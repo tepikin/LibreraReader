@@ -5,6 +5,7 @@ import java.io.FileFilter;
 import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -22,6 +23,17 @@ import com.foobnix.pdf.info.wrapper.AppBookmark;
 import com.foobnix.pdf.info.wrapper.AppState;
 import com.foobnix.pdf.info.wrapper.DocumentController;
 import com.foobnix.sys.TempHolder;
+import com.google.common.base.Optional;
+import com.optimaize.langdetect.DetectedLanguage;
+import com.optimaize.langdetect.LanguageDetector;
+import com.optimaize.langdetect.LanguageDetectorBuilder;
+import com.optimaize.langdetect.i18n.LdLocale;
+import com.optimaize.langdetect.ngram.NgramExtractors;
+import com.optimaize.langdetect.profiles.LanguageProfile;
+import com.optimaize.langdetect.profiles.LanguageProfileReader;
+import com.optimaize.langdetect.text.CommonTextObjectFactories;
+import com.optimaize.langdetect.text.TextObject;
+import com.optimaize.langdetect.text.TextObjectFactory;
 
 import android.annotation.TargetApi;
 import android.content.Context;
@@ -32,6 +44,7 @@ import android.speech.tts.TextToSpeech;
 import android.speech.tts.TextToSpeech.EngineInfo;
 import android.speech.tts.TextToSpeech.OnInitListener;
 import android.speech.tts.TextToSpeech.OnUtteranceCompletedListener;
+import android.util.Log;
 import android.widget.Toast;
 
 public class TTSEngine {
@@ -44,6 +57,25 @@ public class TTSEngine {
     volatile MediaPlayer mp;
     Timer mTimer;
     Object helpObject = new Object();
+
+    private List<LanguageProfile> languageProfiles = getLanguageProfiles();
+
+    private static List<LanguageProfile> getLanguageProfiles()  {
+        try {
+            return new LanguageProfileReader().readAllBuiltIn();
+        }catch (Throwable e){
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    //build language detector:
+    private LanguageDetector languageDetector = LanguageDetectorBuilder.create(NgramExtractors.standard())
+            .withProfiles(languageProfiles)
+            .build();
+
+    //create a text object factory
+    private TextObjectFactory textObjectFactory = CommonTextObjectFactories.forDetectingOnLargeText();
 
     private static TTSEngine INSTANCE = new TTSEngine();
 
@@ -209,7 +241,27 @@ public class TTSEngine {
 
                     HashMap<String, String> mapTemp1 = new HashMap<String, String>();
                     mapTemp1.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, FINISHED + i);
-
+                    Log.e("Speek_part", "text = "+ big);
+try {
+    TextObject textObject = textObjectFactory.forText(big);
+    List<DetectedLanguage> probabilities = languageDetector.getProbabilities(textObject);
+    for (int i1 = 0; i1 < probabilities.size(); i1++) {
+        DetectedLanguage detectedLanguage = probabilities.get(i1);
+        Log.e("Speek_part", "detectedLanguage = "+ detectedLanguage);
+        String language = detectedLanguage.getLocale().getLanguage();
+        Log.e("Speek_part", "detectedLanguage = "+ language);
+        Locale locale = new Locale(language);
+        if (ttsEngine.isLanguageAvailable(locale) == TextToSpeech.LANG_AVAILABLE ||
+                ttsEngine.isLanguageAvailable(locale) == TextToSpeech.LANG_COUNTRY_AVAILABLE ||
+                ttsEngine.isLanguageAvailable(locale) == TextToSpeech.LANG_COUNTRY_VAR_AVAILABLE) {
+            ttsEngine.setLanguage(locale);
+            Log.e("Speek_part", "locale set = "+ locale);
+            break;
+        }
+    }
+}catch (Throwable e){
+    e.printStackTrace();
+}
                     ttsEngine.speak(big, TextToSpeech.QUEUE_ADD, mapTemp1);
                     if (!big.endsWith(".")) {
                         LOG.d("pageHTML-parts", i, "[playSilence]");
