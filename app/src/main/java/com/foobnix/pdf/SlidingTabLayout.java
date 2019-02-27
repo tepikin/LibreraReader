@@ -1,23 +1,25 @@
 package com.foobnix.pdf;
 
-import com.foobnix.android.utils.Dips;
-import com.foobnix.android.utils.LOG;
-import com.foobnix.pdf.info.TintUtil;
-import com.foobnix.pdf.info.wrapper.AppState;
-import com.foobnix.ui2.adapter.TabsAdapter2;
-
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.support.v4.view.ViewPager;
+import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.HorizontalScrollView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
+
+import com.foobnix.android.utils.Dips;
+import com.foobnix.android.utils.LOG;
+import com.foobnix.pdf.info.TintUtil;
+import com.foobnix.pdf.info.wrapper.AppState;
+import com.foobnix.ui2.adapter.TabsAdapter2;
 
 /**
  * To be used with ViewPager to provide a tab indicator component which give
@@ -40,6 +42,7 @@ import android.widget.TextView;
  */
 public class SlidingTabLayout extends HorizontalScrollView {
 
+
     /**
      * Allows complete control over the colors drawn in the tab layout. Set with
      * {@link #setCustomTabColorizer(TabColorizer)}.
@@ -48,21 +51,28 @@ public class SlidingTabLayout extends HorizontalScrollView {
 
         /**
          * @return return the color of the indicator used when {@code position}
-         *         is selected.
+         * is selected.
          */
         int getIndicatorColor(int position);
 
         /**
          * @return return the color of the divider drawn to the right of
-         *         {@code position}.
+         * {@code position}.
          */
         int getDividerColor(int position);
 
     }
 
     private static final int TITLE_OFFSET_DIPS = 24;
-    private static final int TAB_VIEW_PADDING_DIPS = 16;
-    private static final int TAB_VIEW_TEXT_SIZE_SP = 13;
+
+    private static final int TAB_VIEW_TEXT_SIZE_SP = 12;
+
+    private static int POS_HORIZONTAL = 0;
+    private static int POS_VERTICAL = 1;
+
+    private static int myPOS = POS_VERTICAL;
+
+    private static int TAB_VIEW_PADDING_DIPS = myPOS == POS_HORIZONTAL ? 16 : 10;
 
     private int mTitleOffset;
 
@@ -94,12 +104,20 @@ public class SlidingTabLayout extends HorizontalScrollView {
 
         mTabStrip = new SlidingTabStrip(context);
         mTabStrip.setDividerColors(Color.TRANSPARENT);
-        addView(getmTabStrip(), LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
+
     }
+
+    public void init() {
+        myPOS = AppState.get().tapPositionTop ? POS_HORIZONTAL : POS_VERTICAL;
+        TAB_VIEW_PADDING_DIPS = myPOS == POS_HORIZONTAL ? 16 : 10;
+        addView(getmTabStrip(), LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
+
+    }
+
 
     /**
      * Set the custom {@link TabColorizer} to be used.
-     *
+     * <p>
      * If you only require simple custmisation then you can use
      * {@link #setSelectedIndicatorColors(int...)} and
      * {@link #setDividerColors(int...)} to achieve similar effects.
@@ -141,10 +159,8 @@ public class SlidingTabLayout extends HorizontalScrollView {
     /**
      * Set the custom layout to be inflated for the tab views.
      *
-     * @param layoutResId
-     *            Layout id to be inflated
-     * @param textViewId
-     *            id of the {@link TextView} in the inflated view
+     * @param layoutResId Layout id to be inflated
+     * @param textViewId  id of the {@link TextView} in the inflated view
      */
     public void setCustomTabView(int layoutResId, int textViewId) {
         mTabViewLayoutId = layoutResId;
@@ -182,10 +198,12 @@ public class SlidingTabLayout extends HorizontalScrollView {
             textView.setBackgroundResource(outValue.resourceId);
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
-            // If we're running on ICS or newer, enable all-caps to match the
-            // Action Bar tab style
+
+        if (myPOS == POS_HORIZONTAL) {
             textView.setAllCaps(true);
+        }else {
+            textView.setSingleLine();
+            textView.setEllipsize(TextUtils.TruncateAt.END);
         }
 
         int padding = (int) (TAB_VIEW_PADDING_DIPS * getResources().getDisplayMetrics().density);
@@ -229,7 +247,13 @@ public class SlidingTabLayout extends HorizontalScrollView {
                 // TintUtil.addTextView(tabTitleView);
 
                 Drawable drawable = getContext().getResources().getDrawable(adapter.getIconResId(i));
-                tabTitleView.setCompoundDrawablesWithIntrinsicBounds(drawable, null, null, null);
+
+                if (myPOS == POS_VERTICAL) {
+                    tabTitleView.setCompoundDrawablesWithIntrinsicBounds(null, drawable, null, null);
+                } else {
+                    tabTitleView.setCompoundDrawablesWithIntrinsicBounds(drawable, null, null, null);
+                }
+
                 tabTitleView.setCompoundDrawablePadding(Dips.dpToPx(5));
 
                 if (AppState.get().appTheme == AppState.THEME_INK) {
@@ -242,9 +266,12 @@ public class SlidingTabLayout extends HorizontalScrollView {
 
                 tabView.setOnClickListener(tabClickListener);
 
-                
 
-                getmTabStrip().addView(tabView);
+                if (myPOS == POS_VERTICAL) {
+                    getmTabStrip().addView(tabView, new LinearLayout.LayoutParams(Dips.DP_80, LayoutParams.WRAP_CONTENT));
+                } else {
+                    getmTabStrip().addView(tabView);
+                }
             }
         }
         updateIcons(0);
@@ -342,7 +369,15 @@ public class SlidingTabLayout extends HorizontalScrollView {
         for (int i = 0; i < getmTabStrip().getChildCount(); i++) {
             TextView childAt = (TextView) getmTabStrip().getChildAt(i);
             int myColor = i == position ? Color.WHITE : TintUtil.colorSecondTab;
-            Drawable drawable = childAt.getCompoundDrawables()[0];
+
+
+            Drawable drawable;
+            if (myPOS == POS_VERTICAL) {
+                drawable = childAt.getCompoundDrawables()[1];
+            } else {
+                drawable = childAt.getCompoundDrawables()[0];
+            }
+
             if (AppState.get().appTheme == AppState.THEME_INK) {
                 TintUtil.setDrawableTint(drawable, TintUtil.color);
                 childAt.setTextColor(TintUtil.color);

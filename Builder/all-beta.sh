@@ -1,9 +1,14 @@
 #!/usr/bin/env bash
 
+./link_to_mupdf_1.11.sh
+
 cd ../
 
-./gradlew --no-daemon incVersion
-./gradlew --no-daemon clean assembleBetaRelease copyApks -Pbeta
+./gradlew clean incVersion
+./gradlew assembleBetaRelease
+#./gradlew assembleEbookaRelease
+./gradlew copyApks -Pbeta
+./gradlew -stop
 
 cd Builder
 ./remove_all.sh

@@ -1,14 +1,9 @@
 package com.foobnix.pdf.info.model;
 
-import java.io.File;
-import java.io.FilenameFilter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Locale;
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.graphics.Typeface;
+import android.os.Environment;
 
 import com.foobnix.android.utils.LOG;
 import com.foobnix.android.utils.Objects;
@@ -19,15 +14,22 @@ import com.foobnix.dao2.FileMeta;
 import com.foobnix.pdf.info.ExportSettingsManager;
 import com.foobnix.pdf.info.ExtUtils;
 import com.foobnix.pdf.info.FontExtractor;
-import com.foobnix.pdf.info.Urls;
 import com.foobnix.pdf.info.wrapper.AppState;
 import com.foobnix.pdf.info.wrapper.MagicHelper;
 import com.foobnix.ui2.AppDB;
+import com.foobnix.ui2.FileMetaCore;
 
-import android.content.Context;
-import android.content.SharedPreferences;
-import android.graphics.Typeface;
-import android.os.Environment;
+import org.ebookdroid.droids.DocContext;
+
+import java.io.File;
+import java.io.FilenameFilter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
 
 public class BookCSS {
 
@@ -124,7 +126,7 @@ public class BookCSS {
 
         documentStyle = STYLES_DOC_AND_USER;
         isAutoHypens = true;
-        hypenLang = "en";
+        hypenLang = null;
 
         linkColorDay = LINK_COLOR_UNIVERSAL;
         linkColorNight = LINK_COLOR_UNIVERSAL;
@@ -491,6 +493,10 @@ public class BookCSS {
     }
 
     public String toCssString() {
+        return toCssString("");
+    }
+
+    public String toCssString(String path) {
         StringBuilder builder = new StringBuilder();
 
         String backgroundColor = MagicHelper.colorToString(MagicHelper.getBgColor());
@@ -500,6 +506,13 @@ public class BookCSS {
         builder.append("isAutoHypens1" + isAutoHypens + hypenLang + "{}");
 
         builder.append("b>span,strong>span{font-weight:normal}");// fix chess
+
+        if (path.endsWith(DocContext.EXT_DOC_HTML)) {
+            builder.append("book>title, bookinfo {display:none}");
+            builder.append("emphasis,para {display:inline}");
+            builder.append("chapter,sect1, title {display:block}");
+        }
+
 
         builder.append("svg {display:block}");
         builder.append("tr {display:block}");
@@ -696,13 +709,13 @@ public class BookCSS {
     }
 
     public void detectLang(String bookPath) {
+
         FileMeta meta = AppDB.get().load(bookPath);
-        if (meta != null) {
-            BookCSS.get().hypenLang = meta.getLang();
+        if (meta == null) {
+            meta = FileMetaCore.createMetaIfNeed(bookPath, false);
         }
-        if (TxtUtils.isEmpty(BookCSS.get().hypenLang)) {
-            BookCSS.get().hypenLang = Urls.getLangCode();
-        }
+        BookCSS.get().hypenLang = meta != null ? meta.getLang() : null;
+        LOG.d("detectLang",bookPath,  BookCSS.get().hypenLang);
     }
 
 }

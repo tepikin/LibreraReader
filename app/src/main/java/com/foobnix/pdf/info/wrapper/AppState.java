@@ -78,7 +78,7 @@ public class AppState {
     public static final String PNG = "PNG";
     public static final String JPG = "JPG";
 
-    public static final String[] LIBRE_EXT = ".odt, .odp, .pptx, .ppt".split(", ");
+    public static final String[] LIBRE_EXT = ".odp, .pptx, .ppt".split(", ");
     public static final String[] OTHER_BOOK_EXT = ".abw, .docm, .lwp, .md, .pages, .rst, .sdw, .tex, .wpd, .wps, .zabw, .cbc, .chm, .lit, .lrf, .oeb, .pml, .rb, .snb, .tcr, .txtz, .azw1, .tpz".split(", ");
     public static final String[] OTHER_ARCH_EXT = ".img, .zip, .rar, .7z, .arj, .bz2, .bzip2, .tbz2, .tbz, .txz, .cab, .gz, .gzip, .tgz, .iso, .lzh, .lha, .lzma, .tar, .xar, .z, .taz, .xz, .dmg".split(", ");
 
@@ -157,13 +157,9 @@ public class AppState {
     );
 
     public static final List<String> STYLE_COLORS = Arrays.asList(//
-            "#3949AB", //
-            // "#2a56c6", //
-            // "#E6A639", //
-            // "#395B9C", //
-            "#EA5964", //
-            "#00897B", //
-            // "#FBAB49", //
+            "#008760", //
+            "#007dc7", //
+            "#ff001e", //
             "#000000" //
 
     );
@@ -300,7 +296,7 @@ public class AppState {
     @IgnoreHashCode
     public int inactivityTime = 2;
     @IgnoreHashCode
-    public int remindRestTime = 60;
+    public int remindRestTime = 120;
 
     public int flippingInterval = 10;
     public int ttsTimer = 60;
@@ -334,6 +330,8 @@ public class AppState {
 
     public boolean isShowChaptersOnProgress = true;
     public boolean isShowSubChaptersOnProgress = true;
+
+    public boolean tapPositionTop = true;
 
     public long fontExtractTime = 0;
 
@@ -418,7 +416,7 @@ public class AppState {
     public boolean isReverseKeys = Dips.isSmallScreen();
 
     @IgnoreHashCode
-    public boolean isVisibleSorting = Dips.isLargeOrXLargeScreen();
+    public boolean isVisibleSorting = true;
 
     @IgnoreHashCode
     public boolean isShowBookmarsPanelInMusicMode = true;
@@ -463,6 +461,7 @@ public class AppState {
     public int bgImageNightTransparency = NIGHT_TRANSPARENCY;
 
     public String appLang = AppState.MY_SYSTEM_LANG;
+    public String lastBookLang = "";
     public float appFontScale = 1.0f;
 
     public boolean isLocked = false;
@@ -623,8 +622,8 @@ public class AppState {
     public boolean isCutRTL = Urls.isRtl();
 
     // perofrmance
-    public int pagesInMemory = Build.VERSION.SDK_INT >= 24 ? 5 : 3;
-    public float pageQuality = Build.VERSION.SDK_INT >= 24 ? 1.6f : 1.2f;
+    public int pagesInMemory =  3;
+    public float pageQuality = Build.VERSION.SDK_INT >= 24 ? 1.4f : 1.2f;
     public int rotate = 0;
     public int rotateViewPager = 0;
 
@@ -811,17 +810,10 @@ public class AppState {
 
                 }
 
-                if (AppsConfig.LIBRERA_PDF_2.equals(Apps.getPackageName(a))) {
-                    isShowWhatIsNewDialog = false;
-                }
-                if (AppsConfig.LIBRERA_EPUB_READER.equals(Apps.getPackageName(a))) {
+                if (!AppsConfig.LIBRERA_READER.equals(Apps.getPackageName(a)) && !AppsConfig.PRO_LIBRERA_READER.equals(Apps.getPackageName(a))) {
                     isShowWhatIsNewDialog = false;
                 }
 
-                if (AppsConfig.LIBRERA_TTS_READER.equals(Apps.getPackageName(a))) {
-                    isShowWhatIsNewDialog = false;
-                    doubleClickAction1 = DOUBLE_CLICK_START_STOP_TTS;
-                }
 
                 try {
                     List<String> extFolders = ExtUtils.getExternalStorageDirectories(a);

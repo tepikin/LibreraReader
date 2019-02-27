@@ -1,14 +1,5 @@
 package com.foobnix.pdf.info;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-
-import com.foobnix.android.utils.Dips;
-import com.foobnix.android.utils.LOG;
-import com.foobnix.pdf.info.wrapper.AppState;
-import com.foobnix.pdf.info.wrapper.MagicHelper;
-
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.graphics.Color;
@@ -26,11 +17,20 @@ import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.foobnix.android.utils.Dips;
+import com.foobnix.android.utils.LOG;
+import com.foobnix.pdf.info.wrapper.AppState;
+import com.foobnix.pdf.info.wrapper.MagicHelper;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+
 public class TintUtil {
     public static final int RADIUS = Dips.dpToPx(2);
     public static final int STROKE = Dips.dpToPx(1);
     public static int itAlpha = 245;
-    public static int colorSecondTab = Color.parseColor("#eeffffff");// Color.parseColor("#9fd8bc");
+    public static int colorSecondTab = Color.parseColor("#ddffffff");// Color.parseColor("#9fd8bc");
     public static int color = Color.parseColor(AppState.STYLE_COLORS.get(0));
     private static List<Drawable> drawables = new ArrayList<Drawable>();
     private static List<GradientDrawable> drawableFill = new ArrayList<GradientDrawable>();
@@ -140,7 +140,11 @@ public class TintUtil {
     }
 
     public static void setDrawableTint(Drawable drawable, int color) {
-        drawable.setColorFilter(color, Mode.SRC_ATOP);
+        try {
+            drawable.setColorFilter(color, Mode.SRC_ATOP);
+        }catch (Exception e){
+            LOG.e(e);
+        }
     }
 
     public static void addTingBg(View textView) {

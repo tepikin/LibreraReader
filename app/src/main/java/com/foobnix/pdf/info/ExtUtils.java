@@ -64,7 +64,6 @@ import com.nostra13.universalimageloader.core.ImageLoader;
 
 import org.ebookdroid.BookType;
 import org.ebookdroid.LibreraApp;
-import org.ebookdroid.common.cache.CacheManager;
 import org.ebookdroid.core.codec.CodecDocument;
 import org.ebookdroid.core.codec.CodecPage;
 import org.ebookdroid.core.codec.OutlineLink;
@@ -121,6 +120,7 @@ public class ExtUtils {
         browseExts.add(".json");
         browseExts.addAll(BookCSS.fontExts);
         browseExts.addAll(AUDIO);
+        browseExts.add(".docx");
 
         mimeCache.put(".tpz", "application/x-topaz-ebook");
         mimeCache.put(".azw1", "application/x-topaz-ebook");
@@ -896,14 +896,7 @@ public class ExtUtils {
         showDocument(c, Uri.fromFile(file), page, playlist);
     }
 
-    public static boolean showDocument(final Activity c, final Uri uri) {
-        String filePath = CacheManager.getFilePathFromAttachmentIfNeed(c);
-        if (TxtUtils.isEmpty(filePath) && uri != null && uri.getPath() != null) {
-            filePath = uri.getPath();
-        }
-        // MetaCache.get().getOrCreateByPath(filePath);
-        return showDocument(c, new File(filePath), -1);
-    }
+
 
     public static void showDocument(final Context c, final Uri uri, final int page, final String playList) {
         Safe.run(new Runnable() {
@@ -1146,7 +1139,7 @@ public class ExtUtils {
 
             String title = file.getName() + "." + (page + 1) + ".jpg";
 
-            File oFile = new File(CacheZipUtils.CACHE_UN_ZIP_DIR, title);
+            File oFile = new File(CacheZipUtils.ATTACHMENTS_CACHE_DIR, title);
             oFile.getParentFile().mkdirs();
             String pathofBmp = oFile.getPath();
 
@@ -1644,6 +1637,10 @@ public class ExtUtils {
             }
         }
         return null;
+    }
+
+    public  static boolean isMounted(File file){
+            return Environment.MEDIA_MOUNTED.equals(EnvironmentCompat.getStorageState(file));
     }
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)

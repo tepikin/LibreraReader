@@ -1,12 +1,12 @@
 package org.ebookdroid.droids;
 
-import com.BaseExtractor;
 import com.foobnix.android.utils.LOG;
+import com.foobnix.android.utils.TxtUtils;
 import com.foobnix.ext.CacheZipUtils;
-import com.foobnix.ext.RtfExtract;
 import com.foobnix.hypen.HypenUtils;
 import com.foobnix.mobi.parser.IOUtils;
 import com.foobnix.pdf.info.model.BookCSS;
+import com.foobnix.pdf.info.wrapper.AppState;
 
 import org.ebookdroid.core.codec.CodecDocument;
 import org.ebookdroid.droids.mupdf.codec.MuPdfDocument;
@@ -16,11 +16,9 @@ import org.zwobble.mammoth.Result;
 import org.zwobble.mammoth.images.Image;
 import org.zwobble.mammoth.images.ImageConverter;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,7 +28,7 @@ public class DocxContext extends PdfContext {
 
     @Override
     public File getCacheFileName(String fileNameOriginal) {
-        fileNameOriginal = fileNameOriginal + BookCSS.get().isAutoHypens + BookCSS.get().hypenLang;
+        fileNameOriginal = fileNameOriginal + BookCSS.get().isAutoHypens + BookCSS.get().hypenLang + AppState.get().isDouble + AppState.get().isAccurateFontSize + BookCSS.get().isCapitalLetter;
         cacheFile = new File(CacheZipUtils.CACHE_BOOK_DIR, fileNameOriginal.hashCode() + ".html");
         return cacheFile;
     }
@@ -63,7 +61,7 @@ public class DocxContext extends PdfContext {
                 result = converter.convertToHtml(new File(fileName));
 
                 String html = result.getValue();
-                if(BookCSS.get().isAutoHypens){
+                if(BookCSS.get().isAutoHypens && TxtUtils.isNotEmpty(BookCSS.get().hypenLang)){
                     LOG.d("docx-isAutoHypens", BookCSS.get().isAutoHypens);
                     HypenUtils.applyLanguage(BookCSS.get().hypenLang);
                     HypenUtils.resetTokenizer();

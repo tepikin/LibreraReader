@@ -1,16 +1,9 @@
 package com.foobnix.ext;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintWriter;
-import java.util.HashSet;
-import java.util.Set;
+import android.text.TextUtils;
 
 import com.foobnix.android.utils.LOG;
+import com.foobnix.android.utils.TxtUtils;
 import com.foobnix.hypen.HypenUtils;
 import com.foobnix.pdf.info.model.BookCSS;
 import com.rtfparserkit.converter.text.AbstractTextConverter;
@@ -22,10 +15,19 @@ import com.rtfparserkit.parser.standard.StandardRtfParser;
 import com.rtfparserkit.rtf.Command;
 import com.rtfparserkit.utils.HexUtils;
 
-import android.text.TextUtils;
 import net.arnx.wmf2svg.gdi.svg.SvgGdi;
 import net.arnx.wmf2svg.gdi.wmf.WmfParser;
 import net.arnx.wmf2svg.util.ImageUtil;
+
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintWriter;
+import java.util.HashSet;
+import java.util.Set;
 
 public class RtfExtract {
 
@@ -47,7 +49,8 @@ public class RtfExtract {
             IRtfSource source = new RtfStreamSource(is);
             IRtfParser parser = new StandardRtfParser();
 
-            if (BookCSS.get().isAutoHypens) {
+            boolean isEnableHypens = BookCSS.get().isAutoHypens && TxtUtils.isNotEmpty(BookCSS.get().hypenLang);
+            if (isEnableHypens) {
                 HypenUtils.applyLanguage(BookCSS.get().hypenLang);
             }
 
@@ -62,10 +65,11 @@ public class RtfExtract {
                 public void processExtractedText(String text) {
 
                     String htmlEncode = TextUtils.htmlEncode(text);
-                    if (BookCSS.get().isAutoHypens) {
+                    if (isEnableHypens) {
                         htmlEncode = HypenUtils.applyHypnes(htmlEncode);
                     }
                     printText(htmlEncode);
+                    writer.print(" ");
                 }
 
                 @Override
@@ -117,8 +121,10 @@ public class RtfExtract {
                 Set<Command> stack = new HashSet<Command>();
 
                 private void printText(String txt) {
+
+
                     if (stack.contains(Command.par))
-                        writer.print("<p>");
+                        writer.print("<p></p>");
 
                     if (stack.contains(Command.sub))
                         writer.print("<sub>");
@@ -135,7 +141,7 @@ public class RtfExtract {
                     writer.print(txt);
 
                     if (stack.contains(Command.par)) {
-                        writer.print("</p>");
+                        //writer.print("</p>");
                         stack.remove(Command.par);
                     }
 
@@ -169,7 +175,8 @@ public class RtfExtract {
                         writer.write("<br/>");
                     }
 
-                    // writer.write("[" + command + "]");
+                    //writer.write("[" + command + "]");
+
                     stack.add(command);
 
                     if (command == Command.pngblip) {
