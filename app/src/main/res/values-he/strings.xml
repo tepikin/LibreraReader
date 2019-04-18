@@ -536,4 +536,26 @@
    <string name="please_wait_books_are_being_processed_">אנא המתן, ספרים מעובדים</string>
    <string name="system_brightness">בהירות המערכת</string>
    <string name="opening_books_in_the_specified_mode">פתיחת ספרים במצב שצוין</string>
+   <string name="dark_oled">כהה</string>
+   <string name="profile">J</string>
+   <string name="new_profile">פרופיל חדש</string>
+   <string name="main">ראשי</string>
+   <string name="do_you_want_to_switch_profile_">לעבור לפרופיל אחר?</string>
+   <string name="sync_error">שגיאת סינכרון</string>
+   <string name="sign_in">היכנס</string>
+   <string name="sign_out">התנתק</string>
+   <string name="manual_sync_only">סינכרון ידני בלבד</string>
+   <string name="wifi_sync_only">סינכרון WiFi בלבד - -</string>
+   <string name="sync_google_drive">סנכרון (כונן Google)</string>
+   <string name="single_tap_to_select_text">הקש אחת כדי לבחור טקסט</string>
+   <string name="sync_book">לסנכרן ספר</string>
+   <string name="sync">סינכרון</string>
+   <string name="synchronized_folder">תיקייה מסונכרנת - -</string>
+   <string name="today">היום</string>
+   <string name="downloads">הורדות</string>
+   <string name="delete_the_directory_all_the_files_in_the_directory_">התיקיה אינה ריקה. למחוק בכל זאת?</string>
+   <string name="synchronized_books">ספרים מסונכרנים</string>
+   <string name="show_sync_wheel">הצג גלגל סינכרון</string>
+   <string name="publication_date">תאריך פרסום</string>
+   <string name="empy">ריק</string>
 </resources>

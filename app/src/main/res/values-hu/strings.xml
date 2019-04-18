@@ -536,4 +536,26 @@
    <string name="please_wait_books_are_being_processed_">Kérjük várjon, a könyvek feldolgozása folyamatban van</string>
    <string name="system_brightness">A rendszer fényereje</string>
    <string name="opening_books_in_the_specified_mode">Könyvek megnyitása a megadott módban</string>
+   <string name="dark_oled">Sötét oled</string>
+   <string name="profile">Profil</string>
+   <string name="new_profile">Új profil</string>
+   <string name="main">Fő-</string>
+   <string name="do_you_want_to_switch_profile_">Váltson másik profilra?</string>
+   <string name="sync_error">Szinkronizálási hiba</string>
+   <string name="sign_in">Bejelentkezés</string>
+   <string name="sign_out">Kijelentkezés</string>
+   <string name="manual_sync_only">Csak manuális szinkronizálás</string>
+   <string name="wifi_sync_only">Csak wifi szinkronizálás</string>
+   <string name="sync_google_drive">Szinkronizálás (google meghajtó)</string>
+   <string name="single_tap_to_select_text">Egyetlen gombbal válassza ki a szöveget</string>
+   <string name="sync_book">Szinkronizál egy könyvet</string>
+   <string name="sync">Szinkronizál</string>
+   <string name="synchronized_folder">Szinkronizált mappát</string>
+   <string name="today">Ma</string>
+   <string name="downloads">A letöltések</string>
+   <string name="delete_the_directory_all_the_files_in_the_directory_">A mappa nem üres. egyébként törölni?</string>
+   <string name="synchronized_books">Szinkronizált könyvek</string>
+   <string name="show_sync_wheel">Szinkronizáló kerék megjelenítése</string>
+   <string name="publication_date">Közzététel dátuma</string>
+   <string name="empy">Üres</string>
 </resources>

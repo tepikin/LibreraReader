@@ -1,30 +1,5 @@
 package com.foobnix.ui2.fragment;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
-import org.greenrobot.eventbus.EventBus;
-import org.greenrobot.eventbus.Subscribe;
-import org.greenrobot.eventbus.ThreadMode;
-
-import com.foobnix.android.utils.AsyncTasks;
-import com.foobnix.android.utils.Dips;
-import com.foobnix.android.utils.LOG;
-import com.foobnix.android.utils.TxtUtils;
-import com.foobnix.pdf.info.R;
-import com.foobnix.pdf.info.wrapper.AppState;
-import com.foobnix.pdf.info.wrapper.PopupHelper;
-import com.foobnix.pdf.search.activity.msg.NotifyAllFragments;
-import com.foobnix.pdf.search.activity.msg.OpenDirMessage;
-import com.foobnix.pdf.search.activity.msg.UpdateAllFragments;
-import com.foobnix.sys.TempHolder;
-import com.foobnix.ui2.MainTabs2;
-import com.foobnix.ui2.adapter.AuthorsAdapter2;
-import com.foobnix.ui2.adapter.DefaultListeners;
-import com.foobnix.ui2.adapter.FileMetaAdapter;
-import com.foobnix.ui2.fast.FastScrollRecyclerView;
-
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -36,6 +11,7 @@ import android.os.Handler;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.util.Pair;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.GridLayoutManager.SpanSizeLookup;
 import android.support.v7.widget.LinearLayoutManager;
@@ -43,6 +19,33 @@ import android.support.v7.widget.RecyclerView;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+
+import com.foobnix.android.utils.Dips;
+import com.foobnix.android.utils.LOG;
+import com.foobnix.android.utils.TxtUtils;
+import com.foobnix.model.AppState;
+import com.foobnix.pdf.info.R;
+import com.foobnix.pdf.info.model.BookCSS;
+import com.foobnix.pdf.info.wrapper.PopupHelper;
+import com.foobnix.pdf.search.activity.msg.NotifyAllFragments;
+import com.foobnix.pdf.search.activity.msg.OpenDirMessage;
+import com.foobnix.pdf.search.activity.msg.UpdateAllFragments;
+import com.foobnix.sys.TempHolder;
+import com.foobnix.ui2.MainTabs2;
+import com.foobnix.ui2.adapter.AuthorsAdapter2;
+import com.foobnix.ui2.adapter.DefaultListeners;
+import com.foobnix.ui2.adapter.FileMetaAdapter;
+import com.foobnix.ui2.fast.FastScrollRecyclerView;
+import com.foobnix.ui2.fast.FastScrollStateChangeListener;
+import com.nostra13.universalimageloader.core.ImageLoader;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public abstract class UIFragment<T> extends Fragment {
     public static String INTENT_TINT_CHANGE = "INTENT_TINT_CHANGE";
@@ -61,10 +64,44 @@ public abstract class UIFragment<T> extends Fragment {
         handler = new Handler();
     }
 
+    SwipeRefreshLayout swipeRefreshLayout;
+
+
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+
         TxtUtils.updateAllLinks(view);
+        if (AppState.get().appTheme == AppState.THEME_INK) {
+            TxtUtils.setInkTextView(view);
+        }
+
+        if (recyclerView instanceof FastScrollRecyclerView) {
+            swipeRefreshLayout = getActivity().findViewById(R.id.swipeRefreshLayout);
+
+            ((FastScrollRecyclerView) recyclerView).setFastScrollStateChangeListener(new FastScrollStateChangeListener() {
+
+                @Override
+                public void onFastScrollStop() {
+                    ImageLoader.getInstance().resume();
+                    LOG.d("ImageLoader resume");
+                    if (BookCSS.get().isEnableSync) {
+                        swipeRefreshLayout.setEnabled(true);
+                    }
+                }
+
+                @Override
+                public void onFastScrollStart() {
+                    LOG.d("ImageLoader pause");
+                    ImageLoader.getInstance().pause();
+                    if (BookCSS.get().isEnableSync) {
+                        swipeRefreshLayout.setEnabled(false);
+                    }
+                }
+            });
+        }
+
     }
 
     @Override
@@ -128,9 +165,14 @@ public abstract class UIFragment<T> extends Fragment {
         DefaultListeners.bindAdapterAuthorSerias(getActivity(), searchAdapter);
     }
 
+    private List<T> prepareDataInBackgroundSync() {
+        return prepareDataInBackground();
+    }
+
     public List<T> prepareDataInBackground() {
         return null;
     }
+
 
     public void populateDataInUI(List<T> items) {
 
@@ -211,24 +253,72 @@ public abstract class UIFragment<T> extends Fragment {
 
     AsyncTask<Object, Object, List<T>> execute;
 
+    volatile boolean inProgress = false;
+
     public void populate() {
-        if (true) {
-            // return;
+        if (inProgress) {
+            LOG.d("IN_PROGRESS");
+            return;
         }
+        if (true) {
 
-        // if (isInProgress()) {
-        // AsyncTasks.toastPleaseWait(getActivity());
-        // return;
-        // }
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
 
-        if (AsyncTasks.isFinished(execute)) {
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (progressBar != null) {
+                                handler.postDelayed(new Runnable() {
+
+                                    @Override
+                                    public void run() {
+                                        progressBar.setVisibility(View.VISIBLE);
+                                    }
+                                }, 100);
+                            }
+                        }
+                    });
+
+
+                    final List<T> result;
+                    try {
+                        inProgress = true;
+                        result = prepareDataInBackgroundSync();
+                    } finally {
+                        inProgress = false;
+
+                    }
+
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (progressBar != null) {
+                                handler.removeCallbacksAndMessages(null);
+                                progressBar.setVisibility(View.GONE);
+                            }
+                            if (getActivity() != null) {
+                                try {
+                                    populateDataInUI(result);
+                                } catch (Exception e) {
+                                    LOG.e(e);
+                                }
+                            }
+
+                        }
+                    });
+                }
+            }).start();
+
+        } else {
 
             execute = new AsyncTask<Object, Object, List<T>>() {
                 @Override
                 protected List<T> doInBackground(Object... params) {
                     try {
                         LOG.d("UIFragment", "prepareDataInBackground");
-                        return prepareDataInBackground();
+                        return prepareDataInBackgroundSync();
                     } catch (Exception e) {
                         LOG.e(e);
                         return new ArrayList<T>();
@@ -245,9 +335,9 @@ public abstract class UIFragment<T> extends Fragment {
                                 progressBar.setVisibility(View.VISIBLE);
                             }
                         }, 100);
-
                     }
-                };
+                }
+
 
                 @Override
                 protected void onPostExecute(List<T> result) {
@@ -264,10 +354,8 @@ public abstract class UIFragment<T> extends Fragment {
                     }
                 }
             }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-        } else {
-            // AsyncTasks.toastPleaseWait(getActivity());
-            LOG.d("SKIP task");
         }
+
     }
 
     public void onGridList(int mode, ImageView onGridlList, final FileMetaAdapter searchAdapter, AuthorsAdapter2 authorsAdapter) {
@@ -329,7 +417,7 @@ public abstract class UIFragment<T> extends Fragment {
             searchAdapter.setAdapterType(mode == AppState.MODE_COVERS ? FileMetaAdapter.ADAPTER_COVERS : FileMetaAdapter.ADAPTER_GRID);
             recyclerView.setAdapter(searchAdapter);
 
-        } else if (Arrays.asList(AppState.MODE_AUTHORS, AppState.MODE_SERIES, AppState.MODE_GENRE, AppState.MODE_USER_TAGS, AppState.MODE_KEYWORDS, AppState.MODE_LANGUAGES).contains(mode)) {
+        } else if (Arrays.asList(AppState.MODE_PUBLICATION_DATE, AppState.MODE_PUBLISHER, AppState.MODE_AUTHORS, AppState.MODE_SERIES, AppState.MODE_GENRE, AppState.MODE_USER_TAGS, AppState.MODE_KEYWORDS, AppState.MODE_LANGUAGES).contains(mode)) {
             RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getActivity());
             recyclerView.setLayoutManager(mLayoutManager);
             recyclerView.setAdapter(authorsAdapter);

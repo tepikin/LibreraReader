@@ -6,11 +6,12 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.Drawable;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Build;
 import android.provider.Settings.Secure;
 import android.widget.Toast;
 
-import com.foobnix.pdf.info.AppsConfig;
 import com.foobnix.pdf.info.R;
 
 public class Apps {
@@ -97,7 +98,7 @@ public class Apps {
         String string = c.getResources().getString(R.string.my_email).replace("<u>", "").replace("</u>", "");
         final String aEmailList[] = {string};
         emailIntent.putExtra(android.content.Intent.EXTRA_EMAIL, aEmailList);
-        emailIntent.putExtra(android.content.Intent.EXTRA_SUBJECT, AppsConfig.TXT_APP_NAME + " " + Apps.getVersionName(c) + " Crash report");
+        emailIntent.putExtra(android.content.Intent.EXTRA_SUBJECT, getApplicationName(c) + " " + Apps.getVersionName(c) + " Crash report");
         emailIntent.setType("plain/text");
         emailIntent.putExtra(android.content.Intent.EXTRA_TEXT, msg);
 
@@ -122,4 +123,16 @@ public class Apps {
         new RuntimeException("can't find meta-data:" + name);
         return null;
     }
+
+    public static boolean isWifiEnabled(Context c) {
+        ConnectivityManager cm = (ConnectivityManager) c.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo wifiNetwork = cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+
+        if (wifiNetwork != null && wifiNetwork.isConnected()) {
+            return true;
+        }
+        return false;
+    }
+
+
 }

@@ -1,20 +1,5 @@
 package com.foobnix.pdf.info.widget;
 
-import java.io.File;
-import java.util.List;
-
-import org.ebookdroid.ui.viewer.VerticalViewActivity;
-
-import com.foobnix.dao2.FileMeta;
-import com.foobnix.pdf.info.IMG;
-import com.foobnix.pdf.info.R;
-import com.foobnix.pdf.info.wrapper.AppState;
-import com.foobnix.pdf.search.activity.HorizontalViewActivity;
-import com.foobnix.sys.ImageExtractor;
-import com.foobnix.ui2.AppDB;
-import com.foobnix.ui2.MainTabs2;
-import com.nostra13.universalimageloader.core.ImageLoader;
-
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.PendingIntent;
@@ -32,6 +17,24 @@ import android.os.Build;
 import android.os.Bundle;
 import android.widget.RemoteViews;
 
+import com.foobnix.dao2.FileMeta;
+import com.foobnix.model.AppData;
+import com.foobnix.model.AppProfile;
+import com.foobnix.model.AppState;
+import com.foobnix.model.AppTemp;
+import com.foobnix.pdf.info.IMG;
+import com.foobnix.pdf.info.R;
+import com.foobnix.pdf.search.activity.HorizontalViewActivity;
+import com.foobnix.sys.ImageExtractor;
+import com.foobnix.ui2.AppDB;
+import com.foobnix.ui2.MainTabs2;
+import com.nostra13.universalimageloader.core.ImageLoader;
+
+import org.ebookdroid.ui.viewer.VerticalViewActivity;
+
+import java.io.File;
+import java.util.List;
+
 public class RecentBooksWidget extends AppWidgetProvider {
 
     public static final String TEST_LOCALE_POS = "TEST_LOCALE_POS";
@@ -42,11 +45,12 @@ public class RecentBooksWidget extends AppWidgetProvider {
     @Override
     public void onReceive(Context context, Intent intent) {
         this.context = context;
+        AppProfile.init(context);
 
         if (intent.getAction().equals(ACTION_MY)) {
 
             String className = VerticalViewActivity.class.getName();
-            if (AppState.get().readingMode == AppState.READING_MODE_BOOK) {
+            if (AppTemp.get().readingMode == AppState.READING_MODE_BOOK) {
                 className = HorizontalViewActivity.class.getName();
             }
 
@@ -91,7 +95,7 @@ public class RecentBooksWidget extends AppWidgetProvider {
 
     @Override
     public synchronized void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
-        AppState.get().load(context);
+
         for (int widgetId : appWidgetIds) {
             RemoteViews remoteViews = null;
             if (Build.VERSION.SDK_INT >= 16 && AppState.get().widgetType == AppState.WIDGET_GRID) {
@@ -136,14 +140,14 @@ public class RecentBooksWidget extends AppWidgetProvider {
     private void updateList(final RemoteViews remoteViews) {
         List<FileMeta> recent = null;
         if (AppState.get().isStarsInWidget) {
-            recent = AppDB.get().getStarsFiles();
+            recent = AppData.get().getAllFavoriteFiles();
         } else {
-            recent = AppDB.get().getRecent();
+            recent = AppData.get().getAllRecent();
         }
         AppDB.removeClouds(recent);
 
         String className = VerticalViewActivity.class.getName();
-        if (AppState.get().readingMode == AppState.READING_MODE_BOOK) {
+        if (AppTemp.get().readingMode == AppState.READING_MODE_BOOK) {
             className = HorizontalViewActivity.class.getName();
         }
         remoteViews.removeAllViews(R.id.linearLayout);

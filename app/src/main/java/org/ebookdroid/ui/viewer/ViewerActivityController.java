@@ -11,15 +11,19 @@ import android.text.InputType;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.foobnix.android.utils.Apps;
+import com.foobnix.android.utils.Intents;
 import com.foobnix.android.utils.LOG;
 import com.foobnix.android.utils.ResultResponse;
 import com.foobnix.android.utils.Safe;
 import com.foobnix.android.utils.TxtUtils;
 import com.foobnix.dao2.FileMeta;
+import com.foobnix.model.AppBook;
+import com.foobnix.model.AppState;
+import com.foobnix.model.AppTemp;
 import com.foobnix.pdf.info.ExtUtils;
 import com.foobnix.pdf.info.R;
 import com.foobnix.pdf.info.model.OutlineLinkWrapper;
-import com.foobnix.pdf.info.wrapper.AppState;
 import com.foobnix.pdf.info.wrapper.DocumentController;
 import com.foobnix.pdf.info.wrapper.DocumentWrapperUI;
 import com.foobnix.pdf.search.activity.HorizontalModeController;
@@ -32,10 +36,9 @@ import com.foobnix.ui2.FileMetaCore;
 import org.ebookdroid.BookType;
 import org.ebookdroid.common.bitmaps.BitmapManager;
 import org.ebookdroid.common.settings.SettingsManager;
-import org.ebookdroid.common.settings.books.BookSettings;
 import org.ebookdroid.common.settings.listeners.IBookSettingsChangeListener;
+import org.ebookdroid.common.settings.types.DocumentViewMode;
 import org.ebookdroid.core.DecodeService;
-import org.ebookdroid.core.PageIndex;
 import org.ebookdroid.core.ViewState;
 import org.ebookdroid.core.events.CurrentPageListener;
 import org.ebookdroid.core.events.DecodingProgressListener;
@@ -122,12 +125,12 @@ public class ViewerActivityController extends ActionController<VerticalViewActiv
         if (++loadingCount == 1) {
             documentModel = ActivityControllerStub.DM_STUB;
 
-            if (intent == null) {
+            if (intent == null || intent.getData() == null) {
                 return;
             }
 
             File file = new File(intent.getData().getPath());
-             m_fileName = intent.getData().getPath();
+            m_fileName = intent.getData().getPath();
             codecType = BookType.getByUri(m_fileName);
 
             FileMeta meta = FileMetaCore.createMetaIfNeed(m_fileName, false);
@@ -136,7 +139,7 @@ public class ViewerActivityController extends ActionController<VerticalViewActiv
 
             if (codecType == null) {
                 if (getActivity() != null) {
-                    Toast.makeText(getActivity(), getActivity().getString(R.string.app_name) + " " + getActivity().getString(R.string.application_cannot_open_the_book), Toast.LENGTH_LONG).show();
+                    Toast.makeText(getActivity(), Apps.getApplicationName(getActivity()) + " " + getActivity().getString(R.string.application_cannot_open_the_book), Toast.LENGTH_LONG).show();
                     getActivity().finish();
                 }
                 return;
@@ -148,12 +151,13 @@ public class ViewerActivityController extends ActionController<VerticalViewActiv
 
             final Uri uri = Uri.fromFile(file);
             controller.setCurrentBook(file);
+            wrapperControlls.hideShowEditIcon();
 
 
             controller.addRecent(uri);
             SettingsManager.getBookSettings(uri.getPath());
 
-            final BookSettings.Diff diff = new BookSettings.Diff(null, SettingsManager.getBookSettings());
+            final AppBook.Diff diff = new AppBook.Diff(null, SettingsManager.getBookSettings());
             onBookSettingsChanged(null, SettingsManager.getBookSettings(), diff);
 
             if (intent.hasExtra("id2")) {
@@ -178,27 +182,23 @@ public class ViewerActivityController extends ActionController<VerticalViewActiv
 
     }
 
+    public int pageCount;
+
     public void startDecoding(final String fileName, final String password) {
         getManagedComponent().view.getView().post(new BookLoadTask(fileName, password, new Runnable() {
 
             @Override
             public void run() {
 
-                int pageIntent = intent.getIntExtra(DocumentController.EXTRA_PAGE, 0);
                 intent.putExtra(HorizontalModeController.EXTRA_PASSWORD, password);
-                double percent = intent.getDoubleExtra(DocumentController.EXTRA_PERCENT, 0.0);
 
-                intent.putExtra(DocumentController.EXTRA_PAGE, 0);
-                intent.putExtra(DocumentController.EXTRA_PERCENT, 0.0);
+                float percent = Intents.getFloatAndClear(intent, DocumentController.EXTRA_PERCENT);
 
-                if (percent > 0) {
-                    LOG.d("Percent", percent, getDocumentModel().getPageCount());
-                    pageIntent = (int) (getDocumentModel().getPageCount() * percent);
+
+                if (percent > 0f) {
+                    controller.onGoToPage((int) Math.round(getDocumentModel().getPageCount() * percent));
                 }
 
-                if (pageIntent > 0) {
-                    controller.onGoToPage(pageIntent);
-                }
 
                 if (onBookLoaded != null) {
                     onBookLoaded.run();
@@ -213,6 +213,7 @@ public class ViewerActivityController extends ActionController<VerticalViewActiv
                         return false;
                     }
                 });
+                pageCount = controller.getPageCount();
 
             }
         }));
@@ -221,12 +222,6 @@ public class ViewerActivityController extends ActionController<VerticalViewActiv
     public void onPause() {
         if (wrapperControlls != null) {
             wrapperControlls.onPause();
-        }
-
-        BookSettings bookSettings = SettingsManager.getBookSettings();
-        if (bookSettings != null) {
-            bookSettings.updateFromAppState();
-            bookSettings.save();
         }
     }
 
@@ -297,16 +292,16 @@ public class ViewerActivityController extends ActionController<VerticalViewActiv
     public void redecodingWithPassword(final ActionEx action) {
         final PasswordEditable value = action.getParameter("input");
         final String password = value.getPassword();
-        final String fileName = action.getParameter("fileName");
+        final String fileName = action.getParameter("path");
 
         intent.putExtra(DocumentController.EXTRA_PASSWORD, password);
         startDecoding(fileName, password);
     }
 
-    protected IViewController switchDocumentController(final BookSettings bs) {
+    protected IViewController switchDocumentController(final AppBook bs) {
         if (bs != null) {
             try {
-                final IViewController newDc = bs.viewMode.create(this);
+                final IViewController newDc = DocumentViewMode.VERTICALL_SCROLL.create(this);
                 if (newDc != null) {
                     final IViewController oldDc = ctrl.getAndSet(newDc);
                     getZoomModel().removeListener(oldDc);
@@ -325,24 +320,14 @@ public class ViewerActivityController extends ActionController<VerticalViewActiv
     }
 
     @Override
-    public void currentPageChanged(final PageIndex newIndex, int pages) {
+    public void currentPageChanged(final int page, int pages) {
         final int pageCount = documentModel.getPageCount();
         String pageText = "";
         if (pageCount > 0) {
-            pageText = (newIndex.viewIndex + 1) + "/" + pageCount;
-        }
-
-        try {
-            BookSettings bs = SettingsManager.getBookSettings(controller.getCurrentBook().getPath());
-            bs.updateFromAppState();
-            bs.currentPageChanged(newIndex, pageCount);
-            bs.save();
-        } catch (Exception e) {
-            LOG.e(e);
+            pageText = (page + 1) + "/" + pageCount;
         }
 
         wrapperControlls.updateUI();
-
 
 
         wrapperControlls.setTitle(title);
@@ -353,18 +338,18 @@ public class ViewerActivityController extends ActionController<VerticalViewActiv
         try {
             String file = a.getIntent().getData().getPath();
 
-            AppState.get().lastBookPath = file;
-            AppState.get().lastClosedActivity = VerticalViewActivity.class.getSimpleName();
-            AppState.get().lastMode = VerticalViewActivity.class.getSimpleName();
+            AppTemp.get().lastBookPath = file;
+            AppTemp.get().lastClosedActivity = VerticalViewActivity.class.getSimpleName();
+            AppTemp.get().lastMode = VerticalViewActivity.class.getSimpleName();
 
-            LOG.d("lasta save", AppState.get().lastClosedActivity);
+            LOG.d("lasta save", AppTemp.get().lastClosedActivity);
 
             LOG.d("createWrapper", file);
             if (ExtUtils.isTextFomat(file)) {
-                AppState.get().isLocked = true;
+                AppTemp.get().isLocked = true;
             } else {
                 if (AppState.get().isLockPDF) {
-                    AppState.get().isLocked = true;
+                    AppTemp.get().isLocked = true;
                 }
             }
         } catch (Exception e) {
@@ -388,11 +373,9 @@ public class ViewerActivityController extends ActionController<VerticalViewActiv
     }
 
 
-
-
     @Override
     public ViewState jumpToPage(final int viewIndex, final float offsetX, final float offsetY, boolean addToHistory) {
-        // getDocumentController().goToPage(viewIndex, offsetX, offsetY);
+        // getDocumentController().goToPage(viewIndex, x, y);
         ViewState goToPage;
         if (addToHistory) {
             int curY = getDocumentController().getView().getScrollY();
@@ -400,7 +383,7 @@ public class ViewerActivityController extends ActionController<VerticalViewActiv
             controller.getLinkHistory().add(curY);
             wrapperControlls.showHideHistory();
         } else {
-            // getDocumentController().goToPage(viewIndex, offsetX, offsetY);
+            // getDocumentController().goToPage(viewIndex, x, y);
             goToPage = getDocumentController().goToPage(viewIndex);
         }
         return goToPage;
@@ -423,25 +406,24 @@ public class ViewerActivityController extends ActionController<VerticalViewActiv
 
     public void toggleNightMode() {
         getDocumentController().toggleRenderingEffects();
-        currentPageChanged(documentModel.getCurrentIndex(), -1);
+        currentPageChanged(documentModel.getCurrentIndex().docIndex, getDocumentController().getBase().getDocumentModel().getPageCount());
     }
 
     public void toggleCrop(boolean isCrop) {
-        SettingsManager.toggleCropMode(isCrop);
         getDocumentController().toggleRenderingEffects();
 
         final IViewController newDc = switchDocumentController(SettingsManager.getBookSettings());
         newDc.init(null);
         newDc.show();
 
-        currentPageChanged(documentModel.getCurrentIndex(), -1);
+        currentPageChanged(documentModel.getCurrentIndex().docIndex, getDocumentController().getBase().getDocumentModel().getPageCount());
 
     }
 
     /**
-     * Gets the zoom model.
+     * Gets the z model.
      *
-     * @return the zoom model
+     * @return the z model
      */
     @Override
     public ZoomModel getZoomModel() {
@@ -513,9 +495,6 @@ public class ViewerActivityController extends ActionController<VerticalViewActiv
                 }
 
                 LOG.d("closeActivity 2");
-
-                SettingsManager.storeBookSettings1();
-
                 LOG.d("closeActivity 3");
                 getManagedComponent().finish();
 
@@ -532,7 +511,6 @@ public class ViewerActivityController extends ActionController<VerticalViewActiv
     }
 
     public void closeActivity1(final ActionEx action) {
-        SettingsManager.storeBookSettings1();
         getManagedComponent().finish();
 
         System.gc();
@@ -543,7 +521,7 @@ public class ViewerActivityController extends ActionController<VerticalViewActiv
 
 
     @Override
-    public void onBookSettingsChanged(final BookSettings oldSettings, final BookSettings newSettings, final BookSettings.Diff diff) {
+    public void onBookSettingsChanged(final AppBook oldSettings, final AppBook newSettings, final AppBook.Diff diff) {
         if (newSettings == null) {
             return;
         }
@@ -574,7 +552,7 @@ public class ViewerActivityController extends ActionController<VerticalViewActiv
         }
 
         // currentPageChanged(PageIndex.NULL, documentModel.getCurrentIndex());
-        currentPageChanged(newSettings.currentPage, -1);
+        //currentPageChanged(newSettings.currentPage.do, -1);
 
     }
 
@@ -644,7 +622,7 @@ public class ViewerActivityController extends ActionController<VerticalViewActiv
                         getDocumentController().show();
 
                         final DocumentModel dm = getDocumentModel();
-                        currentPageChanged(dm.getCurrentIndex(), -1);
+                        currentPageChanged(dm.getCurrentIndex().docIndex, -1);
                         onBookLoaded.run();
 
                     } catch (final Throwable th) {

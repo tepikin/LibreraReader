@@ -2,11 +2,13 @@ package com.foobnix.pdf.info.view;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnDismissListener;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
+import android.widget.Toast;
 
 import com.foobnix.android.utils.Dips;
 import com.foobnix.android.utils.Keyboards;
@@ -14,6 +16,10 @@ import com.foobnix.pdf.info.R;
 import com.foobnix.pdf.info.Urls;
 
 public class AlertDialogs {
+
+    public static void showResultToasts(Context c, boolean result) {
+        Toast.makeText(c, result ? R.string.success : R.string.fail, Toast.LENGTH_LONG).show();
+    }
 
     public static void openUrl(final Activity c, final String url) {
         final AlertDialog.Builder builder = new AlertDialog.Builder(c);
@@ -128,6 +134,10 @@ public class AlertDialogs {
     }
 
     public static AlertDialog showViewDialog(final Activity c, final View child) {
+        return showViewDialog(c, null, child);
+    }
+
+    public static AlertDialog showViewDialog(final Activity c, Runnable ondissmiss, final View... childs) {
         final AlertDialog.Builder builder = new AlertDialog.Builder(c);
         builder.setCancelable(true);
 
@@ -136,7 +146,10 @@ public class AlertDialogs {
         LinearLayout l = new LinearLayout(c);
         l.setPadding(Dips.DP_5, Dips.DP_5, Dips.DP_5, Dips.DP_5);
         l.setOrientation(LinearLayout.VERTICAL);
-        l.addView(child);
+
+        for (View child : childs) {
+            l.addView(child);
+        }
 
         scroll.addView(l);
         builder.setView(scroll);
@@ -152,6 +165,9 @@ public class AlertDialogs {
 
             @Override
             public void onDismiss(DialogInterface dialog) {
+                if (ondissmiss != null) {
+                    ondissmiss.run();
+                }
                 Keyboards.hideNavigation(c);
             }
         });

@@ -536,4 +536,26 @@
    <string name="please_wait_books_are_being_processed_">कृपया प्रतीक्षा करें, पुस्तकों पर कार्रवाई की जा रही है</string>
    <string name="system_brightness">सिस्टम की चमक</string>
    <string name="opening_books_in_the_specified_mode">निर्दिष्ट मोड में किताबें खोलना</string>
+   <string name="dark_oled">गहरे रंग का</string>
+   <string name="profile">प्रोफ़ाइल</string>
+   <string name="new_profile">नई प्रोफ़ाइल</string>
+   <string name="main">मुख्य</string>
+   <string name="do_you_want_to_switch_profile_">किसी अन्य प्रोफ़ाइल पर स्विच करें?</string>
+   <string name="sync_error">सिंक त्रुटि</string>
+   <string name="sign_in">दाखिल करना</string>
+   <string name="sign_out">साइन आउट</string>
+   <string name="manual_sync_only">मैनुअल सिंक ही</string>
+   <string name="wifi_sync_only">वाईफाई सिंक केवल</string>
+   <string name="sync_google_drive">सिंक (Google ड्राइव)</string>
+   <string name="single_tap_to_select_text">पाठ का चयन करने के लिए एकल-टैप करें</string>
+   <string name="sync_book">एक किताब सिंक करें</string>
+   <string name="sync">सिंक</string>
+   <string name="synchronized_folder">सिंक्रनाइज़ फ़ोल्डर</string>
+   <string name="today">आज</string>
+   <string name="downloads">डाउनलोड</string>
+   <string name="delete_the_directory_all_the_files_in_the_directory_">फोल्डर खाली नहीं है। फिर भी हटाओ?</string>
+   <string name="synchronized_books">सिंक्रनाइज़ की गई पुस्तकें</string>
+   <string name="show_sync_wheel">सिंक पहिया दिखाएं</string>
+   <string name="publication_date">प्रकाशन तिथि</string>
+   <string name="empy">खाली</string>
 </resources>

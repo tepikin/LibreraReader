@@ -5,8 +5,9 @@ import com.foobnix.ext.CacheZipUtils;
 import com.foobnix.ext.Fb2Extractor;
 import com.foobnix.hypen.HypenUtils;
 import com.foobnix.libmobi.LibMobi;
+import com.foobnix.model.AppState;
+import com.foobnix.model.AppTemp;
 import com.foobnix.pdf.info.model.BookCSS;
-import com.foobnix.pdf.info.wrapper.AppState;
 
 import org.ebookdroid.core.codec.CodecDocument;
 import org.ebookdroid.droids.mupdf.codec.MuPdfDocument;
@@ -27,7 +28,7 @@ public class DocContext extends PdfContext {
 
     @Override
     public File getCacheFileName(String fileNameOriginal) {
-        fileNameOriginal = fileNameOriginal + BookCSS.get().isAutoHypens + BookCSS.get().hypenLang + AppState.get().isDouble + AppState.get().isAccurateFontSize + BookCSS.get().isCapitalLetter;
+        fileNameOriginal = fileNameOriginal + BookCSS.get().isAutoHypens + AppTemp.get().hypenLang + AppTemp.get().isDouble + AppState.get().isAccurateFontSize + BookCSS.get().isCapitalLetter;
         cacheFile = new File(CacheZipUtils.CACHE_BOOK_DIR, fileNameOriginal.hashCode() + EXT_DOC_HTML);
         return cacheFile;
     }
@@ -37,12 +38,18 @@ public class DocContext extends PdfContext {
 
         if (!cacheFile.isFile()) {
             String outputTemp = cacheFile.getPath() + ".tmp";
-            LibMobi.convertDocToHtml(fileName, outputTemp);
+            final int res = LibMobi.convertDocToHtml(fileName, outputTemp);
+            LOG.d("convertDocToHtml",res);
+            if (res == 0) {
+                return new RtfContext().openDocumentInner(fileName, password);
+            }
+
+
             try {
                 FileInputStream in = new FileInputStream(outputTemp);
                 OutputStream out = new BufferedOutputStream(new FileOutputStream(cacheFile));
 
-                HypenUtils.applyLanguage(BookCSS.get().hypenLang);
+                HypenUtils.applyLanguage(AppTemp.get().hypenLang);
                 Fb2Extractor.generateHyphenFileEpub(new InputStreamReader(in), null, out);
                 out.close();
                 in.close();

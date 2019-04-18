@@ -1,23 +1,28 @@
 package com.foobnix.android.utils;
 
+import android.graphics.Color;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import android.graphics.Color;
-
 public class StringDB {
     public static String DIVIDER = ",";
 
-    public static String add(String db, String text) {
+    public static void add(String db, String text, final StringResult result) {
         if (TxtUtils.isEmpty(text)) {
-            return db;
+            result.onResult(db);
+            return;
         }
+        if (db == null) {
+            db = "";
+        }
+
         text = text.replace(DIVIDER, "").trim();
         db = db + text + DIVIDER;
-        return db;
+        result.onResult(db);
     }
 
     public static List<Integer> converToColor(String db, int last) {
@@ -57,12 +62,13 @@ public class StringDB {
 
     }
 
-    public static String delete(String db, String text) {
+    public static void delete(String db, String text, final StringResult result) {
         if (TxtUtils.isEmpty(text)) {
-            return db;
+            result.onResult(db);
+            return;
         }
         db = db.replace(text + DIVIDER, "");
-        return db;
+        result.onResult(db);
     }
 
     public static boolean contains(String db, String tag) {

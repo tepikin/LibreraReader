@@ -9,6 +9,7 @@ import android.graphics.PointF;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
+import android.os.Looper;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
@@ -19,11 +20,16 @@ import android.widget.Toast;
 import com.foobnix.android.utils.Dips;
 import com.foobnix.android.utils.Keyboards;
 import com.foobnix.android.utils.LOG;
+import com.foobnix.android.utils.MyMath;
 import com.foobnix.android.utils.ResultResponse;
 import com.foobnix.android.utils.Safe;
 import com.foobnix.android.utils.TxtUtils;
 import com.foobnix.android.utils.Vibro;
 import com.foobnix.dao2.FileMeta;
+import com.foobnix.model.AppBook;
+import com.foobnix.model.AppProfile;
+import com.foobnix.model.AppState;
+import com.foobnix.model.AppTemp;
 import com.foobnix.pdf.info.ExtUtils;
 import com.foobnix.pdf.info.IMG;
 import com.foobnix.pdf.info.MyADSProvider;
@@ -40,7 +46,7 @@ import com.foobnix.ui2.AppDB;
 import com.nostra13.universalimageloader.core.ImageLoader;
 
 import org.ebookdroid.common.settings.SettingsManager;
-import org.ebookdroid.common.settings.books.BookSettings;
+import org.ebookdroid.common.settings.books.SharedBooks;
 import org.ebookdroid.core.codec.Annotation;
 import org.ebookdroid.core.codec.PageLink;
 
@@ -53,12 +59,11 @@ import java.util.concurrent.TimeUnit;
 @SuppressLint("NewApi")
 public abstract class DocumentController {
 
-    public static final String EXTRA_PAGE = "page";
     public static final String EXTRA_PASSWORD = "password";
-    public static final String EXTRA_PERCENT = "percent";
+    public static final String EXTRA_PERCENT = "p";
     public static final String EXTRA_PLAYLIST = "playlist";
 
-    public static final int REPEAT_SKIP_AMOUNT = 20;
+    public static final int REPEAT_SKIP_AMOUNT = 15;
 
     public final static List<Integer> orientationIds = Arrays.asList(//
             ActivityInfo.SCREEN_ORIENTATION_SENSOR, //
@@ -82,7 +87,9 @@ public abstract class DocumentController {
 
     protected final Activity activity;
     private DocumentWrapperUI ui;
-    public Handler handler;
+
+    public Handler handler = new Handler(Looper.getMainLooper());
+    public Handler handler2 = new Handler(Looper.getMainLooper());
 
     public long readTimeStart;
 
@@ -91,9 +98,6 @@ public abstract class DocumentController {
         readTimeStart = System.currentTimeMillis();
     }
 
-    public void initHandler() {
-        handler = new Handler();
-    }
 
     private File currentBook;
     private String title;
@@ -168,6 +172,7 @@ public abstract class DocumentController {
 
     public abstract void onCloseActivityFinal(Runnable run);
 
+
     public abstract void onNightMode();
 
     public abstract void onCrop();
@@ -213,14 +218,9 @@ public abstract class DocumentController {
     }
 
     public float getPercentage() {
-        return (float) (getCurentPageFirst1() + 0.0001) / getPageCount();
+        return MyMath.percent(getCurentPageFirst1(), getPageCount());
     }
 
-    public void updateReadPercent() {
-        activity.getIntent().putExtra(DocumentController.EXTRA_PERCENT, (double) getPercentage());
-        LOG.d("updateReadPercent", getPercentage(), getCurentPage(), getPageCount());
-
-    }
 
     public MyADSProvider getAdsProvider() {
         return null;
@@ -234,11 +234,11 @@ public abstract class DocumentController {
         try {
             if (TTSEngine.get().isPlaying()) {
 
-                BookSettings bs = SettingsManager.getBookSettings(getCurrentBook().getPath());
+                AppBook bs = SettingsManager.getBookSettings(getCurrentBook().getPath());
 
-                if (getCurrentBook().getPath().equals(AppState.get().lastBookPath)) {
-                    onGoToPage(bs.getCurrentPage().viewIndex + 1);
-                    LOG.d("goToPageByTTS", AppState.get().lastBookPage + 1);
+                if (getCurrentBook().getPath().equals(AppTemp.get().lastBookPath)) {
+                    onGoToPage(bs.getCurrentPage(getPageCount()).viewIndex + 1);
+                    LOG.d("goToPageByTTS", AppTemp.get().lastBookPage + 1);
                 }
             }
         } catch (Exception e) {
@@ -264,6 +264,55 @@ public abstract class DocumentController {
                 }
             });
         }
+
+    }
+
+    public void closeActivity() {
+        handler2.removeCallbacksAndMessages(null);
+        handler.removeCallbacksAndMessages(null);
+    }
+
+    public void saveCurrentPage() {
+        AppBook bs = SettingsManager.getBookSettings();
+        if (bs != null) {
+            bs.updateFromAppState();
+            bs.currentPageChanged(getCurentPageFirst1(), getPageCount());
+            handler2.removeCallbacks(saveCurrentPageRunnable);
+            handler2.postDelayed(saveCurrentPageRunnable, 1000);
+        }
+    }
+
+
+    Runnable saveCurrentPageRunnable = new Runnable() {
+        @Override
+        public void run() {
+            saveCurrentPageAsync();
+        }
+    };
+
+    public void saveCurrentPageAsync() {
+        if (TempHolder.get().loadingCancelled) {
+            LOG.d("Loading cancelled");
+            return;
+        }
+        // int page = PageUrl.fakeToReal(currentPage);
+        LOG.d("_PAGE", "saveCurrentPage", getCurentPageFirst1(), getPageCount());
+        try {
+            if (getPageCount() <= 0) {
+                LOG.d("_PAGE", "saveCurrentPage skip");
+                return;
+            }
+            AppBook bs = SettingsManager.getBookSettings();
+            SharedBooks.save(bs);
+
+            //AppBook bs = SettingsManager.getBookSettings(getCurrentBook().getPath());
+            //bs.updateFromAppState();
+            //bs.currentPageChanged(getCurentPageFirst1(), getPageCount());
+            //SharedBooks.save(bs);
+        } catch (Exception e) {
+            LOG.e(e);
+        }
+
     }
 
     public void onChangeTextSelection() {
@@ -277,23 +326,25 @@ public abstract class DocumentController {
     }
 
     public boolean isBookMode() {
-        return AppState.get().readingMode == AppState.READING_MODE_BOOK;
+        return AppTemp.get().readingMode == AppState.READING_MODE_BOOK;
     }
 
     public boolean isScrollMode() {
-        return AppState.get().readingMode == AppState.READING_MODE_SCROLL;
+        return AppTemp.get().readingMode == AppState.READING_MODE_SCROLL;
     }
 
     public boolean isMusicianMode() {
-        return AppState.get().readingMode == AppState.READING_MODE_MUSICIAN;
+        return AppTemp.get().readingMode == AppState.READING_MODE_MUSICIAN;
     }
 
     public void onResume() {
         readTimeStart = System.currentTimeMillis();
         try {
-            BookSettings bs = SettingsManager.getBookSettings(getCurrentBook().getPath());
-            if (getCurentPage() != bs.getCurrentPage().viewIndex + 1) {
-                onGoToPage(bs.getCurrentPage().viewIndex + 1);
+            if (getPageCount() != 0) {
+                AppBook bs = SettingsManager.getBookSettings(getCurrentBook().getPath());
+                if (getCurentPage() != bs.getCurrentPage(getPageCount()).viewIndex + 1) {
+                    onGoToPage(bs.getCurrentPage(getPageCount()).viewIndex + 1);
+                }
             }
         } catch (Exception e) {
             LOG.e(e);
@@ -390,7 +441,7 @@ public abstract class DocumentController {
 
     public void addRecent(final Uri uri) {
         AppDB.get().addRecent(uri.getPath());
-        // AppSharedPreferences.get().addRecent(uri);
+        // BookmarksData.get().addRecent(uri);
     }
 
     public void onClickTop() {
@@ -459,7 +510,6 @@ public abstract class DocumentController {
     }
 
     public void restartActivity() {
-        updateReadPercent();
 
         IMG.clearMemoryCache();
         saveAppState();
@@ -477,7 +527,7 @@ public abstract class DocumentController {
     }
 
     public void saveAppState() {
-        AppState.get().save(activity);
+        AppProfile.save(activity);
     }
 
     public static void doRotation(final Activity a) {

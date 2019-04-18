@@ -8,9 +8,9 @@ import com.foobnix.android.utils.LOG;
 import com.foobnix.dao2.FileMeta;
 import com.foobnix.ext.CacheZipUtils;
 import com.foobnix.mobi.parser.IOUtils;
+import com.foobnix.model.AppState;
 import com.foobnix.pdf.info.ExtUtils;
 import com.foobnix.pdf.info.R;
-import com.foobnix.pdf.info.wrapper.AppState;
 import com.foobnix.ui2.FileMetaCore;
 
 import org.ebookdroid.BookType;
@@ -41,6 +41,7 @@ public class OpenerActivity extends Activity {
         LOG.d("OpenerActivity Path", getIntent().getData().getPath());
         LOG.d("OpenerActivity Scheme", getIntent().getScheme());
         LOG.d("OpenerActivity Mime", getIntent().getType());
+        //LOG.d("OpenerActivity Mime", getIntent().getData().);
 
         File file = new File(getIntent().getData().getPath());
         if (!file.isFile()) {
@@ -65,8 +66,8 @@ public class OpenerActivity extends Activity {
                 if (!file.isFile()) {
                     FileOutputStream out = new FileOutputStream(file);
                     InputStream inputStream = getContentResolver().openInputStream(getIntent().getData());
-                    IOUtils.copy(inputStream, out);
-                    inputStream.close();
+                    IOUtils.copyClose(inputStream, out);
+
                     LOG.d("OpenerActivity", "creatae cache file", file.getPath());
                 }
             } catch (Exception e) {

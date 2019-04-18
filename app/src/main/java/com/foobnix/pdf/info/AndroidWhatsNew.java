@@ -1,22 +1,5 @@
 package com.foobnix.pdf.info;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.Arrays;
-import java.util.List;
-import java.util.regex.Pattern;
-
-import com.foobnix.android.utils.Apps;
-import com.foobnix.android.utils.Https;
-import com.foobnix.android.utils.LOG;
-import com.foobnix.android.utils.TxtUtils;
-import com.foobnix.opds.OPDS;
-import com.foobnix.pdf.CopyAsyncTask;
-import com.foobnix.pdf.info.view.AlertDialogs;
-import com.foobnix.pdf.info.wrapper.AppState;
-
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
@@ -28,12 +11,30 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.TextView;
 
+import com.foobnix.android.utils.Apps;
+import com.foobnix.android.utils.Https;
+import com.foobnix.android.utils.LOG;
+import com.foobnix.android.utils.TxtUtils;
+import com.foobnix.model.AppProfile;
+import com.foobnix.model.AppState;
+import com.foobnix.opds.OPDS;
+import com.foobnix.pdf.CopyAsyncTask;
+import com.foobnix.pdf.info.view.AlertDialogs;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.Arrays;
+import java.util.List;
+import java.util.regex.Pattern;
+
 public class AndroidWhatsNew {
 
-    public static final String DETAIL_URL_RU = "http://librera.mobi/wiki";
+    public static final String DETAIL_URL_RU = "https://librera.mobi/wiki";
     private static final String BETA_TXT = "changelog.txt";
     private static final String BETA = "beta-";
-    private static final String WIKI_URL = "http://librera.mobi/wiki/what-is-new/%s/";
+    private static final String WIKI_URL = "https://librera.mobi/wiki/what-is-new/%s/";
 
     public static String getLangUrl(Context c) {
         String versionName = Apps.getVersionName(c);
@@ -81,7 +82,7 @@ public class AndroidWhatsNew {
         url += "?utm_p=" + Apps.getPackageName(c);
         url += "&utm_v=" + Apps.getVersionName(c);
         url += "&utm_ln=" + appLang;
-        url += "&utm_beta=" + AppsConfig.IS_BETA;
+        url += "&utm_beta=" + BuildConfig.IS_BETA;
 
         url += "#" + shortVersion.replace(".", "");
 
@@ -97,6 +98,7 @@ public class AndroidWhatsNew {
         final WebView wv = inflate.findViewById(R.id.webView2);
         wv.getSettings().setUserAgentString(OPDS.USER_AGENT);
         wv.getSettings().setJavaScriptEnabled(true);
+
 
         wv.loadUrl(getLangUrl(c));
 
@@ -198,7 +200,7 @@ public class AndroidWhatsNew {
         notes.setText(textNotes);
 
         AlertDialog.Builder builder = new AlertDialog.Builder(c);
-        builder.setTitle(c.getString(R.string.what_is_new_in) + " " + AppsConfig.TXT_APP_NAME + " " + versionName);
+        builder.setTitle(c.getString(R.string.what_is_new_in) + " " + Apps.getApplicationName(c) + " " + versionName);
         builder.setView(inflate);
         builder.setNegativeButton(R.string.close, new OnClickListener() {
 
@@ -228,7 +230,7 @@ public class AndroidWhatsNew {
     }
 
     public static void checkForNewBeta(final Activity c) {
-        if (!AppsConfig.IS_BETA) {
+        if (!BuildConfig.IS_BETA) {
             return;
         }
 
@@ -280,7 +282,7 @@ public class AndroidWhatsNew {
         if (TxtUtils.isEmpty(oldVersion) || !isEqualsFirstSecondDigit(currentVersion, oldVersion)) {
             show2(c);
             AppState.get().versionNew = currentVersion;
-            AppState.get().save(c);
+            AppProfile.save(c);
         }
     }
 

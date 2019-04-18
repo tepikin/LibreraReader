@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package com.foobnix.pdf.info.wrapper;
 
@@ -34,6 +34,8 @@ import com.foobnix.android.utils.LOG;
 import com.foobnix.android.utils.TxtUtils;
 import com.foobnix.android.utils.Vibro;
 import com.foobnix.android.utils.Views;
+import com.foobnix.model.AppState;
+import com.foobnix.model.AppTemp;
 import com.foobnix.pdf.info.DictsHelper;
 import com.foobnix.pdf.info.ExtUtils;
 import com.foobnix.pdf.info.OutlineHelper;
@@ -57,7 +59,6 @@ import com.foobnix.pdf.info.view.ProgressDraw;
 import com.foobnix.pdf.info.view.UnderlineImageView;
 import com.foobnix.pdf.info.widget.DraggbleTouchListener;
 import com.foobnix.pdf.info.widget.ShareDialog;
-import com.foobnix.pdf.search.activity.HorizontalModeController;
 import com.foobnix.pdf.search.activity.msg.MessagePageXY;
 import com.foobnix.pdf.search.activity.msg.MessegeBrightness;
 import com.foobnix.pdf.search.view.CloseAppDialog;
@@ -65,15 +66,13 @@ import com.foobnix.sys.TempHolder;
 import com.foobnix.tts.MessagePageNumber;
 import com.foobnix.tts.TTSControlsView;
 import com.foobnix.tts.TTSEngine;
-import com.foobnix.tts.TTSNotification;
 import com.foobnix.tts.TTSService;
 import com.foobnix.tts.TtsStatus;
 import com.foobnix.ui2.AppDB;
 import com.foobnix.ui2.MainTabs2;
 import com.nostra13.universalimageloader.core.ImageLoader;
 
-import org.ebookdroid.common.settings.SettingsManager;
-import org.ebookdroid.common.settings.books.BookSettings;
+import org.ebookdroid.BookType;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
@@ -85,10 +84,8 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * @author iivanenko
- * 
  */
 public class DocumentWrapperUI {
-    private static final int TRANSPARENT_UI = 240;
 
     final DocumentController dc;
     Activity a;
@@ -174,6 +171,7 @@ public class DocumentWrapperUI {
         } else {
             if (AppState.get().isRememberDictionary) {
                 DictsHelper.runIntent(dc.getActivity(), AppState.get().selectedText);
+                dc.clearSelectedText();
             } else {
                 DragingDialogs.selectTextMenu(anchor, dc, true, updateUIRunnable);
             }
@@ -318,16 +316,17 @@ public class DocumentWrapperUI {
         if (AppState.get().isUseVolumeKeys && KeyEvent.KEYCODE_HEADSETHOOK == keyCode) {
             if (TTSEngine.get().isPlaying()) {
                 if (AppState.get().isFastBookmarkByTTS) {
-                    TTSEngine.get().fastTTSBookmakr(dc.getActivity(), dc.getPercentage());
+                    TTSEngine.get().fastTTSBookmakr(dc.getActivity(), dc.getCurentPageFirst1(), dc.getPageCount());
                 } else {
                     TTSEngine.get().stop();
                 }
             } else {
-                TTSEngine.get().playCurrent();
+                //TTSEngine.get().playCurrent();
+                TTSService.playPause(dc.getActivity(), dc);
                 anchor.setTag("");
             }
-            TTSNotification.showLast();
-            DragingDialogs.textToSpeachDialog(anchor, dc);
+            //TTSNotification.showLast();
+            //DragingDialogs.textToSpeachDialog(anchor, dc);
             return true;
         }
 
@@ -350,6 +349,11 @@ public class DocumentWrapperUI {
             return true;
         }
 
+//        if (PageImageState.get().hasSelectedWords()) {
+//            dc.clearSelectedText();
+//            return true;
+//        }
+
         return false;
 
     }
@@ -357,7 +361,7 @@ public class DocumentWrapperUI {
     public void closeAndRunList() {
         EventBus.getDefault().unregister(this);
 
-        AppState.get().lastClosedActivity = null;
+        AppTemp.get().lastClosedActivity = null;
         if (handler != null) {
             handler.removeCallbacksAndMessages(null);
         }
@@ -365,7 +369,9 @@ public class DocumentWrapperUI {
         if (titleBar != null) {
             titleBar.removeCallbacks(null);
         }
+        dc.saveCurrentPageAsync();
         dc.onCloseActivityAdnShowInterstial();
+        dc.closeActivity();
 
     }
 
@@ -410,6 +416,7 @@ public class DocumentWrapperUI {
         initToolBarPlusMinus();
 
         showHideHistory();
+
         updateLock();
 
         reverseKeysIndicator.setVisibility(AppState.get().isReverseKeys ? View.VISIBLE : View.GONE);
@@ -435,16 +442,16 @@ public class DocumentWrapperUI {
             } else {
                 onBC.setVisibility(View.GONE);
             }
-            if (AppState.get().isCrop) {
+            if (AppTemp.get().isCrop) {
                 crop.setVisibility(View.VISIBLE);
             }
-            if (AppState.get().isCut) {
+            if (AppTemp.get().isCut) {
                 cut.setVisibility(View.VISIBLE);
             }
         }
 
-        crop.underline(AppState.get().isCrop);
-        cut.underline(AppState.get().isCut);
+        crop.underline(AppTemp.get().isCrop);
+        cut.underline(AppTemp.get().isCut);
 
         progressDraw.updateProgress(current - 1);
 
@@ -458,6 +465,10 @@ public class DocumentWrapperUI {
         } else {
             pagesBookmark.setVisibility(View.VISIBLE);
         }
+
+
+        dc.saveCurrentPage();
+        //SharedBooks.save(bs);
 
     }
 
@@ -499,7 +510,7 @@ public class DocumentWrapperUI {
     public void updateLock() {
         // int mode = View.VISIBLE;
 
-        if (AppState.get().isLocked) {
+        if (AppTemp.get().isLocked) {
             lockUnlock.setImageResource(R.drawable.glyphicons_204_lock);
             lockUnlockTop.setImageResource(R.drawable.glyphicons_204_lock);
             // lockUnlock.setColorFilter(a.getResources().getColor(R.color.tint_yellow));
@@ -512,7 +523,7 @@ public class DocumentWrapperUI {
             // lockUnlockTop.setColorFilter(a.getResources().getColor(R.color.tint_white));
             // mode = View.GONE;
         }
-//        if (AppState.get().isLocked) {
+//        if (AppState.get().l) {
 //            TintUtil.setTintImageWithAlpha(moveCenter, Color.LTGRAY);
 //        } else {
 //            TintUtil.setTintImageWithAlpha(moveCenter, Color.WHITE);
@@ -624,7 +635,10 @@ public class DocumentWrapperUI {
             public void run() {
                 onMoveAction.run();
                 if (AppState.get().isRememberDictionary) {
-                    DictsHelper.runIntent(dc.getActivity(), AppState.get().selectedText);
+                    final String text = AppState.get().selectedText;
+                    DictsHelper.runIntent(dc.getActivity(), text);
+                    dc.clearSelectedText();
+
                 } else {
                     DragingDialogs.selectTextMenu(anchor, dc, true, updateUIRunnable);
                 }
@@ -713,8 +727,9 @@ public class DocumentWrapperUI {
 
         crop = (UnderlineImageView) a.findViewById(R.id.crop);
         crop.setOnClickListener(onCrop);
+        crop.setOnLongClickListener(onCropLong);
 
-        if (AppState.get().isCut) {
+        if (AppTemp.get().isCut) {
             crop.setVisibility(View.GONE);
         }
 
@@ -724,7 +739,7 @@ public class DocumentWrapperUI {
 
         onModeChange = (ImageView) a.findViewById(R.id.onModeChange);
         onModeChange.setOnClickListener(onModeChangeClick);
-        onModeChange.setImageResource(AppState.get().isCut ? R.drawable.glyphicons_page_split : R.drawable.glyphicons_two_page_one);
+        onModeChange.setImageResource(AppTemp.get().isCut ? R.drawable.glyphicons_page_split : R.drawable.glyphicons_two_page_one);
 
         View prefTop = a.findViewById(R.id.prefTop);
         prefTop.setOnClickListener(onPrefTop);
@@ -877,9 +892,9 @@ public class DocumentWrapperUI {
         // bottom 1
         TintUtil.setStatusBarColor(a);
 
-        TintUtil.setTintBgSimple(a.findViewById(R.id.menuLayout), TRANSPARENT_UI);
-        TintUtil.setTintBgSimple(a.findViewById(R.id.bottomBar1), TRANSPARENT_UI);
-        TintUtil.setBackgroundFillColorBottomRight(lirbiLogo, ColorUtils.setAlphaComponent(TintUtil.color, TRANSPARENT_UI));
+        TintUtil.setTintBgSimple(a.findViewById(R.id.menuLayout), AppState.get().transparencyUI);
+        TintUtil.setTintBgSimple(a.findViewById(R.id.bottomBar1), AppState.get().transparencyUI);
+        TintUtil.setBackgroundFillColorBottomRight(lirbiLogo, ColorUtils.setAlphaComponent(TintUtil.color, AppState.get().transparencyUI));
         tintSpeed();
 
         pageshelper = (LinearLayout) a.findViewById(R.id.pageshelper);
@@ -1048,7 +1063,7 @@ public class DocumentWrapperUI {
 
         @Override
         public void onClick(final View v) {
-            if (AppState.get().isCut) {
+            if (AppTemp.get().isCut) {
                 onModeChange.setImageResource(R.drawable.glyphicons_two_page_one);
                 onCut.onClick(null);
                 return;
@@ -1130,6 +1145,7 @@ public class DocumentWrapperUI {
                         MainTabs2.closeApp(dc.getActivity());
                     }
                 });
+                dc.closeActivity();
             }
         }
     }
@@ -1374,12 +1390,12 @@ public class DocumentWrapperUI {
     };
 
     public void showSearchDialog() {
-        if (AppState.get().isCut) {
+        if (AppTemp.get().isCut) {
             onModeChange.setImageResource(R.drawable.glyphicons_two_page_one);
-            AppState.get().isCut = !false;
+            AppTemp.get().isCut = !false;
             onCut.onClick(null);
         }
-        if (AppState.get().isCrop) {
+        if (AppTemp.get().isCrop) {
             onCrop.onClick(null);
         }
 
@@ -1432,7 +1448,7 @@ public class DocumentWrapperUI {
 
         @Override
         public void onClick(final View arg0) {
-            AppState.get().isLocked = !AppState.get().isLocked;
+            AppTemp.get().isLocked = !AppTemp.get().isLocked;
             updateLock();
         }
     };
@@ -1441,7 +1457,7 @@ public class DocumentWrapperUI {
 
         @Override
         public void onClick(final View arg0) {
-            if (AppState.get().isCrop) {
+            if (AppTemp.get().isCrop) {
                 onCrop.onClick(null);
             }
 
@@ -1495,7 +1511,7 @@ public class DocumentWrapperUI {
 
         @Override
         public void onClick(final View arg0) {
-            AppState.get().readingMode = AppState.READING_MODE_BOOK;
+            AppTemp.get().readingMode = AppState.READING_MODE_BOOK;
             initUI(a);
             hideShow();
         }
@@ -1602,6 +1618,21 @@ public class DocumentWrapperUI {
             });
         }
     };
+    public View.OnLongClickListener onCropLong = new View.OnLongClickListener() {
+
+        @Override
+        public boolean onLongClick(View v) {
+            AppTemp.get().isCrop = !AppTemp.get().isCrop;
+
+            dc.onCrop();
+            updateUI();
+
+            AppState.get().isEditMode = false;
+            hideShow();
+            hideShowEditIcon();
+            return true;
+        }
+    };
 
     private boolean closeDialogs() {
         return dc.closeDialogs();
@@ -1619,7 +1650,7 @@ public class DocumentWrapperUI {
                 public boolean onMenuItemClick(MenuItem item) {
                     closeDialogs();
                     onModeChange.setImageResource(R.drawable.glyphicons_two_page_one);
-                    AppState.get().isCut = !false;
+                    AppTemp.get().isCut = !false;
                     onCut.onClick(null);
                     hideShowEditIcon();
                     return false;
@@ -1631,7 +1662,7 @@ public class DocumentWrapperUI {
                 public boolean onMenuItemClick(MenuItem item) {
                     closeDialogs();
                     onModeChange.setImageResource(R.drawable.glyphicons_page_split);
-                    AppState.get().isCut = !true;
+                    AppTemp.get().isCut = !true;
                     onCut.onClick(null);
                     hideShowEditIcon();
                     return false;
@@ -1646,19 +1677,12 @@ public class DocumentWrapperUI {
 
         @Override
         public void onClick(final View arg0) {
-            AppState.get().isCrop = false; // no crop with cut
+            AppTemp.get().isCrop = false; // no crop with cut
             AppState.get().cutP = 50;
-            AppState.get().isCut = !AppState.get().isCut;
+            AppTemp.get().isCut = !AppTemp.get().isCut;
 
-            BookSettings bookSettings = SettingsManager.getBookSettings();
-            if (bookSettings != null) {
-                bookSettings.updateFromAppState();
-                bookSettings.save();
-            }
+            crop.setVisibility(AppTemp.get().isCut ? View.GONE : View.VISIBLE);
 
-            crop.setVisibility(AppState.get().isCut ? View.GONE : View.VISIBLE);
-
-            SettingsManager.toggleCropMode(true);
 
             dc.onCrop();// crop false
             dc.updateRendering();
@@ -1692,7 +1716,6 @@ public class DocumentWrapperUI {
 
         @Override
         public void run() {
-            a.getIntent().putExtra(HorizontalModeController.EXTRA_PERCENT, (double) dc.getPercentage());
             initToolBarPlusMinus();
             updateSeekBarColorAndSize();
             hideShow();
@@ -1721,7 +1744,9 @@ public class DocumentWrapperUI {
             CloseAppDialog.showOnLongClickDialog(a, v, getController());
             hideAds();
             return true;
-        };
+        }
+
+        ;
     };
 
     public void hideAds() {
@@ -1835,9 +1860,9 @@ public class DocumentWrapperUI {
     }
 
     public void hideShowEditIcon() {
-        if (dc != null && dc.getCurrentBook() != null && !dc.getCurrentBook().getName().toLowerCase(Locale.US).endsWith(".pdf")) {
+        if (dc != null && !BookType.PDF.is(dc.getCurrentBook().getPath())) {
             editTop2.setVisibility(View.GONE);
-        } else if (AppState.get().isCrop || AppState.get().isCut) {
+        } else if (AppTemp.get().isCrop || AppTemp.get().isCut) {
             editTop2.setVisibility(View.GONE);
         } else {
             boolean passwordProtected = dc.isPasswordProtected();
@@ -1860,12 +1885,12 @@ public class DocumentWrapperUI {
     }
 
     public void showHelp() {
-        if (AppState.get().isFirstTimeVertical) {
+        if (AppTemp.get().isFirstTimeVertical) {
             handler.postDelayed(new Runnable() {
 
                 @Override
                 public void run() {
-                    AppState.get().isFirstTimeVertical = false;
+                    AppTemp.get().isFirstTimeVertical = false;
                     AppState.get().isEditMode = true;
                     hideShow();
                     Views.showHelpToast(lockUnlock);
@@ -1876,7 +1901,11 @@ public class DocumentWrapperUI {
     }
 
     public void showPagesHelper() {
-        BookmarkPanel.showPagesHelper(pageshelper, musicButtonPanel, dc, pagesBookmark, quickBookmark);
+        try {
+            BookmarkPanel.showPagesHelper(pageshelper, musicButtonPanel, dc, pagesBookmark, quickBookmark);
+        } catch (Exception e) {
+            LOG.e(e);
+        }
     }
 
     public void showOutline(final List<OutlineLinkWrapper> list, final int count) {

@@ -1,6 +1,7 @@
 package com.foobnix.ui2.fragment;
 
 import android.annotation.TargetApi;
+import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
@@ -42,6 +43,10 @@ import com.foobnix.android.utils.ResultResponse;
 import com.foobnix.android.utils.StringDB;
 import com.foobnix.android.utils.TxtUtils;
 import com.foobnix.dao2.FileMeta;
+import com.foobnix.drive.GFile;
+import com.foobnix.model.AppData;
+import com.foobnix.model.AppProfile;
+import com.foobnix.model.AppState;
 import com.foobnix.pdf.info.AppsConfig;
 import com.foobnix.pdf.info.Clouds;
 import com.foobnix.pdf.info.ExtUtils;
@@ -49,10 +54,12 @@ import com.foobnix.pdf.info.FileMetaComparators;
 import com.foobnix.pdf.info.R;
 import com.foobnix.pdf.info.TintUtil;
 import com.foobnix.pdf.info.io.SearchCore;
+import com.foobnix.pdf.info.model.BookCSS;
+import com.foobnix.pdf.info.view.AlertDialogs;
 import com.foobnix.pdf.info.view.MyPopupMenu;
 import com.foobnix.pdf.info.widget.ShareDialog;
-import com.foobnix.pdf.info.wrapper.AppState;
 import com.foobnix.pdf.info.wrapper.PopupHelper;
+import com.foobnix.pdf.search.view.AsyncProgressResultToastTask;
 import com.foobnix.pdf.search.view.AsyncProgressTask;
 import com.foobnix.sys.TempHolder;
 import com.foobnix.ui2.AppDB;
@@ -237,6 +244,7 @@ public class BrowseFragment2 extends UIFragment<FileMeta> {
         View onBack = view.findViewById(R.id.onBack);
         recyclerView = (FastScrollRecyclerView) view.findViewById(R.id.recyclerView);
 
+
         paths = (LinearLayout) view.findViewById(R.id.paths);
         scroller = (HorizontalScrollView) view.findViewById(R.id.scroller);
         final View onHome = view.findViewById(R.id.onHome);
@@ -299,19 +307,29 @@ public class BrowseFragment2 extends UIFragment<FileMeta> {
 
                 }
 
-                menu.getMenu().add("Librera").setOnMenuItemClickListener(new OnMenuItemClickListener() {
+                menu.getMenu().add(R.string.downloads).setOnMenuItemClickListener(new OnMenuItemClickListener() {
 
                     @Override
                     public boolean onMenuItemClick(MenuItem item) {
-                        displayAnyPath(new File(AppState.DOWNLOADS_DIR, "Librera").getPath());
+                        displayAnyPath(BookCSS.get().downlodsPath);
                         return false;
                     }
                 }).setIcon(R.drawable.glyphicons_591_folder_heart);
 
+
+                menu.getMenu().add(R.string.sync).setOnMenuItemClickListener(new OnMenuItemClickListener() {
+
+                    @Override
+                    public boolean onMenuItemClick(MenuItem item) {
+                        displayAnyPath(AppProfile.SYNC_FOLDER_ROOT.getPath());
+                        return false;
+                    }
+                }).setIcon(R.drawable.glyphicons_sync);
+
                 // resources
 
                 if (Build.VERSION.SDK_INT >= 21 && getActivity() instanceof MainTabs2) {
-                    List<String> safs = StringDB.asList(AppState.get().pathSAF);
+                    List<String> safs = StringDB.asList(BookCSS.get().pathSAF);
 
                     for (final String saf : safs) {
                         String fileName = DocumentsContract.getTreeDocumentId(Uri.parse(saf));
@@ -326,7 +344,7 @@ public class BrowseFragment2 extends UIFragment<FileMeta> {
 
                             @Override
                             public boolean onMenuItemClick(MenuItem item) {
-                                AppState.get().pathSAF = StringDB.delete(AppState.get().pathSAF, saf);
+                                StringDB.delete(BookCSS.get().pathSAF, saf, (String db) -> BookCSS.get().pathSAF = db);
                                 return false;
                             }
                         }).setIcon(R.drawable.glyphicons_146_folder_plus);
@@ -334,7 +352,7 @@ public class BrowseFragment2 extends UIFragment<FileMeta> {
                 }
 
                 // stars
-                List<FileMeta> starFolders = AppDB.get().getStarsFolder();
+                List<FileMeta> starFolders = AppData.get().getAllFavoriteFolders();
                 List<String> names = new ArrayList<String>();
                 for (FileMeta f : starFolders) {
                     names.add(f.getPath());
@@ -493,6 +511,8 @@ public class BrowseFragment2 extends UIFragment<FileMeta> {
                                 resetFragment();
                             }
                         });
+                    } else {
+                        deleteFolderPopup(getActivity(), result.getPath());
                     }
                 } else {
                     DefaultListeners.getOnItemLongClickListener(getActivity(), searchAdapter).onResultRecive(result);
@@ -605,17 +625,17 @@ public class BrowseFragment2 extends UIFragment<FileMeta> {
         public void onClick(View v) {
             if (fragmentType == TYPE_SELECT_FOLDER) {
 
-                if (ExtUtils.isExteralSD(AppState.get().dirLastPath) || new File(AppState.get().dirLastPath).canRead()) {
-                    onPositiveAction.onResultRecive(AppState.get().dirLastPath);
+                if (ExtUtils.isExteralSD(BookCSS.get().dirLastPath) || new File(BookCSS.get().dirLastPath).canRead()) {
+                    onPositiveAction.onResultRecive(BookCSS.get().dirLastPath);
                 } else {
                     Toast.makeText(getContext(), R.string.incorrect_value, Toast.LENGTH_SHORT).show();
                 }
             } else if (fragmentType == TYPE_SELECT_FILE) {
-                onPositiveAction.onResultRecive(AppState.get().dirLastPath + "/" + editPath.getText());
+                onPositiveAction.onResultRecive(BookCSS.get().dirLastPath + "/" + editPath.getText());
             } else if (fragmentType == TYPE_SELECT_FILE_OR_FOLDER) {
                 onPositiveAction.onResultRecive(editPath.getText().toString());
             } else if (fragmentType == TYPE_CREATE_FILE) {
-                onPositiveAction.onResultRecive(AppState.get().dirLastPath + "/" + editPath.getText());
+                onPositiveAction.onResultRecive(BookCSS.get().dirLastPath + "/" + editPath.getText());
             }
 
         }
@@ -630,7 +650,7 @@ public class BrowseFragment2 extends UIFragment<FileMeta> {
         } catch (Exception e) {
             LOG.e(e);
         }
-        String path = AppState.get().dirLastPath == null ? Environment.getExternalStorageDirectory().getPath() : AppState.get().dirLastPath;
+        String path = BookCSS.get().dirLastPath == null ? Environment.getExternalStorageDirectory().getPath() : BookCSS.get().dirLastPath;
         if (ExtUtils.isExteralSD(path)) {
             return path;
         }
@@ -790,8 +810,8 @@ public class BrowseFragment2 extends UIFragment<FileMeta> {
     boolean isRestorePos = false;
 
     public boolean onBackAction() {
-        if (ExtUtils.isExteralSD(AppState.get().dirLastPath)) {
-            String path = AppState.get().dirLastPath;
+        if (ExtUtils.isExteralSD(BookCSS.get().dirLastPath)) {
+            String path = BookCSS.get().dirLastPath;
             LOG.d("pathBack before", path);
             if (path.contains("%2F")) {
                 path = path.substring(0, path.lastIndexOf("%2F"));
@@ -832,7 +852,7 @@ public class BrowseFragment2 extends UIFragment<FileMeta> {
         LOG.d("Display-path", path);
         isRestorePos = false;
         displayPath = path;
-        AppState.get().dirLastPath = path;
+        BookCSS.get().dirLastPath = path;
 
         populate();
     }
@@ -1050,7 +1070,11 @@ public class BrowseFragment2 extends UIFragment<FileMeta> {
                                 }
                             });
                             return true;
+                        } else {
+                            deleteFolderPopup(getActivity(), pathFull);
                         }
+
+
                         return false;
                     }
                 });
@@ -1113,6 +1137,48 @@ public class BrowseFragment2 extends UIFragment<FileMeta> {
                 TintUtil.setTintImageWithAlpha(starIconDir);
             }
         });
+
+    }
+
+    private void deleteFolderPopup(Activity a, String path) {
+
+        AlertDialogs.showOkDialog(a, getString(R.string.delete_the_directory_all_the_files_in_the_directory_), new Runnable() {
+            @Override
+            public void run() {
+                if (Clouds.isLibreraSyncRootFolder(path)) {
+
+
+                    new AsyncProgressResultToastTask(a) {
+
+                        @Override
+                        protected Boolean doInBackground(Object... objects) {
+                            try {
+                                GFile.deleteRemoteFile(new File(path));
+                                a.runOnUiThread(() -> {
+                                    final boolean result = ExtUtils.deleteRecursive(new File(path));
+                                    AlertDialogs.showResultToasts(a, result);
+                                    resetFragment();
+                                });
+                                //GFile.runSyncService(a);
+                            } catch (Exception e) {
+                                LOG.e(e);
+                                return false;
+                            }
+                            return true;
+                        }
+
+                    }.execute();
+
+                } else {
+                    final boolean result = ExtUtils.deleteRecursive(new File(path));
+                    AlertDialogs.showResultToasts(a, result);
+                    resetFragment();
+                }
+
+
+            }
+        });
+
 
     }
 

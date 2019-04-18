@@ -1,16 +1,16 @@
 package com.foobnix.tts;
 
-import com.foobnix.pdf.info.wrapper.AppState;
-
 import android.app.Activity;
 import android.os.Bundle;
+
+import com.foobnix.model.AppProfile;
 
 public class TTSActivity extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        AppState.get().load(this);
+        AppProfile.init(this);
         TTSService.playLastBook();
         finish();
 

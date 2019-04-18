@@ -536,4 +536,26 @@
    <string name="please_wait_books_are_being_processed_">Prašome palaukti, tvarkomos knygos</string>
    <string name="system_brightness">Sistemos ryškumas</string>
    <string name="opening_books_in_the_specified_mode">Knygų atidarymas nurodytu režimu</string>
+   <string name="dark_oled">Tamsiai oled</string>
+   <string name="profile">Profilis</string>
+   <string name="new_profile">Naujas profilis</string>
+   <string name="main">Pagrindinis</string>
+   <string name="do_you_want_to_switch_profile_">Pereiti prie kito profilio?</string>
+   <string name="sync_error">Sinchronizavimo klaida</string>
+   <string name="sign_in">Prisijungti</string>
+   <string name="sign_out">Atsijungti</string>
+   <string name="manual_sync_only">Rankinis sinchronizavimas</string>
+   <string name="wifi_sync_only">„wifi“ sinchronizavimas</string>
+   <string name="sync_google_drive">Sinchronizuoti („Google“ diskas)</string>
+   <string name="single_tap_to_select_text">Vienu bakstelėjimu pasirinkite tekstą</string>
+   <string name="sync_book">Sinchronizuoti knygą</string>
+   <string name="sync">Sinchronizuoti</string>
+   <string name="synchronized_folder">Sinchronizuotas aplankas</string>
+   <string name="today">Šiandien</string>
+   <string name="downloads">Parsisiųsti</string>
+   <string name="delete_the_directory_all_the_files_in_the_directory_">Aplankas nėra tuščias. bet kokiu atveju ištrinti?</string>
+   <string name="synchronized_books">Sinchronizuotos knygos</string>
+   <string name="show_sync_wheel">Rodyti sinchronizavimo ratą</string>
+   <string name="publication_date">Paskelbimo data</string>
+   <string name="empy">Tuščia</string>
 </resources>

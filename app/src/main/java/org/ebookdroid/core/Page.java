@@ -1,12 +1,14 @@
 package org.ebookdroid.core;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
+import android.graphics.Matrix;
+import android.graphics.RectF;
+
+import com.foobnix.android.utils.TxtUtils;
+import com.foobnix.model.AppBook;
+import com.foobnix.model.AppState;
 
 import org.ebookdroid.common.bitmaps.Bitmaps;
 import org.ebookdroid.common.settings.SettingsManager;
-import org.ebookdroid.common.settings.books.BookSettings;
 import org.ebookdroid.common.settings.types.PageType;
 import org.ebookdroid.core.codec.Annotation;
 import org.ebookdroid.core.codec.CodecPageInfo;
@@ -16,11 +18,9 @@ import org.ebookdroid.ui.viewer.IActivityController;
 import org.emdev.utils.MathUtils;
 import org.emdev.utils.MatrixUtils;
 
-import com.foobnix.android.utils.TxtUtils;
-import com.foobnix.pdf.info.wrapper.AppState;
-
-import android.graphics.Matrix;
-import android.graphics.RectF;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 
 public class Page {
 
@@ -163,9 +163,9 @@ public class Page {
     }
 
     public RectF getBounds(final float zoom) {
-        // if (zoom != storedZoom) {
-        // storedZoom = zoom;
-        // zoomedBounds = MathUtils.zoom(bounds, zoom);
+        // if (z != storedZoom) {
+        // storedZoom = z;
+        // zoomedBounds = MathUtils.z(bounds, z);
         // }
         // return zoomedBounds;
         return MathUtils.zoom(bounds, zoom);
@@ -213,9 +213,9 @@ public class Page {
     }
 
     public RectF getPageRegion(final RectF pageBounds, final RectF sourceRect) {
-        final BookSettings bs = SettingsManager.getBookSettings();
+        final AppBook bs = SettingsManager.getBookSettings();
         final RectF cb = nodes.root.croppedBounds;
-        if (bs != null && bs.cropPages && cb != null) {
+        if (bs != null && bs.cp && cb != null) {
             final Matrix m = MatrixUtils.get();
             final RectF psb = nodes.root.pageSliceBounds;
             m.postTranslate(psb.left - cb.left, psb.top - cb.top);

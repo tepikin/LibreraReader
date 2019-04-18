@@ -12,16 +12,17 @@ import com.foobnix.dao2.DaoSession;
 import com.foobnix.dao2.DatabaseUpgradeHelper;
 import com.foobnix.dao2.FileMeta;
 import com.foobnix.dao2.FileMetaDao;
+import com.foobnix.model.AppData;
+import com.foobnix.model.AppState;
+import com.foobnix.model.SimpleMeta;
+import com.foobnix.pdf.info.Android6;
 import com.foobnix.pdf.info.Clouds;
 import com.foobnix.pdf.info.ExtUtils;
 import com.foobnix.pdf.info.R;
-import com.foobnix.pdf.info.wrapper.AppState;
 import com.foobnix.pdf.info.wrapper.UITab;
 import com.foobnix.ui2.adapter.FileMetaAdapter;
 import com.foobnix.ui2.fragment.SearchFragment2;
 
-import org.ebookdroid.common.settings.SettingsManager;
-import org.ebookdroid.common.settings.books.BookSettings;
 import org.greenrobot.greendao.Property;
 import org.greenrobot.greendao.query.QueryBuilder;
 
@@ -34,7 +35,7 @@ import java.util.Locale;
 
 public class AppDB {
 
-    private static final String DB_NAME = "all-5";
+    public static final String DB_NAME = "all-5";
 
     private final static AppDB in = new AppDB();
 
@@ -46,7 +47,9 @@ public class AppDB {
         AUTHOR(FileMetaDao.Properties.Author, AppState.MODE_AUTHORS), //
         TAGS(FileMetaDao.Properties.Tag, AppState.MODE_USER_TAGS), //
         KEYWRODS(FileMetaDao.Properties.Keyword, AppState.MODE_KEYWORDS), //
-        LANGUAGES(FileMetaDao.Properties.Lang, AppState.MODE_LANGUAGES);
+        LANGUAGES(FileMetaDao.Properties.Lang, AppState.MODE_LANGUAGES),
+        YEAR(FileMetaDao.Properties.Year, AppState.MODE_PUBLICATION_DATE),
+        PUBLISHER(FileMetaDao.Properties.Publisher, AppState.MODE_PUBLISHER);
         // ANNOT(FileMetaDao.Properties.Annotation, -1); //
         // REGEX(FileMetaDao.Properties.Path, -1);//
         //
@@ -101,7 +104,10 @@ public class AppDB {
         SERIES_INDEX(7, R.string.by_number_in_serie, FileMetaDao.Properties.SIndex), //
         PAGES(8, R.string.by_number_of_pages, FileMetaDao.Properties.Pages), //
         EXT(9, R.string.by_extension, FileMetaDao.Properties.Ext), //
-        LANGUAGE(10, R.string.language, FileMetaDao.Properties.Lang);//
+        LANGUAGE(10, R.string.language, FileMetaDao.Properties.Lang),//
+        PUBLICATION_YEAR(11, R.string.publication_date, FileMetaDao.Properties.Year),//
+        PUBLISHER(12, R.string.publisher, FileMetaDao.Properties.Publisher);//
+
 
         private final int index;
         private final int resName;
@@ -153,8 +159,15 @@ public class AppDB {
 
     }
 
-    public void open(Context c) {
-        DatabaseUpgradeHelper helper = new DatabaseUpgradeHelper(c, DB_NAME);
+    public boolean isOpen;
+
+    public void open(Context c, String appDB) {
+        isOpen = false;
+        if (!Android6.canWrite(c)) {
+            return;
+        }
+        LOG.d("Open-DB", appDB);
+        DatabaseUpgradeHelper helper = new DatabaseUpgradeHelper(c, appDB);
 
         SQLiteDatabase writableDatabase = helper.getWritableDatabase();
         DaoMaster daoMaster = new DaoMaster(writableDatabase);
@@ -162,18 +175,24 @@ public class AppDB {
         daoSession = daoMaster.newSession();
 
         fileMetaDao = daoSession.getFileMetaDao();
+        isOpen = true;
 
         // if (c.getResources().getBoolean(R.bool.is_log_enable)) {
         // QueryBuilder.LOG_SQL = true;
         // QueryBuilder.LOG_VALUES = true;
         // }
 
+
     }
 
-    public void dropCreateTables(Context c) {
-        DatabaseUpgradeHelper helper = new DatabaseUpgradeHelper(c, DB_NAME);
-        DaoMaster.dropAllTables(helper.getWritableDb(), true);
-        DaoMaster.createAllTables(helper.getWritableDb(), true);
+    //public void dropCreateTables(Context c) {
+    //    DatabaseUpgradeHelper helper = new DatabaseUpgradeHelper(c, DB_NAME);
+    //    DaoMaster.dropAllTables(helper.getWritableDb(), true);
+    //    DaoMaster.createAllTables(helper.getWritableDb(), true);
+    // }
+
+    public void deleteAllData() {
+        fileMetaDao.deleteAll();
     }
 
     public List<FileMeta> deleteAllSafe() {
@@ -198,7 +217,7 @@ public class AppDB {
         fileMetaDao.deleteByKey(metaByPath);
     }
 
-    public List<FileMeta> getRecent() {
+    public List<FileMeta> getRecentDeprecated() {
         try {
             List<FileMeta> list = fileMetaDao.queryBuilder().where(FileMetaDao.Properties.IsRecent.eq(1)).orderDesc(FileMetaDao.Properties.IsRecentTime).list();
             return removeNotExist(list);
@@ -253,28 +272,6 @@ public class AppDB {
         return list.get(0);
     }
 
-    public List<FileMeta> getAllRecentWithProgress() {
-        List<FileMeta> list = fileMetaDao.queryBuilder().where(FileMetaDao.Properties.IsRecent.eq(1)).orderDesc(FileMetaDao.Properties.IsRecentTime).list();
-        for (FileMeta meta : list) {
-            BookSettings bs = SettingsManager.getTempBookSettings(meta.getPath());
-            try {
-                float isRecentProgress = (float) (bs.currentPage.viewIndex + 1) / bs.getPages();
-                if (isRecentProgress > 1) {
-                    isRecentProgress = 1;
-                }
-                if (isRecentProgress < 0) {
-                    isRecentProgress = 0;
-                }
-                meta.setIsRecentProgress(isRecentProgress);
-                AppDB.get().update(meta);
-            } catch (Exception e) {
-                LOG.d(e);
-                meta.setIsRecentProgress(1f);
-            }
-        }
-
-        return removeNotExist(list);
-    }
 
     public void addRecent(String path) {
         if (!UITab.isShowRecent()) {
@@ -286,10 +283,15 @@ public class AppDB {
             return;
         }
         LOG.d("Add Recent", path);
-        FileMeta load = getOrCreate(path);
-        load.setIsRecent(true);
-        load.setIsRecentTime(System.currentTimeMillis());
-        fileMetaDao.update(load);
+        if (!path.endsWith("json")) {
+            FileMeta load = getOrCreate(path);
+            load.setIsRecent(true);
+            load.setIsRecentTime(System.currentTimeMillis());
+            fileMetaDao.update(load);
+
+            AppData.get().addRecent(new SimpleMeta(path, System.currentTimeMillis()));
+        }
+
     }
 
     public void addStarFile(String path) {
@@ -339,6 +341,14 @@ public class AppDB {
         }
     }
 
+    public void setIsSearchBook(String path, boolean value) {
+        final FileMeta load = AppDB.get().load(path);
+        if (load != null) {
+            load.setIsSearchBook(value);
+            AppDB.get().update(load);
+        }
+    }
+
     public FileMeta load(String path) {
         if (fileMetaDao == null) {
             return null;
@@ -347,6 +357,7 @@ public class AppDB {
     }
 
     public FileMeta getOrCreate(String path) {
+
         FileMeta load = fileMetaDao.load(path);
         try {
             if (load == null) {
@@ -371,6 +382,23 @@ public class AppDB {
             LOG.e(e);
         }
     }
+
+    public void refresh(FileMeta meta) {
+        try {
+            fileMetaDao.refresh(meta);
+        } catch (Exception e) {
+            LOG.e(e);
+        }
+    }
+
+    public void clearSession() {
+        try {
+            daoSession.clear();
+        } catch (Exception e) {
+            LOG.e(e);
+        }
+    }
+
 
     public synchronized void updateOrSave(FileMeta meta) {
         if (fileMetaDao.load(meta.getPath()) == null) {
@@ -425,13 +453,13 @@ public class AppDB {
         return result;
     }
 
-    public List<FileMeta> getStarsFiles() {
+    public List<FileMeta> getStarsFilesDeprecated() {
         QueryBuilder<FileMeta> where = fileMetaDao.queryBuilder();
         List<FileMeta> list = where.where(FileMetaDao.Properties.IsStar.eq(1), where.or(FileMetaDao.Properties.CusType.isNull(), FileMetaDao.Properties.CusType.eq(FileMetaAdapter.DISPLAY_TYPE_FILE))).orderDesc(FileMetaDao.Properties.IsStarTime).list();
         return removeNotExist(list);
     }
 
-    public List<FileMeta> getStarsFolder() {
+    public List<FileMeta> getStarsFoldersDeprecated() {
         return fileMetaDao.queryBuilder().where(FileMetaDao.Properties.IsStar.eq(1), FileMetaDao.Properties.CusType.eq(FileMetaAdapter.DISPLAY_TYPE_DIRECTORY)).orderAsc(FileMetaDao.Properties.PathTxt).list();
     }
 
@@ -448,7 +476,7 @@ public class AppDB {
     }
 
     public void clearAllRecent() {
-        List<FileMeta> recent = getRecent();
+        List<FileMeta> recent = getRecentDeprecated();
         for (FileMeta meta : recent) {
             meta.setIsRecent(false);
         }
@@ -468,7 +496,8 @@ public class AppDB {
         LOG.d("getAllWithTag", tagName);
         try {
             QueryBuilder<FileMeta> where = fileMetaDao.queryBuilder();
-            where = where.where(SEARCH_IN.TAGS.getProperty().like("%" + tagName + StringDB.DIVIDER + "%"));
+            where =  where.where(SEARCH_IN.TAGS.getProperty().like("%" + tagName + StringDB.DIVIDER + "%"),FileMetaDao.Properties.IsSearchBook.eq(1));
+            //where = where.where(SEARCH_IN.TAGS.getProperty().like("%" + tagName + StringDB.DIVIDER + "%"));
             return where.list();
         } catch (Exception e) {
             return new ArrayList<FileMeta>();
@@ -516,9 +545,7 @@ public class AppDB {
             LOG.d("searchBy", searchIn, str, "-");
             if (str.startsWith(SearchFragment2.EMPTY_ID)) {
                 where = where.whereOr(searchIn.getProperty().like(""), searchIn.getProperty().isNull());
-            } else
-
-            if (searchIn == SEARCH_IN.SERIES && !str.contains("*")) {
+            } else if (searchIn == SEARCH_IN.SERIES && !str.contains("*")) {
                 where = where.where(searchIn.getProperty().eq(str));
             } else {
                 if (TxtUtils.isNotEmpty(str)) {

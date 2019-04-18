@@ -1,18 +1,5 @@
 package com.foobnix.pdf.info.widget;
 
-import com.buzzingandroid.ui.HSVColorPickerDialog.OnColorSelectedListener;
-import com.buzzingandroid.ui.HSVColorWheel;
-import com.buzzingandroid.ui.HSVValueSlider;
-import com.foobnix.android.utils.IntegerResponse;
-import com.foobnix.android.utils.LOG;
-import com.foobnix.android.utils.ResultResponse2;
-import com.foobnix.android.utils.TxtUtils;
-import com.foobnix.pdf.info.ExtUtils;
-import com.foobnix.pdf.info.R;
-import com.foobnix.pdf.info.view.CustomSeek;
-import com.foobnix.pdf.info.wrapper.AppState;
-import com.foobnix.pdf.info.wrapper.MagicHelper;
-
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;
@@ -30,6 +17,21 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.buzzingandroid.ui.HSVColorPickerDialog.OnColorSelectedListener;
+import com.buzzingandroid.ui.HSVColorWheel;
+import com.buzzingandroid.ui.HSVValueSlider;
+import com.foobnix.android.utils.IntegerResponse;
+import com.foobnix.android.utils.LOG;
+import com.foobnix.android.utils.ResultResponse2;
+import com.foobnix.android.utils.TxtUtils;
+import com.foobnix.model.AppProfile;
+import com.foobnix.model.AppState;
+import com.foobnix.pdf.info.ExtUtils;
+import com.foobnix.pdf.info.R;
+import com.foobnix.pdf.info.model.BookCSS;
+import com.foobnix.pdf.info.view.CustomSeek;
+import com.foobnix.pdf.info.wrapper.MagicHelper;
 
 public class ColorsDialog {
     int colorTextChoose;
@@ -397,7 +399,7 @@ public class ColorsDialog {
 
                 colorsDialogResult.onChooseColor(colorTextChoose, colorBgChoose);
 
-                AppState.get().save(c);
+                AppProfile.save(c);
             }
         });
         d.show();
@@ -441,7 +443,7 @@ public class ColorsDialog {
         // updateRGB(fontRGB, colorText);
         // updateRGB(bgRGB, colorBg);
 
-        if (!(AppState.get().isTextFormat() || AppState.get().isCustomizeBgAndColors)) {
+        if (!(BookCSS.get().isTextFormat() || AppState.get().isCustomizeBgAndColors)) {
             fontRGB.setVisibility(View.GONE);
             hsvColorWheel1.setVisibility(View.GONE);
             hsvValueSlider1.setVisibility(View.GONE);

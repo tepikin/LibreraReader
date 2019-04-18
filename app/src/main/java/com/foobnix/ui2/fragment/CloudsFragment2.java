@@ -1,34 +1,5 @@
 package com.foobnix.ui2.fragment;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
-import org.greenrobot.eventbus.EventBus;
-import org.greenrobot.eventbus.Subscribe;
-import org.greenrobot.eventbus.ThreadMode;
-
-import com.foobnix.android.utils.LOG;
-import com.foobnix.android.utils.TxtUtils;
-import com.foobnix.dao2.FileMeta;
-import com.foobnix.pdf.info.Clouds;
-import com.foobnix.pdf.info.FileMetaComparators;
-import com.foobnix.pdf.info.R;
-import com.foobnix.pdf.info.TintUtil;
-import com.foobnix.pdf.info.view.MyPopupMenu;
-import com.foobnix.pdf.info.wrapper.AppState;
-import com.foobnix.pdf.info.wrapper.PopupHelper;
-import com.foobnix.pdf.info.wrapper.UITab;
-import com.foobnix.pdf.search.activity.msg.MessageSyncFinish;
-import com.foobnix.pdf.search.activity.msg.MessageSyncUpdateList;
-import com.foobnix.pdf.search.activity.msg.OpenDirMessage;
-import com.foobnix.ui2.BooksService;
-import com.foobnix.ui2.FileMetaCore;
-import com.foobnix.ui2.MainTabs2;
-import com.foobnix.ui2.adapter.FileMetaAdapter;
-
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -43,6 +14,36 @@ import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.Toast;
+
+import com.foobnix.android.utils.LOG;
+import com.foobnix.android.utils.TxtUtils;
+import com.foobnix.dao2.FileMeta;
+import com.foobnix.model.AppState;
+import com.foobnix.pdf.info.Clouds;
+import com.foobnix.pdf.info.FileMetaComparators;
+import com.foobnix.pdf.info.R;
+import com.foobnix.pdf.info.TintUtil;
+import com.foobnix.pdf.info.model.BookCSS;
+import com.foobnix.pdf.info.view.MyPopupMenu;
+import com.foobnix.pdf.info.wrapper.PopupHelper;
+import com.foobnix.pdf.info.wrapper.UITab;
+import com.foobnix.pdf.search.activity.msg.MessageSyncFinish;
+import com.foobnix.pdf.search.activity.msg.MessageSyncUpdateList;
+import com.foobnix.pdf.search.activity.msg.OpenDirMessage;
+import com.foobnix.ui2.BooksService;
+import com.foobnix.ui2.FileMetaCore;
+import com.foobnix.ui2.MainTabs2;
+import com.foobnix.ui2.adapter.FileMetaAdapter;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 public class CloudsFragment2 extends UIFragment<FileMeta> {
     public static final Pair<Integer, Integer> PAIR = new Pair<Integer, Integer>(R.string.clouds, R.drawable.glyphicons_2_cloud);
@@ -275,19 +276,19 @@ public class CloudsFragment2 extends UIFragment<FileMeta> {
         if (Clouds.get().isDropbox()) {
             String title = getActivity().getString(R.string.dropbox) + " (" + Clouds.get().dropboxSpace + ")";
             res.add(metaTitle(title));
-            res.addAll(getCloudFiles(AppState.get().syncDropboxPath, Clouds.PREFIX_CLOUD_DROPBOX + Clouds.LIBRERA_SYNC_ONLINE_FOLDER));
+            res.addAll(getCloudFiles(BookCSS.get().syncDropboxPath, Clouds.PREFIX_CLOUD_DROPBOX + Clouds.LIBRERA_SYNC_ONLINE_FOLDER));
         }
 
         if (Clouds.get().isGoogleDrive()) {
             String title = getActivity().getString(R.string.google_drive) + " (" + Clouds.get().googleSpace + ")";
             res.add(metaTitle(title));
-            res.addAll(getCloudFiles(AppState.get().syncGdrivePath, Clouds.PREFIX_CLOUD_GDRIVE + Clouds.LIBRERA_SYNC_ONLINE_FOLDER));
+            res.addAll(getCloudFiles(BookCSS.get().syncGdrivePath, Clouds.PREFIX_CLOUD_GDRIVE + Clouds.LIBRERA_SYNC_ONLINE_FOLDER));
         }
 
         if (Clouds.get().isOneDrive()) {
             String title = getActivity().getString(R.string.one_drive) + " (" + Clouds.get().oneDriveSpace + ")";
             res.add(metaTitle(title));
-            res.addAll(getCloudFiles(AppState.get().syncOneDrivePath, Clouds.PREFIX_CLOUD_ONEDRIVE + Clouds.LIBRERA_SYNC_ONLINE_FOLDER));
+            res.addAll(getCloudFiles(BookCSS.get().syncOneDrivePath, Clouds.PREFIX_CLOUD_ONEDRIVE + Clouds.LIBRERA_SYNC_ONLINE_FOLDER));
         }
 
         LOG.d("prepareDataInBackground");

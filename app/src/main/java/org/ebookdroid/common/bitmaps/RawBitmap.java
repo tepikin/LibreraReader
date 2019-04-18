@@ -1,15 +1,17 @@
 package org.ebookdroid.common.bitmaps;
 
-import org.ebookdroid.BookType;
-
-import com.foobnix.android.utils.LOG;
-import com.foobnix.pdf.info.wrapper.AppState;
-import com.foobnix.pdf.info.wrapper.MagicHelper;
-
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
+
+import com.foobnix.android.utils.LOG;
+import com.foobnix.model.AppState;
+import com.foobnix.model.AppTemp;
+import com.foobnix.pdf.info.model.BookCSS;
+import com.foobnix.pdf.info.wrapper.MagicHelper;
+
+import org.ebookdroid.BookType;
 
 public final class RawBitmap {
 
@@ -87,16 +89,16 @@ public final class RawBitmap {
 
 
     public void invert() {
-        LOG.d("invert", AppState.get().lastBookPath);
-        if (!MagicHelper.isNeedMagic() && BookType.DJVU.is(AppState.get().lastBookPath)) {
+        LOG.d("invert", AppTemp.get().lastBookPath);
+        if (!MagicHelper.isNeedMagic() && BookType.DJVU.is(AppTemp.get().lastBookPath)) {
             nativeInvert(pixels, width, height);
             return;
         }
-        if (BookType.DJVU.is(AppState.get().lastBookPath)) {
+        if (BookType.DJVU.is(AppTemp.get().lastBookPath)) {
             return;
         }
         if (!(MagicHelper.isNeedMagic() && AppState.get().isCustomizeBgAndColors)) {
-            if (!AppState.get().isTextFormat()) {
+            if (!BookCSS.get().isTextFormat()) {
                 nativeInvert(pixels, width, height);
             }
         }

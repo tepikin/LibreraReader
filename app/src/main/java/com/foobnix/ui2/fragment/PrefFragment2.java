@@ -16,6 +16,7 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.util.Pair;
 import android.support.v4.widget.DrawerLayout;
 import android.text.Html;
+import android.text.format.DateUtils;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -47,9 +48,13 @@ import com.foobnix.android.utils.Keyboards;
 import com.foobnix.android.utils.LOG;
 import com.foobnix.android.utils.ResultResponse2;
 import com.foobnix.android.utils.TxtUtils;
+import com.foobnix.drive.GFile;
+import com.foobnix.model.AppProfile;
+import com.foobnix.model.AppState;
+import com.foobnix.model.AppTemp;
 import com.foobnix.pdf.info.AndroidWhatsNew;
-import com.foobnix.pdf.info.AppSharedPreferences;
 import com.foobnix.pdf.info.AppsConfig;
+import com.foobnix.pdf.info.BookmarksData;
 import com.foobnix.pdf.info.ExtUtils;
 import com.foobnix.pdf.info.IMG;
 import com.foobnix.pdf.info.PasswordDialog;
@@ -71,20 +76,28 @@ import com.foobnix.pdf.info.widget.DialogTranslateFromTo;
 import com.foobnix.pdf.info.widget.PrefDialogs;
 import com.foobnix.pdf.info.widget.RecentUpates;
 import com.foobnix.pdf.info.widget.ShareDialog;
-import com.foobnix.pdf.info.wrapper.AppState;
 import com.foobnix.pdf.info.wrapper.DocumentController;
 import com.foobnix.pdf.info.wrapper.PasswordState;
 import com.foobnix.pdf.info.wrapper.UITab;
+import com.foobnix.pdf.search.activity.msg.GDriveSycnEvent;
+import com.foobnix.pdf.search.activity.msg.MessageSync;
 import com.foobnix.sys.TempHolder;
+import com.foobnix.ui2.AppDB;
 import com.foobnix.ui2.BooksService;
 import com.foobnix.ui2.MainTabs2;
 import com.foobnix.ui2.MyContextWrapper;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.jmedeisis.draglinearlayout.DragLinearLayout;
 import com.nostra13.universalimageloader.core.ImageLoader;
 
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
+
+import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 public class PrefFragment2 extends UIFragment {
@@ -93,7 +106,7 @@ public class PrefFragment2 extends UIFragment {
     private static final String WWW_SITE = "http://librera.mobi";
     private static final String WWW_BETA_SITE = "http://beta.librera.mobi";
     private static final String WWW_WIKI_SITE = "http://wiki.librera.mobi";
-    private TextView curBrightness, themeColor;
+    private TextView curBrightness, themeColor, profileLetter;
     private CheckBox isRememberDictionary;
 
     @Override
@@ -114,6 +127,7 @@ public class PrefFragment2 extends UIFragment {
     public void resetFragment() {
     }
 
+
     @Override
     public void onTintChanged() {
         TintUtil.setStatusBarColor(getActivity(), TintUtil.color);
@@ -124,14 +138,144 @@ public class PrefFragment2 extends UIFragment {
         TintUtil.setBackgroundFillColor(section5, TintUtil.color);
         TintUtil.setBackgroundFillColor(section6, TintUtil.color);
         TintUtil.setBackgroundFillColor(section7, TintUtil.color);
+        TintUtil.setBackgroundFillColor(section8, TintUtil.color);
+        TintUtil.setBackgroundFillColor(section9, TintUtil.color);
+
+        if (profileLetter != null) {
+            final String p = AppProfile.getCurrent(getActivity());
+            profileLetter.setText(TxtUtils.getFirstLetter(p));
+            profileLetter.setBackgroundDrawable(AppProfile.getProfileColorDrawable(getActivity(), TintUtil.color));
+        }
+
+        if (AppState.get().appTheme == AppState.THEME_INK) {
+            TxtUtils.setInkTextView(inflate.getRootView());
+        }
+
 
     }
 
-    View section1, section2, section3, section4, section5, section6, section7, overlay;
+    View section1, section2, section3, section4, section5, section6, section7, section8, section9, overlay;
+
+
+    @Subscribe
+    public void updateSyncInfo(GDriveSycnEvent event) {
+        String gdriveInfo = GFile.getDisplayInfo(getActivity());
+
+        if (TxtUtils.isEmpty(gdriveInfo)) {
+            BookCSS.get().isEnableSync = false;
+            syncInfo.setVisibility(View.GONE);
+            singIn.setText(R.string.sign_in);
+            TxtUtils.underlineTextView(singIn);
+            singIn.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    GFile.init(getActivity());
+                    updateSyncInfo(null);
+                }
+            });
+        } else {
+            syncInfo.setVisibility(View.VISIBLE);
+            syncInfo.setText(gdriveInfo);
+            singIn.setText(R.string.sign_out);
+            TxtUtils.underlineTextView(singIn);
+
+            singIn.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    BookCSS.get().isEnableSync = false;
+                    BookCSS.get().syncRootID = "";
+                    AppTemp.get().syncTime = 0;
+                    GFile.logout(getActivity());
+                    updateSyncInfo(null);
+                }
+            });
+        }
+
+        isEnableSync.setChecked(BookCSS.get().isEnableSync);
+        onSync(null);
+
+
+    }
+
+    TextView singIn, syncInfo, syncHeader;
+    CheckBox isEnableSync;
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onSync(MessageSync msg) {
+        if (AppTemp.get().syncTime > 0) {
+
+            final Date date = new Date(AppTemp.get().syncTime);
+            String format = "";
+            if (DateUtils.isToday(AppTemp.get().syncTime)) {
+                format = getString(R.string.today) + " " + DateFormat.getTimeInstance().format(date);
+            } else {
+                format = DateFormat.getDateTimeInstance().format(date);
+            }
+
+            String status = AppTemp.get().syncTimeStatus == MessageSync.STATE_SUCCESS ? getString(R.string.success) : getString(R.string.fail);
+            if (AppTemp.get().syncTimeStatus == MessageSync.STATE_VISIBLE) {
+                status = "...";
+            }
+
+            syncHeader.setText(getString(R.string.sync) + " (" + format + " - " + status + ")");
+        } else {
+            syncHeader.setText(R.string.sync_google_drive);
+
+        }
+    }
 
     @Override
-    public View onCreateView(final LayoutInflater inflater, final ViewGroup container, final Bundle savedInstanceState) {
+    public View onCreateView(final LayoutInflater inflater, final ViewGroup container,
+                             final Bundle savedInstanceState) {
         inflate = inflater.inflate(R.layout.preferences, container, false);
+
+
+        singIn = inflate.findViewById(R.id.signIn);
+        syncInfo = inflate.findViewById(R.id.syncInfo);
+        syncHeader = inflate.findViewById(R.id.syncHeader);
+        onSync(null);
+        syncHeader.setOnClickListener((in) -> Dialogs.showSyncLOGDialog(getActivity()));
+
+
+        isEnableSync = inflate.findViewById(R.id.isEnableSync);
+        isEnableSync.setChecked(BookCSS.get().isEnableSync);
+        isEnableSync.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            BookCSS.get().isEnableSync = isChecked;
+            if (isChecked) {
+                if (GoogleSignIn.getLastSignedInAccount(getActivity()) == null) {
+                    GFile.init(getActivity());
+                } else {
+                    GFile.runSyncService(getActivity());
+                }
+            }
+        });
+
+        inflate.findViewById(R.id.isEnableSyncSettings).setOnClickListener(v -> {
+            final CheckBox isSyncManualOnly = new CheckBox(getActivity());
+            isSyncManualOnly.setText(R.string.manual_sync_only);
+            isSyncManualOnly.setChecked(BookCSS.get().isSyncManualOnly);
+            isSyncManualOnly.setOnCheckedChangeListener((buttonView, isChecked) -> BookCSS.get().isSyncManualOnly = isChecked);
+
+            final CheckBox isSyncWifiOnly = new CheckBox(getActivity());
+            isSyncWifiOnly.setText(R.string.wifi_sync_only);
+            isSyncWifiOnly.setChecked(BookCSS.get().isSyncWifiOnly);
+            isSyncWifiOnly.setOnCheckedChangeListener((buttonView, isChecked) -> BookCSS.get().isSyncWifiOnly = isChecked);
+
+            final CheckBox isShowSyncWheel = new CheckBox(getActivity());
+            isShowSyncWheel.setText(getString(R.string.show_sync_wheel));
+            isShowSyncWheel.setChecked(BookCSS.get().isShowSyncWheel);
+            isShowSyncWheel.setOnCheckedChangeListener((buttonView, isChecked) -> BookCSS.get().isShowSyncWheel = isChecked);
+
+            AlertDialogs.showViewDialog(getActivity(), null, isSyncManualOnly, isSyncWifiOnly, isShowSyncWheel);
+        });
+
+
+        updateSyncInfo(null);
+
+
+        section8 = inflate.findViewById(R.id.section8);
+        section9 = inflate.findViewById(R.id.section9);
+
 
         // tabs position
         final DragLinearLayout dragLinearLayout = (DragLinearLayout) inflate.findViewById(R.id.dragLinearLayout);
@@ -169,6 +313,10 @@ public class PrefFragment2 extends UIFragment {
                     }
 
                     View library = LayoutInflater.from(getActivity()).inflate(R.layout.item_tab_line, null, false);
+                    if (AppState.get().appTheme == AppState.THEME_DARK_OLED || AppState.get().appTheme == AppState.THEME_DARK) {
+                        library.setBackgroundColor(Color.BLACK);
+                    }
+
                     ((TextView) library.findViewById(R.id.text1)).setText(tab.getName());
                     ((CheckBox) library.findViewById(R.id.isVisible)).setChecked(tab.isVisible());
                     ((CheckBox) library.findViewById(R.id.isVisible)).setOnCheckedChangeListener(new OnCheckedChangeListener() {
@@ -206,7 +354,7 @@ public class PrefFragment2 extends UIFragment {
                 }
                 AppState.get().tabsOrder7 = TxtUtils.replaceLast(AppState.get().tabsOrder7, ",", "");
                 LOG.d("tabsApply", AppState.get().tabsOrder7);
-                AppState.get().save(getActivity());
+                AppProfile.save(getActivity());
                 onTheme();
             }
         });
@@ -224,9 +372,6 @@ public class PrefFragment2 extends UIFragment {
                 } else {
                     AppState.get().tabsOrder7 = AppState.get().tabsOrder7.replace(UITab.PrefFragment.index + "#0", UITab.PrefFragment.index + "#1");
                 }
-
-                dragLinear.run();
-
             }
         });
 
@@ -240,7 +385,8 @@ public class PrefFragment2 extends UIFragment {
                     public void run() {
                         AppState.get().tabsOrder7 = AppState.DEFAULTS_TABS_ORDER;
                         isshowPrefAsMenu.setChecked(false);
-                        dragLinear.run();
+                        AppProfile.save(getActivity());
+                        onTheme();
                     }
                 });
 
@@ -256,6 +402,7 @@ public class PrefFragment2 extends UIFragment {
         section5 = inflate.findViewById(R.id.section5);
         section6 = inflate.findViewById(R.id.section6);
         section7 = inflate.findViewById(R.id.section7);
+
 
         onTintChanged();
 
@@ -352,7 +499,11 @@ public class PrefFragment2 extends UIFragment {
         final ScrollView scrollView = (ScrollView) inflate.findViewById(R.id.scroll);
         scrollView.setVerticalScrollBarEnabled(false);
 
-        ((TextView) inflate.findViewById(R.id.section6)).setText(String.format("%s: %s", getString(R.string.product), AppsConfig.TXT_APP_NAME));
+        if (AppState.get().appTheme == AppState.THEME_DARK_OLED) {
+            scrollView.setBackgroundColor(Color.BLACK);
+        }
+
+        ((TextView) inflate.findViewById(R.id.section6)).setText(String.format("%s: %s", getString(R.string.product), Apps.getApplicationName(getActivity())));
         // ((TextView) findViewById(R.id.appName)).setText(AppsConfig.APP_NAME);
 
         try {
@@ -514,7 +665,7 @@ public class PrefFragment2 extends UIFragment {
                         AppState.get().bolderTextOnImage = false;
                         AppState.get().isEnableBC = false;
 
-                        AppState.get().save(getActivity());
+                        AppProfile.save(getActivity());
 
                         IMG.clearDiscCache();
                         IMG.clearMemoryCache();
@@ -534,7 +685,7 @@ public class PrefFragment2 extends UIFragment {
                         AppState.get().bolderTextOnImage = false;
                         AppState.get().isEnableBC = false;
 
-                        AppState.get().save(getActivity());
+                        AppProfile.save(getActivity());
 
                         IMG.clearDiscCache();
                         IMG.clearMemoryCache();
@@ -554,7 +705,7 @@ public class PrefFragment2 extends UIFragment {
                         AppState.get().bolderTextOnImage = false;
                         AppState.get().isEnableBC = false;
 
-                        AppState.get().save(getActivity());
+                        AppProfile.save(getActivity());
 
                         IMG.clearDiscCache();
                         IMG.clearMemoryCache();
@@ -609,7 +760,7 @@ public class PrefFragment2 extends UIFragment {
                         AppState.get().appLang = AppState.MY_SYSTEM_LANG;
                         TempHolder.get().forseAppLang = true;
                         MyContextWrapper.wrap(getContext());
-                        AppState.get().save(getActivity());
+                        AppProfile.save(getActivity());
                         onTheme();
                         return false;
                     }
@@ -625,7 +776,7 @@ public class PrefFragment2 extends UIFragment {
                         public boolean onMenuItemClick(MenuItem item) {
                             AppState.get().appLang = code;
                             TxtUtils.underlineTextView(hypenLang);
-                            AppState.get().save(getActivity());
+                            AppProfile.save(getActivity());
                             onTheme();
                             return false;
                         }
@@ -637,7 +788,7 @@ public class PrefFragment2 extends UIFragment {
         });
 
         final TextView appFontScale = (TextView) inflate.findViewById(R.id.appFontScale);
-        appFontScale.setText(getFontName(AppState.get().appFontScale));
+        appFontScale.setText(getFontName(BookCSS.get().appFontScale));
         TxtUtils.underlineTextView(appFontScale);
         appFontScale.setOnClickListener(new OnClickListener() {
 
@@ -650,8 +801,8 @@ public class PrefFragment2 extends UIFragment {
 
                         @Override
                         public boolean onMenuItemClick(MenuItem item) {
-                            AppState.get().appFontScale = number;
-                            AppState.get().save(getActivity());
+                            BookCSS.get().appFontScale = number;
+                            AppProfile.save(getActivity());
                             onTheme();
                             return false;
                         }
@@ -700,7 +851,7 @@ public class PrefFragment2 extends UIFragment {
 
                     @Override
                     public boolean onMenuItemClick(final MenuItem item) {
-                        AppState.get().readingMode = AppState.READING_MODE_SCROLL;
+                        AppTemp.get().readingMode = AppState.READING_MODE_SCROLL;
                         checkOpenWithSpinner();
                         return false;
                     }
@@ -711,7 +862,7 @@ public class PrefFragment2 extends UIFragment {
 
                     @Override
                     public boolean onMenuItemClick(final MenuItem item) {
-                        AppState.get().readingMode = AppState.READING_MODE_BOOK;
+                        AppTemp.get().readingMode = AppState.READING_MODE_BOOK;
                         checkOpenWithSpinner();
                         return false;
                     }
@@ -721,7 +872,7 @@ public class PrefFragment2 extends UIFragment {
 
                     @Override
                     public boolean onMenuItemClick(final MenuItem item) {
-                        AppState.get().readingMode = AppState.READING_MODE_MUSICIAN;
+                        AppTemp.get().readingMode = AppState.READING_MODE_MUSICIAN;
                         checkOpenWithSpinner();
                         return false;
                     }
@@ -731,7 +882,7 @@ public class PrefFragment2 extends UIFragment {
 
                     @Override
                     public boolean onMenuItemClick(final MenuItem item) {
-                        AppState.get().readingMode = AppState.READING_MODE_TAG_MANAGER;
+                        AppTemp.get().readingMode = AppState.READING_MODE_TAG_MANAGER;
                         checkOpenWithSpinner();
                         return false;
                     }
@@ -1215,7 +1366,7 @@ public class PrefFragment2 extends UIFragment {
         initKeys();
 
         searchPaths = (TextView) inflate.findViewById(R.id.searchPaths);
-        searchPaths.setText(TxtUtils.underline(AppState.get().searchPaths.replace(",", "<br>")));
+        searchPaths.setText(TxtUtils.underline(BookCSS.get().searchPaths.replace(",", "<br>")));
         searchPaths.setOnClickListener(new OnClickListener() {
 
             @Override
@@ -1234,21 +1385,9 @@ public class PrefFragment2 extends UIFragment {
             }
         });
 
-        TxtUtils.underlineTextView(inflate.findViewById(R.id.importButton)).setOnClickListener(new View.OnClickListener() {
+        TxtUtils.underlineTextView(inflate.findViewById(R.id.importButton)).setOnClickListener(v -> PrefDialogs.importDialog(getActivity()));
 
-            @Override
-            public void onClick(final View v) {
-                PrefDialogs.importDialog(getActivity());
-            }
-        });
-
-        TxtUtils.underlineTextView(inflate.findViewById(R.id.exportButton)).setOnClickListener(new View.OnClickListener() {
-
-            @Override
-            public void onClick(final View v) {
-                PrefDialogs.exportDialog(getActivity());
-            }
-        });
+        TxtUtils.underlineTextView(inflate.findViewById(R.id.exportButton)).setOnClickListener(v -> PrefDialogs.exportDialog(getActivity()));
 
         final CheckBox isAutomaticExport = (CheckBox) inflate.findViewById(R.id.isAutomaticExport);
         isAutomaticExport.setChecked(AppState.get().isAutomaticExport);
@@ -1280,16 +1419,16 @@ public class PrefFragment2 extends UIFragment {
         });
 
         final TextView downloadFolder = (TextView) inflate.findViewById(R.id.downloadFolder);
-        TxtUtils.underline(downloadFolder, TxtUtils.lastTwoPath(AppState.get().downlodsPath));
+        TxtUtils.underline(downloadFolder, TxtUtils.lastTwoPath(BookCSS.get().downlodsPath));
         downloadFolder.setOnClickListener(new OnClickListener() {
 
             @Override
             public void onClick(View v) {
-                ChooserDialogFragment.chooseFolder(getActivity(), AppState.get().downlodsPath).setOnSelectListener(new ResultResponse2<String, Dialog>() {
+                ChooserDialogFragment.chooseFolder(getActivity(), BookCSS.get().downlodsPath).setOnSelectListener(new ResultResponse2<String, Dialog>() {
                     @Override
                     public boolean onResultRecive(String nPath, Dialog dialog) {
-                        AppState.get().downlodsPath = nPath;
-                        TxtUtils.underline(downloadFolder, TxtUtils.lastTwoPath(AppState.get().downlodsPath));
+                        BookCSS.get().downlodsPath = nPath;
+                        TxtUtils.underline(downloadFolder, TxtUtils.lastTwoPath(BookCSS.get().downlodsPath));
                         dialog.dismiss();
                         return false;
                     }
@@ -1298,16 +1437,16 @@ public class PrefFragment2 extends UIFragment {
         });
 
         final TextView syncPath = (TextView) inflate.findViewById(R.id.syncPath);
-        TxtUtils.underline(syncPath, TxtUtils.lastTwoPath(AppState.get().syncDropboxPath));
+        TxtUtils.underline(syncPath, TxtUtils.lastTwoPath(BookCSS.get().syncDropboxPath));
         syncPath.setOnClickListener(new OnClickListener() {
 
             @Override
             public void onClick(View v) {
-                ChooserDialogFragment.chooseFolder(getActivity(), AppState.get().syncDropboxPath).setOnSelectListener(new ResultResponse2<String, Dialog>() {
+                ChooserDialogFragment.chooseFolder(getActivity(), BookCSS.get().syncDropboxPath).setOnSelectListener(new ResultResponse2<String, Dialog>() {
                     @Override
                     public boolean onResultRecive(String nPath, Dialog dialog) {
-                        AppState.get().syncDropboxPath = nPath;
-                        TxtUtils.underline(downloadFolder, TxtUtils.lastTwoPath(AppState.get().syncDropboxPath));
+                        BookCSS.get().syncDropboxPath = nPath;
+                        TxtUtils.underline(downloadFolder, TxtUtils.lastTwoPath(BookCSS.get().syncDropboxPath));
                         dialog.dismiss();
                         return false;
                     }
@@ -1316,16 +1455,16 @@ public class PrefFragment2 extends UIFragment {
         });
 
         final TextView ttsFolder = (TextView) inflate.findViewById(R.id.ttsFolder);
-        TxtUtils.underline(ttsFolder, TxtUtils.lastTwoPath(AppState.get().ttsSpeakPath));
+        TxtUtils.underline(ttsFolder, TxtUtils.lastTwoPath(BookCSS.get().ttsSpeakPath));
         ttsFolder.setOnClickListener(new OnClickListener() {
 
             @Override
             public void onClick(View v) {
-                ChooserDialogFragment.chooseFolder(getActivity(), AppState.get().ttsSpeakPath).setOnSelectListener(new ResultResponse2<String, Dialog>() {
+                ChooserDialogFragment.chooseFolder(getActivity(), BookCSS.get().ttsSpeakPath).setOnSelectListener(new ResultResponse2<String, Dialog>() {
                     @Override
                     public boolean onResultRecive(String nPath, Dialog dialog) {
-                        AppState.get().ttsSpeakPath = nPath;
-                        TxtUtils.underline(ttsFolder, TxtUtils.lastTwoPath(AppState.get().ttsSpeakPath));
+                        BookCSS.get().ttsSpeakPath = nPath;
+                        TxtUtils.underline(ttsFolder, TxtUtils.lastTwoPath(BookCSS.get().ttsSpeakPath));
                         dialog.dismiss();
                         return false;
                     }
@@ -1334,16 +1473,16 @@ public class PrefFragment2 extends UIFragment {
         });
 
         final TextView backupPath = (TextView) inflate.findViewById(R.id.backupFolder);
-        TxtUtils.underline(backupPath, TxtUtils.lastTwoPath(AppState.get().backupPath));
+        TxtUtils.underline(backupPath, TxtUtils.lastTwoPath(BookCSS.get().backupPath));
         backupPath.setOnClickListener(new OnClickListener() {
 
             @Override
             public void onClick(View v) {
-                ChooserDialogFragment.chooseFolder(getActivity(), AppState.get().backupPath).setOnSelectListener(new ResultResponse2<String, Dialog>() {
+                ChooserDialogFragment.chooseFolder(getActivity(), BookCSS.get().backupPath).setOnSelectListener(new ResultResponse2<String, Dialog>() {
                     @Override
                     public boolean onResultRecive(String nPath, Dialog dialog) {
-                        AppState.get().backupPath = nPath;
-                        TxtUtils.underline(backupPath, TxtUtils.lastTwoPath(AppState.get().backupPath));
+                        BookCSS.get().backupPath = nPath;
+                        TxtUtils.underline(backupPath, TxtUtils.lastTwoPath(BookCSS.get().backupPath));
                         dialog.dismiss();
                         return false;
                     }
@@ -1413,6 +1552,8 @@ public class PrefFragment2 extends UIFragment {
                         AppState.get().isStarsInWidget = false;
                         widgetForRecent.setText(AppState.get().isStarsInWidget ? R.string.starred : R.string.recent);
                         TxtUtils.underlineTextView(widgetForRecent);
+
+                        RecentUpates.updateAll(getActivity());
                         return false;
                     }
                 });
@@ -1425,6 +1566,8 @@ public class PrefFragment2 extends UIFragment {
                         AppState.get().isStarsInWidget = true;
                         widgetForRecent.setText(AppState.get().isStarsInWidget ? R.string.starred : R.string.recent);
                         TxtUtils.underlineTextView(widgetForRecent);
+
+                        RecentUpates.updateAll(getActivity());
                         return false;
                     }
                 });
@@ -1573,7 +1716,7 @@ public class PrefFragment2 extends UIFragment {
                     onTintChanged();
                     sendNotifyTintChanged();
 
-                    AppState.get().save(getActivity());
+                    AppProfile.save(getActivity());
 
                 }
             });
@@ -1602,7 +1745,7 @@ public class PrefFragment2 extends UIFragment {
                         onTintChanged();
                         sendNotifyTintChanged();
 
-                        AppState.get().save(getActivity());
+                        AppProfile.save(getActivity());
 
                         TempHolder.listHash++;
 
@@ -1713,7 +1856,7 @@ public class PrefFragment2 extends UIFragment {
 
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        AppSharedPreferences.get().cleanRecent();
+                        //BookmarksData.get().cleanRecent();
                     }
                 });
                 builder.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
@@ -1739,7 +1882,7 @@ public class PrefFragment2 extends UIFragment {
 
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        AppSharedPreferences.get().cleanBookmarks();
+                        BookmarksData.get().cleanBookmarks();
 
                     }
                 });
@@ -1826,6 +1969,69 @@ public class PrefFragment2 extends UIFragment {
 
         overlay = getActivity().findViewById(R.id.overlay);
 
+
+        TextView onProfile = inflate.findViewById(R.id.onProfile);
+
+        profileLetter = inflate.findViewById(R.id.profileLetter);
+
+
+        final String p = AppProfile.getCurrent(getActivity());
+
+        profileLetter.setText(TxtUtils.getFirstLetter(p));
+        profileLetter.setBackgroundDrawable(AppProfile.getProfileColorDrawable(getActivity(), p));
+
+        onProfile.setText(p);
+        TxtUtils.underlineTextView(onProfile);
+        onProfile.setOnClickListener(v -> {
+            MyPopupMenu popup = new MyPopupMenu(getActivity(), v);
+
+            List<String> all = AppProfile.getAllProfiles();
+            for (String profile : all) {
+
+                popup.getMenu().setDrawable(TxtUtils.getFirstLetter(profile), AppProfile.getProfileColorDrawable(getActivity(), profile)).add(profile).setOnMenuItemClickListener(menu -> {
+                    {
+                        if (!profile.equals(AppProfile.getCurrent(getActivity()))) {
+
+                            AlertDialogs.showOkDialog(getActivity(), getActivity().getString(R.string.do_you_want_to_switch_profile_), new Runnable() {
+
+                                @Override
+                                public void run() {
+                                    AppProfile.saveCurrent(getActivity(), profile);
+                                    AppDB.get().open(getActivity(), AppProfile.getCurrent(getActivity()));
+                                    RecentUpates.updateAll(getActivity());
+                                    onTheme();
+                                }
+                            });
+                        }
+
+                        return false;
+                    }
+                });
+            }
+            popup.show();
+
+        });
+        profileLetter.setOnClickListener(v -> onProfile.performClick());
+
+        inflate.findViewById(R.id.onProfileEdit).setOnClickListener(v -> {
+                    AppProfile.showDialog(getActivity(), profile -> {
+                        if (!profile.equals(AppProfile.getCurrent(getActivity()))) {
+                            AlertDialogs.showOkDialog(getActivity(), getActivity().getString(R.string.do_you_want_to_switch_profile_), new Runnable() {
+
+                                @Override
+                                public void run() {
+                                    AppProfile.saveCurrent(getActivity(), profile);
+                                    AppDB.get().open(getActivity(), AppProfile.getCurrent(getActivity()));
+                                    onTheme();
+                                }
+                            });
+                        }
+                        return false;
+                    });
+                }
+        );
+
+
         return inflate;
 
     }
@@ -1833,11 +2039,13 @@ public class PrefFragment2 extends UIFragment {
     private void onEink() {
         AppState.get().appTheme = AppState.THEME_INK;
         AppState.get().blueLightAlpha = 0;
+        AppState.get().tintColor = Color.BLACK;
+        TintUtil.color = Color.BLACK;
 
         onTintChanged();
         sendNotifyTintChanged();
 
-        AppState.get().save(getActivity());
+        AppProfile.save(getActivity());
 
         getActivity().finish();
         MainTabs2.startActivity(getActivity(), TempHolder.get().currentTab);
@@ -1863,13 +2071,13 @@ public class PrefFragment2 extends UIFragment {
 
     private void checkOpenWithSpinner() {
         String modId = AppState.get().nameVerticalMode;
-        if (AppState.get().readingMode == AppState.READING_MODE_MUSICIAN) {
+        if (AppTemp.get().readingMode == AppState.READING_MODE_MUSICIAN) {
             modId = AppState.get().nameMusicianMode;
-        } else if (AppState.get().readingMode == AppState.READING_MODE_BOOK) {
+        } else if (AppTemp.get().readingMode == AppState.READING_MODE_BOOK) {
             modId = AppState.get().nameHorizontalMode;
-        } else if (AppState.get().readingMode == AppState.READING_MODE_SCROLL) {
+        } else if (AppTemp.get().readingMode == AppState.READING_MODE_SCROLL) {
             modId = AppState.get().nameVerticalMode;
-        } else if (AppState.get().readingMode == AppState.READING_MODE_TAG_MANAGER) {
+        } else if (AppTemp.get().readingMode == AppState.READING_MODE_TAG_MANAGER) {
             modId = getString(R.string.tag_manager);
         }
 
@@ -1877,13 +2085,13 @@ public class PrefFragment2 extends UIFragment {
     }
 
     public void onFolderConfigDialog() {
-        AppState.get().searchPaths = AppState.get().searchPaths.replace("//", "/");
+        BookCSS.get().searchPaths = BookCSS.get().searchPaths.replace("//", "/");
         PrefDialogs.chooseFolderDialog(getActivity(), new Runnable() {
 
             @Override
             public void run() {
-                AppState.get().searchPaths = AppState.get().searchPaths.replace("//", "/");
-                searchPaths.setText(TxtUtils.underline(AppState.get().searchPaths.replace(",", "<br>")));
+                BookCSS.get().searchPaths = BookCSS.get().searchPaths.replace("//", "/");
+                searchPaths.setText(TxtUtils.underline(BookCSS.get().searchPaths.replace(",", "<br>")));
                 saveChanges();
                 LOG.d("Save Changes", 2);
             }
@@ -1975,7 +2183,7 @@ public class PrefFragment2 extends UIFragment {
         String string = getResources().getString(R.string.my_email).replace("<u>", "").replace("</u>", "");
         final String aEmailList[] = {string};
         emailIntent.putExtra(android.content.Intent.EXTRA_EMAIL, aEmailList);
-        emailIntent.putExtra(android.content.Intent.EXTRA_SUBJECT, AppsConfig.TXT_APP_NAME + " " + Apps.getVersionName(getContext()));
+        emailIntent.putExtra(android.content.Intent.EXTRA_SUBJECT, Apps.getApplicationName(getContext()) + " " + Apps.getVersionName(getContext()));
         emailIntent.setType("plain/text");
         emailIntent.putExtra(android.content.Intent.EXTRA_TEXT, "Hi Support, ");
 
@@ -1996,6 +2204,10 @@ public class PrefFragment2 extends UIFragment {
     }
 
     public void onScan() {
+        if (getActivity() == null) {
+            return;
+        }
+        AppProfile.save(getActivity());
         closeLeftMenu();
 
         getActivity().startService(new Intent(getActivity(), BooksService.class).setAction(BooksService.ACTION_SEARCH_ALL));
@@ -2044,7 +2256,7 @@ public class PrefFragment2 extends UIFragment {
 
     private void saveChanges() {
         if (getActivity() != null) {
-            AppState.get().save(getActivity());
+            AppProfile.save(getActivity());
         }
     }
 

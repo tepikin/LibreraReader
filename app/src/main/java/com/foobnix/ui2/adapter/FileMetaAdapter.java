@@ -1,37 +1,5 @@
 package com.foobnix.ui2.adapter;
 
-import java.io.File;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
-
-import com.foobnix.android.utils.Dips;
-import com.foobnix.android.utils.LOG;
-import com.foobnix.android.utils.ResultResponse;
-import com.foobnix.android.utils.ResultResponse2;
-import com.foobnix.android.utils.StringDB;
-import com.foobnix.android.utils.TxtUtils;
-import com.foobnix.dao2.FileMeta;
-import com.foobnix.pdf.info.Clouds;
-import com.foobnix.pdf.info.ExtUtils;
-import com.foobnix.pdf.info.IMG;
-import com.foobnix.pdf.info.Playlists;
-import com.foobnix.pdf.info.R;
-import com.foobnix.pdf.info.TintUtil;
-import com.foobnix.pdf.info.view.Dialogs;
-import com.foobnix.pdf.info.view.MyPopupMenu;
-import com.foobnix.pdf.info.wrapper.AppState;
-import com.foobnix.pdf.info.wrapper.PopupHelper;
-import com.foobnix.ui2.AppDB;
-import com.foobnix.ui2.AppDB.SEARCH_IN;
-import com.foobnix.ui2.AppDB.SORT_BY;
-import com.foobnix.ui2.AppRecycleAdapter;
-import com.foobnix.ui2.MainTabs2;
-import com.foobnix.ui2.adapter.AuthorsAdapter2.AuthorViewHolder;
-import com.foobnix.ui2.fast.FastScroller;
-import com.nostra13.universalimageloader.core.ImageLoader;
-import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
-
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Color;
@@ -52,6 +20,39 @@ import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+
+import com.foobnix.android.utils.Dips;
+import com.foobnix.android.utils.LOG;
+import com.foobnix.android.utils.ResultResponse;
+import com.foobnix.android.utils.ResultResponse2;
+import com.foobnix.android.utils.StringDB;
+import com.foobnix.android.utils.TxtUtils;
+import com.foobnix.dao2.FileMeta;
+import com.foobnix.model.AppData;
+import com.foobnix.model.AppState;
+import com.foobnix.pdf.info.Clouds;
+import com.foobnix.pdf.info.ExtUtils;
+import com.foobnix.pdf.info.IMG;
+import com.foobnix.pdf.info.Playlists;
+import com.foobnix.pdf.info.R;
+import com.foobnix.pdf.info.TintUtil;
+import com.foobnix.pdf.info.view.Dialogs;
+import com.foobnix.pdf.info.view.MyPopupMenu;
+import com.foobnix.pdf.info.wrapper.PopupHelper;
+import com.foobnix.ui2.AppDB;
+import com.foobnix.ui2.AppDB.SEARCH_IN;
+import com.foobnix.ui2.AppDB.SORT_BY;
+import com.foobnix.ui2.AppRecycleAdapter;
+import com.foobnix.ui2.MainTabs2;
+import com.foobnix.ui2.adapter.AuthorsAdapter2.AuthorViewHolder;
+import com.foobnix.ui2.fast.FastScroller;
+import com.nostra13.universalimageloader.core.ImageLoader;
+import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
+
+import java.io.File;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
 
 public class FileMetaAdapter extends AppRecycleAdapter<FileMeta, RecyclerView.ViewHolder> implements FastScroller.SectionIndexer {
 
@@ -125,7 +126,7 @@ public class FileMetaAdapter extends AppRecycleAdapter<FileMeta, RecyclerView.Vi
             image = (ImageView) view.findViewById(R.id.browserItemIcon);
             cloudImage = (ImageView) view.findViewById(R.id.cloudImage);
             star = (ImageView) view.findViewById(R.id.starIcon);
-            signIcon = (ImageView) view.findViewById(R.id.signIcon);
+            //signIcon = (ImageView) view.findViewById(R.id.signIcon);
             idProgressColor = view.findViewById(R.id.idProgressColor);
             idProgressBg = view.findViewById(R.id.idProgressBg);
             infoLayout = view.findViewById(R.id.infoLayout);
@@ -143,7 +144,7 @@ public class FileMetaAdapter extends AppRecycleAdapter<FileMeta, RecyclerView.Vi
 
     public class DirectoryViewHolder extends ContextViewHolder {
         public TextView title, path, play, count;
-        public ImageView image, starIcon;
+        public ImageView image, starIcon, imageCloud;
         public View parent;
 
         public DirectoryViewHolder(View view) {
@@ -154,6 +155,7 @@ public class FileMetaAdapter extends AppRecycleAdapter<FileMeta, RecyclerView.Vi
             path = (TextView) view.findViewById(R.id.text2);
             image = (ImageView) view.findViewById(R.id.image1);
             starIcon = (ImageView) view.findViewById(R.id.starIcon);
+            imageCloud = (ImageView) view.findViewById(R.id.imageCloud);
             parent = view;
         }
     }
@@ -372,21 +374,20 @@ public class FileMetaAdapter extends AppRecycleAdapter<FileMeta, RecyclerView.Vi
             String path = fileMeta.getPath();
             Clouds.showHideCloudImage(holder.cloudImage, path);
 
-        }
-
-        else if (holderAll instanceof TagViewHolder) {
+        } else if (holderAll instanceof TagViewHolder) {
             final TagViewHolder holder = (TagViewHolder) holderAll;
             holder.title.setText(fileMeta.getPathTxt());
             TintUtil.setTintImageWithAlpha(holder.image);
             bindItemClickAndLongClickListeners(holder.parent, fileMeta);
+
+            TxtUtils.setInkTextView(holder.title);
+
         } else if (holderAll instanceof NameDividerViewHolder) {
             final NameDividerViewHolder holder = (NameDividerViewHolder) holderAll;
             holder.title.setText(fileMeta.getTitle());
             // bindItemClickAndLongClickListeners(holder.parent, fileMeta);
 
-        } else if (holderAll instanceof DirectoryViewHolder)
-
-        {
+        } else if (holderAll instanceof DirectoryViewHolder) {
             final DirectoryViewHolder holder = (DirectoryViewHolder) holderAll;
 
             holder.play.setVisibility(View.GONE);
@@ -394,6 +395,14 @@ public class FileMetaAdapter extends AppRecycleAdapter<FileMeta, RecyclerView.Vi
             holder.path.setText(fileMeta.getPath());
 
             holder.starIcon.setVisibility(ExtUtils.isExteralSD(fileMeta.getPath()) ? View.GONE : View.VISIBLE);
+
+            holder.imageCloud.setVisibility(View.GONE);
+            //holder.imageCloud.setImageResource(R.drawable.glyphicons_sync);
+            //TintUtil.setTintImageNoAlpha(holder.imageCloud, TintUtil.color);
+
+            //holder.imageCloud.setVisibility(Clouds.isLibreraSyncFile(fileMeta.getPath()) && !fileMeta.getPath().endsWith(Playlists.L_PLAYLIST) ? View.VISIBLE : View.GONE);
+
+            //Clouds.showHideCloudImage(holder.imageCloud, fileMeta.getPath());
 
             TintUtil.setTintImageWithAlpha(holder.image, holder.image.getContext() instanceof MainTabs2 ? TintUtil.getColorInDayNighth() : TintUtil.getColorInDayNighthBook());
 
@@ -410,6 +419,7 @@ public class FileMetaAdapter extends AppRecycleAdapter<FileMeta, RecyclerView.Vi
             }
 
             TintUtil.setTintImageWithAlpha(holder.starIcon, holder.starIcon.getContext() instanceof MainTabs2 ? TintUtil.getColorInDayNighth() : TintUtil.getColorInDayNighthBook());
+
 
             if (onStarClickListener != null) {
                 holder.starIcon.setOnClickListener(new OnClickListener() {
@@ -466,9 +476,11 @@ public class FileMetaAdapter extends AppRecycleAdapter<FileMeta, RecyclerView.Vi
                 }
             }
 
-            if(AppState.get().appTheme == AppState.THEME_DARK_OLED && tempValue2 != TEMP2_RECENT_FROM_BOOK){
+            if (AppState.get().appTheme == AppState.THEME_DARK_OLED && tempValue2 != TEMP2_RECENT_FROM_BOOK) {
                 holder.parent.setBackgroundColor(Color.BLACK);
             }
+
+           TxtUtils.setInkTextView(holder.title,holder.path, holder.play, holder.count);
 
         } else if (holderAll instanceof StarsLayoutViewHolder) {
             final StarsLayoutViewHolder holder = (StarsLayoutViewHolder) holderAll;
@@ -492,7 +504,7 @@ public class FileMetaAdapter extends AppRecycleAdapter<FileMeta, RecyclerView.Vi
             TintUtil.setBackgroundFillColor(holder.panelRecent, TintUtil.color);
             TintUtil.setBackgroundFillColor(holder.panelStars, TintUtil.color);
 
-            List<FileMeta> allStars = AppDB.get().getStarsFiles();
+            List<FileMeta> allStars = AppData.get().getAllFavoriteFiles();
 
             final List<FileMeta> playlists = Playlists.getAllPlaylistsMeta();
 
@@ -520,7 +532,7 @@ public class FileMetaAdapter extends AppRecycleAdapter<FileMeta, RecyclerView.Vi
                             TxtUtils.underline(holder.starredName, STARRED);
 
                             adapter.getItemsList().clear();
-                            List<FileMeta> allStars = AppDB.get().getStarsFiles();
+                            List<FileMeta> allStars = AppData.get().getAllFavoriteFiles();
                             adapter.getItemsList().addAll(allStars);
                             adapter.notifyDataSetChanged();
 
@@ -600,6 +612,7 @@ public class FileMetaAdapter extends AppRecycleAdapter<FileMeta, RecyclerView.Vi
                 adapter.getItemsList().addAll(allTags);
 
                 TxtUtils.underline(holder.starredName, AppState.get().recentTag + " (" + allTags.size() + ")");
+
 
             }
             adapter.notifyDataSetChanged();
@@ -683,6 +696,7 @@ public class FileMetaAdapter extends AppRecycleAdapter<FileMeta, RecyclerView.Vi
                     t.setTextAppearance(holder.tags.getContext(), R.style.textLink);
                     TxtUtils.bold(t);
                     t.setText(tag + " ");
+                    t.setSingleLine();
                     t.setTextSize(12);
                     t.setGravity(Gravity.CENTER_VERTICAL);
 
@@ -742,14 +756,16 @@ public class FileMetaAdapter extends AppRecycleAdapter<FileMeta, RecyclerView.Vi
 
         double recentProgress = fileMeta.getIsRecentProgress() == null ? 0 : fileMeta.getIsRecentProgress();
 
-        if (holder.idProgressColor != null && recentProgress > 0) {
+
+        if (holder.idProgressColor != null && recentProgress > 0f) {
+            LOG.d("getIsRecentProgress", recentProgress);
             holder.progresLayout.setVisibility(View.VISIBLE);
             holder.idPercentText.setVisibility(View.VISIBLE);
             holder.idProgressColor.setBackgroundColor(TintUtil.color);
             int width = adapterType == ADAPTER_LIST_COMPACT ? Dips.dpToPx(100) : Dips.dpToPx(200);
 
             holder.idProgressBg.getLayoutParams().width = width;
-            holder.idProgressColor.getLayoutParams().width = (int) (width * recentProgress);
+            holder.idProgressColor.getLayoutParams().width = (int) Math.round((float) width * recentProgress);
             holder.idProgressColor.setLayoutParams(holder.idProgressColor.getLayoutParams());
             holder.idPercentText.setText("" + Math.round(100f * recentProgress) + "%");
 
@@ -758,7 +774,7 @@ public class FileMetaAdapter extends AppRecycleAdapter<FileMeta, RecyclerView.Vi
             holder.idPercentText.setVisibility(View.INVISIBLE);
         }
 
-        if (adapterType == ADAPTER_GRID && recentProgress > 0) {
+        if (adapterType == ADAPTER_GRID && recentProgress > 0f) {
             holder.idPercentText.setText("" + (int) (100 * recentProgress) + "%");
             if (AppState.get().coverBigSize < IMG.TWO_LINE_COVER_SIZE) {
                 holder.browserExt.setVisibility(View.GONE);
@@ -800,9 +816,7 @@ public class FileMetaAdapter extends AppRecycleAdapter<FileMeta, RecyclerView.Vi
                     return true;
                 }
             });
-        } else
-
-        {
+        } else {
         }
         holder.star.setVisibility(ExtUtils.isExteralSD(fileMeta.getPath()) ? View.GONE : View.VISIBLE);
 
@@ -929,7 +943,7 @@ public class FileMetaAdapter extends AppRecycleAdapter<FileMeta, RecyclerView.Vi
 
             @Override
             public void onClick(View v) {
-                if (onMenuClickListener != null) {
+                if (onMenuClickListener != null && fileMeta != null) {
                     onMenuClickListener.onResultRecive(fileMeta);
                 }
             }
@@ -953,7 +967,7 @@ public class FileMetaAdapter extends AppRecycleAdapter<FileMeta, RecyclerView.Vi
         if (!AppState.get().isBorderAndShadow) {
             holder.parent.setBackgroundColor(Color.TRANSPARENT);
         }
-        if(AppState.get().appTheme == AppState.THEME_DARK_OLED && tempValue2 != TEMP2_RECENT_FROM_BOOK){
+        if (AppState.get().appTheme == AppState.THEME_DARK_OLED && tempValue2 != TEMP2_RECENT_FROM_BOOK) {
             holder.parent.setBackgroundColor(Color.BLACK);
         }
 
@@ -967,9 +981,11 @@ public class FileMetaAdapter extends AppRecycleAdapter<FileMeta, RecyclerView.Vi
                 holder.title.setText("[" + fileMeta.getSIndex() + "] " + fileMeta.getTitle());
             }
         }
+        TxtUtils.setInkTextView(holder.title, holder.author, holder.path, holder.browserExt, holder.size, holder.date, holder.series, holder.idPercentText);
 
         return fileMeta;
     }
+
 
     @Override
     public String getSectionText(int position) {

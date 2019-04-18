@@ -536,4 +536,26 @@
    <string name="please_wait_books_are_being_processed_">Bitte warten Sie, die Bücher werden bearbeitet</string>
    <string name="system_brightness">Systemhelligkeit</string>
    <string name="opening_books_in_the_specified_mode">Öffnen von Büchern im angegebenen Modus</string>
+   <string name="dark_oled">Dunkles oled</string>
+   <string name="profile">Profil</string>
+   <string name="new_profile">Neues Profil</string>
+   <string name="main">Main</string>
+   <string name="do_you_want_to_switch_profile_">Zu einem anderen Profil wechseln?</string>
+   <string name="sync_error">Synchronisierungsfehler</string>
+   <string name="sign_in">Einloggen</string>
+   <string name="sign_out">Ausloggen</string>
+   <string name="manual_sync_only">Nur manuelle Synchronisierung</string>
+   <string name="wifi_sync_only">Nur WiFi-Synchronisierung</string>
+   <string name="sync_google_drive">Sync (Google-Laufwerk)</string>
+   <string name="single_tap_to_select_text">Tippen Sie einmal, um Text auszuwählen</string>
+   <string name="sync_book">Ein Buch synchronisieren</string>
+   <string name="sync">Sync</string>
+   <string name="synchronized_folder">Synchronisierter Ordner</string>
+   <string name="today">Heute</string>
+   <string name="downloads">Die Downloads</string>
+   <string name="delete_the_directory_all_the_files_in_the_directory_">Ordner ist nicht leer. trotzdem löschen?</string>
+   <string name="synchronized_books">Synchronisierte Bücher</string>
+   <string name="show_sync_wheel">Sync-Rad anzeigen</string>
+   <string name="publication_date">Veröffentlichungsdatum</string>
+   <string name="empy">Leeren</string>
 </resources>

@@ -8,11 +8,12 @@ import android.widget.TextView;
 import com.foobnix.android.utils.TxtUtils;
 import com.foobnix.dao2.FileMeta;
 import com.foobnix.hypen.HyphenPattern;
+import com.foobnix.model.AppState;
+import com.foobnix.model.AppTemp;
 import com.foobnix.pdf.info.R;
 import com.foobnix.pdf.info.Urls;
 import com.foobnix.pdf.info.model.BookCSS;
 import com.foobnix.pdf.info.widget.DialogTranslateFromTo;
-import com.foobnix.pdf.info.wrapper.AppState;
 import com.foobnix.pdf.info.wrapper.DocumentController;
 import com.foobnix.ui2.AppDB;
 
@@ -25,7 +26,7 @@ public class HypenPanelHelper {
 
     public static void init(View parent, DocumentController dc) {
         View hyphenPanel = parent.findViewById(R.id.showHypenLangPanel);
-        hyphenPanel.setVisibility(TxtUtils.visibleIf(dc.isTextFormat() && BookCSS.get().isAutoHypens && TxtUtils.isEmpty(BookCSS.get().hypenLang)));
+        hyphenPanel.setVisibility(TxtUtils.visibleIf(dc.isTextFormat() && BookCSS.get().isAutoHypens && TxtUtils.isEmpty(AppTemp.get().hypenLang)));
 
 
         final TextView hypenLang = (TextView) parent.findViewById(R.id.hypenLang);
@@ -53,10 +54,10 @@ public class HypenPanelHelper {
 
                 }
                 Collections.sort(all);
-                if(TxtUtils.isEmpty(AppState.get().lastBookLang)){
-                    AppState.get().lastBookLang = AppState.get().appLang.equals(AppState.MY_SYSTEM_LANG) ? Urls.getLangCode() : AppState.get().appLang;
+                if(TxtUtils.isEmpty(AppTemp.get().lastBookLang)){
+                    AppTemp.get().lastBookLang = AppState.get().appLang.equals(AppState.MY_SYSTEM_LANG) ? Urls.getLangCode() : AppState.get().appLang;
                 }
-                String e = DialogTranslateFromTo.getLanuageByCode(AppState.get().lastBookLang) + ":" + AppState.get().lastBookLang;
+                String e = DialogTranslateFromTo.getLanuageByCode(AppTemp.get().lastBookLang) + ":" + AppTemp.get().lastBookLang;
                 all.add(0, e);
 
                 for (final String langFull : all) {
@@ -67,8 +68,8 @@ public class HypenPanelHelper {
 
                         @Override
                         public boolean onMenuItemClick(MenuItem item) {
-                            BookCSS.get().hypenLang = code;
-                            AppState.get().lastBookLang = code;
+                            AppTemp.get().hypenLang = code;
+                            AppTemp.get().lastBookLang = code;
                             hypenLang.setText(titleLang);
                             TxtUtils.underlineTextView(hypenLang);
                             FileMeta load = AppDB.get().load(dc.getCurrentBook().getPath());
@@ -89,7 +90,7 @@ public class HypenPanelHelper {
         hypenApply.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (TxtUtils.isNotEmpty(BookCSS.get().hypenLang)) {
+                if (TxtUtils.isNotEmpty(AppTemp.get().hypenLang)) {
                     dc.restartActivity();
                 }
             }

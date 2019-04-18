@@ -1,15 +1,5 @@
 package com.foobnix.ui2.adapter;
 
-import com.foobnix.android.utils.ResultResponse;
-import com.foobnix.pdf.info.IMG;
-import com.foobnix.pdf.info.R;
-import com.foobnix.pdf.info.TintUtil;
-import com.foobnix.pdf.info.wrapper.AppBookmark;
-import com.foobnix.pdf.info.wrapper.AppState;
-import com.foobnix.ui2.AppRecycleAdapter;
-import com.foobnix.ui2.adapter.BookmarksAdapter2.BookmarksViewHolder;
-import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
-
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.support.v7.widget.CardView;
@@ -21,11 +11,24 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.foobnix.android.utils.ResultResponse;
+import com.foobnix.android.utils.TxtUtils;
+import com.foobnix.model.AppBookmark;
+import com.foobnix.model.AppState;
+import com.foobnix.pdf.info.ExtUtils;
+import com.foobnix.pdf.info.IMG;
+import com.foobnix.pdf.info.R;
+import com.foobnix.pdf.info.TintUtil;
+import com.foobnix.ui2.AppRecycleAdapter;
+import com.foobnix.ui2.adapter.BookmarksAdapter2.BookmarksViewHolder;
+import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
+
 public class BookmarksAdapter2 extends AppRecycleAdapter<AppBookmark, BookmarksViewHolder> {
+
 
     public class BookmarksViewHolder extends RecyclerView.ViewHolder {
         public TextView page, text, title;
-        public View remove;
+        public ImageView remove;
         public CardView parent;
         public ImageView image;
 
@@ -40,6 +43,7 @@ public class BookmarksAdapter2 extends AppRecycleAdapter<AppBookmark, BookmarksV
         }
     }
 
+
     @Override
     public BookmarksViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View itemView = LayoutInflater.from(parent.getContext()).inflate(R.layout.bookmark_item, parent, false);
@@ -50,10 +54,11 @@ public class BookmarksAdapter2 extends AppRecycleAdapter<AppBookmark, BookmarksV
     public void onBindViewHolder(final BookmarksViewHolder holder, final int position) {
         final AppBookmark item = getItem(position);
 
-        holder.page.setText("" + item.getPage());
-        holder.title.setText("" + item.getTitle());
+        holder.page.setText(TxtUtils.percentFormatInt(item.getPercent()));
+        holder.title.setText(ExtUtils.getFileName(item.getPath()));
 
-        holder.text.setText(item.getText());
+
+        holder.text.setText(item.text);
         holder.remove.setOnClickListener(new OnClickListener() {
 
             @Override
@@ -61,9 +66,12 @@ public class BookmarksAdapter2 extends AppRecycleAdapter<AppBookmark, BookmarksV
                 onDeleteClickListener.onResultRecive(item);
             }
         });
+        holder.remove.setImageResource(withPageNumber ? R.drawable.glyphicons_208_remove_2 : R.drawable.glyphicons_basic_578_share);
+        TintUtil.setTintImageNoAlpha(holder.remove, holder.remove.getResources().getColor(R.color.lt_grey_dima));
 
         if (withTitle) {
-            holder.title.setVisibility(View.VISIBLE);
+            //holder.title.setVisibility(View.VISIBLE);
+            //holder.title.setVisibility(View.GONE);
         } else {
             holder.title.setVisibility(View.GONE);
         }
@@ -72,10 +80,10 @@ public class BookmarksAdapter2 extends AppRecycleAdapter<AppBookmark, BookmarksV
         holder.page.setTextColor(Color.WHITE);
         if (withPageNumber) {
             holder.page.setVisibility(View.VISIBLE);
-            holder.remove.setVisibility(View.VISIBLE);
+            // holder.remove.setVisibility(View.VISIBLE);
         } else {
             holder.page.setVisibility(View.GONE);
-            holder.remove.setVisibility(View.GONE);
+            //holder.remove.setVisibility(View.GONE);
         }
 
         IMG.getCoverPageWithEffectPos(holder.image, item.getPath(), IMG.getImageSize(), position, new SimpleImageLoadingListener() {
@@ -92,7 +100,7 @@ public class BookmarksAdapter2 extends AppRecycleAdapter<AppBookmark, BookmarksV
 
         bindItemClickAndLongClickListeners(holder.parent, getItem(position));
 
-        if(AppState.get().appTheme == AppState.THEME_DARK_OLED){
+        if (AppState.get().appTheme == AppState.THEME_DARK_OLED) {
             holder.parent.setBackgroundColor(Color.BLACK);
         }
     }

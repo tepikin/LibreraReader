@@ -1,9 +1,5 @@
 package com.foobnix.pdf.search.menu;
 
-import com.foobnix.pdf.info.R;
-import com.foobnix.pdf.info.wrapper.AppState;
-import com.foobnix.pdf.info.wrapper.DocumentController;
-
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
@@ -12,6 +8,11 @@ import android.view.MenuItem;
 import android.view.MenuItem.OnMenuItemClickListener;
 import android.view.View;
 import android.widget.PopupMenu;
+
+import com.foobnix.model.AppState;
+import com.foobnix.model.AppTemp;
+import com.foobnix.pdf.info.R;
+import com.foobnix.pdf.info.wrapper.DocumentController;
 
 @SuppressLint("NewApi")
 public class MenuBuilderM {
@@ -54,13 +55,13 @@ public class MenuBuilderM {
 
         final MenuItem crop = popupMenu.getMenu().add(R.string.crop_white_borders);
         crop.setCheckable(true);
-        crop.setChecked(AppState.get().isCrop);
+        crop.setChecked(AppTemp.get().isCrop);
         crop.setOnMenuItemClickListener(new OnMenuItemClickListener() {
 
             @Override
             public boolean onMenuItemClick(final MenuItem item) {
-                AppState.get().isCrop = !AppState.get().isCrop;
-                crop.setChecked(AppState.get().isCrop);
+                AppTemp.get().isCrop = !AppTemp.get().isCrop;
+                crop.setChecked(AppTemp.get().isCrop);
                 onReloadDocument.run();
                 return false;
             }

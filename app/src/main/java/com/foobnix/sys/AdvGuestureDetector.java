@@ -1,5 +1,24 @@
 package com.foobnix.sys;
 
+import android.content.Context;
+import android.graphics.Rect;
+import android.view.GestureDetector.SimpleOnGestureListener;
+import android.view.MotionEvent;
+import android.widget.Toast;
+
+import com.foobnix.android.utils.Dips;
+import com.foobnix.android.utils.LOG;
+import com.foobnix.android.utils.TxtUtils;
+import com.foobnix.android.utils.Vibro;
+import com.foobnix.model.AppState;
+import com.foobnix.model.AppTemp;
+import com.foobnix.pdf.info.ExtUtils;
+import com.foobnix.pdf.info.R;
+import com.foobnix.pdf.info.model.AnnotationType;
+import com.foobnix.pdf.info.view.BrightnessHelper;
+import com.foobnix.pdf.info.wrapper.DocumentController;
+import com.foobnix.pdf.search.activity.msg.MessagePageXY;
+
 import org.ebookdroid.BookType;
 import org.ebookdroid.LibreraApp;
 import org.ebookdroid.common.settings.SettingsManager;
@@ -10,24 +29,6 @@ import org.ebookdroid.core.AbstractViewController;
 import org.ebookdroid.core.codec.Annotation;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
-
-import com.foobnix.android.utils.Dips;
-import com.foobnix.android.utils.LOG;
-import com.foobnix.android.utils.TxtUtils;
-import com.foobnix.android.utils.Vibro;
-import com.foobnix.pdf.info.ExtUtils;
-import com.foobnix.pdf.info.R;
-import com.foobnix.pdf.info.model.AnnotationType;
-import com.foobnix.pdf.info.view.BrightnessHelper;
-import com.foobnix.pdf.info.wrapper.AppState;
-import com.foobnix.pdf.info.wrapper.DocumentController;
-import com.foobnix.pdf.search.activity.msg.MessagePageXY;
-
-import android.content.Context;
-import android.graphics.Rect;
-import android.view.GestureDetector.SimpleOnGestureListener;
-import android.view.MotionEvent;
-import android.widget.Toast;
 
 public class AdvGuestureDetector extends SimpleOnGestureListener implements IMultiTouchListener {
 
@@ -167,7 +168,7 @@ public class AdvGuestureDetector extends SimpleOnGestureListener implements IMul
             return true;
         }
 
-        if (!(AppState.get().readingMode == AppState.READING_MODE_MUSICIAN) && !AppState.get().isIgnoreAnnotatations || AppState.get().editWith == AppState.EDIT_DELETE) {
+        if (!(AppTemp.get().readingMode == AppState.READING_MODE_MUSICIAN) && !AppState.get().isIgnoreAnnotatations || AppState.get().editWith == AppState.EDIT_DELETE) {
             alowConfirm = false;
             Annotation annotation2 = avc.isAnnotationTap(e.getX(), e.getY());
 
@@ -214,7 +215,7 @@ public class AdvGuestureDetector extends SimpleOnGestureListener implements IMul
             }
 
         }
-        if (!(AppState.get().readingMode == AppState.READING_MODE_MUSICIAN)) {
+        if (!(AppTemp.get().readingMode == AppState.READING_MODE_MUSICIAN)) {
             boolean processTap = avc.processTap(TouchManager.Touch.SingleTap, e);
             if (processTap) {
                 return false;
@@ -256,7 +257,7 @@ public class AdvGuestureDetector extends SimpleOnGestureListener implements IMul
                 return false;
             }
 
-            if (AppState.get().readingMode == AppState.READING_MODE_MUSICIAN) {
+            if (AppTemp.get().readingMode == AppState.READING_MODE_MUSICIAN) {
                 return false;
             }
             final Rect l = avc.getScrollLimits();
@@ -305,7 +306,7 @@ public class AdvGuestureDetector extends SimpleOnGestureListener implements IMul
         long delta = System.currentTimeMillis() - t;
         if (delta > 50) {
             t = System.currentTimeMillis();
-            if (isNoLock() || (e2.getPointerCount() == 2 && !(AppState.get().readingMode == AppState.READING_MODE_MUSICIAN) && AppState.get().isZoomInOutWithLock)) {
+            if (isNoLock() || (e2.getPointerCount() == 2 && !(AppTemp.get().readingMode == AppState.READING_MODE_MUSICIAN) && AppState.get().isZoomInOutWithLock)) {
                 avc.getView().scrollBy(d1, d2);
             } else {
                 avc.getView().scrollBy(0, d2);
@@ -319,7 +320,7 @@ public class AdvGuestureDetector extends SimpleOnGestureListener implements IMul
     }
 
     private boolean isNoLock() {
-        return !AppState.get().isLocked;
+        return !AppTemp.get().isLocked;
     }
 
     /**
@@ -338,14 +339,14 @@ public class AdvGuestureDetector extends SimpleOnGestureListener implements IMul
             return;
         }
         Vibro.vibrate();
-        if (AppState.get().isCut || AppState.get().isCrop) {
+        if (AppTemp.get().isCut || AppTemp.get().isCrop) {
             Toast.makeText(LibreraApp.context, R.string.the_page_is_clipped_the_text_selection_does_not_work, Toast.LENGTH_LONG).show();
             return;
         }
 
         isLongMovement = true;
 
-        if (SettingsManager.getBookSettings() != null && SettingsManager.getBookSettings().cropPages) {
+        if (SettingsManager.getBookSettings() != null && SettingsManager.getBookSettings().cp) {
             docCtrl.onCrop();
         }
         AppState.get().selectedText = avc.processLongTap(true, e, e, true);
@@ -377,8 +378,8 @@ public class AdvGuestureDetector extends SimpleOnGestureListener implements IMul
     @Override
     public void onTwoFingerPinch(final MotionEvent e, final float oldDistance, final float newDistance) {
         LOG.d("onTwoFingerPinch", oldDistance, newDistance);
-        if (AppState.get().isLocked) {
-            if (AppState.get().readingMode == AppState.READING_MODE_MUSICIAN) {
+        if (AppTemp.get().isLocked) {
+            if (AppTemp.get().readingMode == AppState.READING_MODE_MUSICIAN) {
                 return;
             }
             if (!AppState.get().isZoomInOutWithLock) {
@@ -404,8 +405,8 @@ public class AdvGuestureDetector extends SimpleOnGestureListener implements IMul
      */
     @Override
     public void onTwoFingerPinchEnd(final MotionEvent e) {
-        if (AppState.get().isLocked) {
-            if (AppState.get().readingMode == AppState.READING_MODE_MUSICIAN) {
+        if (AppTemp.get().isLocked) {
+            if (AppTemp.get().readingMode == AppState.READING_MODE_MUSICIAN) {
                 return;
             }
             if (!AppState.get().isZoomInOutWithLock) {

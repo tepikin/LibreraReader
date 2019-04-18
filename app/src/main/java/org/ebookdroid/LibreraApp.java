@@ -10,26 +10,20 @@ import com.foobnix.android.utils.Apps;
 import com.foobnix.android.utils.Dips;
 import com.foobnix.android.utils.LOG;
 import com.foobnix.ext.CacheZipUtils;
+import com.foobnix.model.AppProfile;
 import com.foobnix.pdf.info.ADS;
-import com.foobnix.pdf.info.AppSharedPreferences;
 import com.foobnix.pdf.info.AppsConfig;
 import com.foobnix.pdf.info.BuildConfig;
 import com.foobnix.pdf.info.Clouds;
 import com.foobnix.pdf.info.ExtUtils;
 import com.foobnix.pdf.info.IMG;
-import com.foobnix.pdf.info.R;
 import com.foobnix.pdf.info.TintUtil;
-import com.foobnix.pdf.info.wrapper.AppState;
 import com.foobnix.tts.TTSNotification;
 import com.foobnix.ui2.AppDB;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.MobileAds;
 
 import org.ebookdroid.common.bitmaps.BitmapManager;
-import org.ebookdroid.common.settings.SettingsManager;
-
-import java.io.PrintWriter;
-import java.io.StringWriter;
 
 public class LibreraApp extends MultiDexApplication {
 
@@ -46,13 +40,13 @@ public class LibreraApp extends MultiDexApplication {
         super.onCreate();
 
 
-        MobileAds.initialize(this, Apps.getMetaData(this,"com.google.android.gms.ads.APPLICATION_ID"));
+        MobileAds.initialize(this, Apps.getMetaData(this, "com.google.android.gms.ads.APPLICATION_ID"));
 
         context = getApplicationContext();
 
         LOG.isEnable = BuildConfig.LOG;
 
-        AppsConfig.init(this);
+        AppProfile.init(this);
 
         if (AppsConfig.MUPDF_VERSION == AppsConfig.MUPDF_1_12) {
             int initNative = StructuredText.initNative();
@@ -61,16 +55,11 @@ public class LibreraApp extends MultiDexApplication {
 
         TTSNotification.initChannels(this);
         Dips.init(this);
-        AppDB.get().open(this);
-        AppState.get().load(this);
-        AppSharedPreferences.get().init(this);
+        AppDB.get().open(this, AppProfile.getCurrent(this));
+
         CacheZipUtils.init(this);
         ExtUtils.init(this);
         IMG.init(this);
-
-        TintUtil.init();
-
-        SettingsManager.init(this);
 
         Clouds.get().init(this);
 
@@ -101,41 +90,6 @@ public class LibreraApp extends MultiDexApplication {
             LOG.e(e);
         }
 
-
-        if (AppsConfig.IS_BETA && !LOG.isEnable) {
-            Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-                @Override
-                public void uncaughtException(Thread thread, final Throwable e) {
-                    LOG.e(e);
-                    e.printStackTrace();
-                    if (e instanceof android.database.sqlite.SQLiteException) {
-                        LOG.d("Drop-databases1");
-                        AppDB.get().dropCreateTables(LibreraApp.this);
-                        LOG.d("Drop-databases2");
-                    }
-                    try {
-
-                        StringWriter errors = new StringWriter();
-                        e.printStackTrace(new PrintWriter(errors));
-                        String log = errors.toString();
-                        log = log + "/n";
-                        log = log + Build.MANUFACTURER + "/n";
-                        log = log + Build.PRODUCT + "/n";
-                        log = log + Build.DEVICE + "/n";
-                        log = log + Build.BRAND + "/n";
-                        log = log + Build.BRAND + "/n";
-                        log = log + Build.MODEL + "/n";
-                        log = log + Build.VERSION.SDK_INT + "/n";
-                        Apps.onCrashEmail(context, log, AppsConfig.TXT_APP_NAME + " " + context.getString(R.string.application_error_please_send_this_report_by_emial));
-
-                        System.exit(1);
-
-                    } catch (Exception e1) {
-                        LOG.e(e1);
-                    }
-                }
-            });
-        }
 
     }
 

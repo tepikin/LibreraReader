@@ -1,16 +1,5 @@
 package com.foobnix.pdf.info.view;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import com.foobnix.android.utils.Dips;
-import com.foobnix.android.utils.Keyboards;
-import com.foobnix.android.utils.LOG;
-import com.foobnix.android.utils.TxtUtils;
-import com.foobnix.pdf.info.R;
-import com.foobnix.pdf.info.TintUtil;
-import com.foobnix.pdf.info.widget.DraggbleTouchListener;
-
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -24,6 +13,18 @@ import android.view.View.OnTouchListener;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
+
+import com.foobnix.android.utils.Dips;
+import com.foobnix.android.utils.Keyboards;
+import com.foobnix.android.utils.LOG;
+import com.foobnix.android.utils.TxtUtils;
+import com.foobnix.model.AppProfile;
+import com.foobnix.pdf.info.R;
+import com.foobnix.pdf.info.TintUtil;
+import com.foobnix.pdf.info.widget.DraggbleTouchListener;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public abstract class DragingPopup {
     protected static final String PREF = "PREF";
@@ -86,6 +87,7 @@ public abstract class DragingPopup {
         try {
             cache.clear();
             SharedPreferences sp = c.getSharedPreferences(DRAGGING_POPUPS, Context.MODE_PRIVATE);
+
             Map<String, String> all = (Map<String, String>) sp.getAll();
             for (String key : all.keySet()) {
                 cache.put(key, Place.fromString(all.get(key)));
@@ -412,6 +414,7 @@ public abstract class DragingPopup {
         }
         Keyboards.close(anchor);
         Keyboards.hideNavigation((Activity) anchor.getContext());
+        AppProfile.save(anchor.getContext());
     }
 
 

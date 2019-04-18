@@ -1,40 +1,5 @@
 package com.foobnix.tts;
 
-import java.io.File;
-import java.io.FileFilter;
-import java.text.DecimalFormat;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Timer;
-import java.util.TimerTask;
-
-import org.ebookdroid.LibreraApp;
-import org.greenrobot.eventbus.EventBus;
-
-import com.foobnix.android.utils.LOG;
-import com.foobnix.android.utils.ResultResponse;
-import com.foobnix.android.utils.TxtUtils;
-import com.foobnix.android.utils.Vibro;
-import com.foobnix.ext.CacheZipUtils;
-import com.foobnix.pdf.info.AppSharedPreferences;
-import com.foobnix.pdf.info.R;
-import com.foobnix.pdf.info.wrapper.AppBookmark;
-import com.foobnix.pdf.info.wrapper.AppState;
-import com.foobnix.pdf.info.wrapper.DocumentController;
-import com.foobnix.sys.TempHolder;
-import com.google.common.base.Optional;
-import com.optimaize.langdetect.DetectedLanguage;
-import com.optimaize.langdetect.LanguageDetector;
-import com.optimaize.langdetect.LanguageDetectorBuilder;
-import com.optimaize.langdetect.i18n.LdLocale;
-import com.optimaize.langdetect.ngram.NgramExtractors;
-import com.optimaize.langdetect.profiles.LanguageProfile;
-import com.optimaize.langdetect.profiles.LanguageProfileReader;
-import com.optimaize.langdetect.text.CommonTextObjectFactories;
-import com.optimaize.langdetect.text.TextObject;
-import com.optimaize.langdetect.text.TextObjectFactory;
-
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.media.MediaPlayer;
@@ -44,8 +9,33 @@ import android.speech.tts.TextToSpeech;
 import android.speech.tts.TextToSpeech.EngineInfo;
 import android.speech.tts.TextToSpeech.OnInitListener;
 import android.speech.tts.TextToSpeech.OnUtteranceCompletedListener;
-import android.util.Log;
 import android.widget.Toast;
+
+import com.foobnix.android.utils.LOG;
+import com.foobnix.android.utils.MyMath;
+import com.foobnix.android.utils.ResultResponse;
+import com.foobnix.android.utils.TxtUtils;
+import com.foobnix.android.utils.Vibro;
+import com.foobnix.ext.CacheZipUtils;
+import com.foobnix.model.AppBookmark;
+import com.foobnix.model.AppState;
+import com.foobnix.model.AppTemp;
+import com.foobnix.pdf.info.BookmarksData;
+import com.foobnix.pdf.info.R;
+import com.foobnix.pdf.info.model.BookCSS;
+import com.foobnix.pdf.info.wrapper.DocumentController;
+import com.foobnix.sys.TempHolder;
+
+import org.ebookdroid.LibreraApp;
+import org.greenrobot.eventbus.EventBus;
+
+import java.io.File;
+import java.io.FileFilter;
+import java.text.DecimalFormat;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class TTSEngine {
 
@@ -58,25 +48,6 @@ public class TTSEngine {
     Timer mTimer;
     Object helpObject = new Object();
 
-    private List<LanguageProfile> languageProfiles = getLanguageProfiles();
-
-    private static List<LanguageProfile> getLanguageProfiles()  {
-        try {
-            return new LanguageProfileReader().readAllBuiltIn();
-        }catch (Throwable e){
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    //build language detector:
-    private LanguageDetector languageDetector = LanguageDetectorBuilder.create(NgramExtractors.standard())
-            .withProfiles(languageProfiles)
-            .build();
-
-    //create a text object factory
-    private TextObjectFactory textObjectFactory = CommonTextObjectFactories.forDetectingOnLargeText();
-
     private static TTSEngine INSTANCE = new TTSEngine();
 
     public static TTSEngine get() {
@@ -84,11 +55,13 @@ public class TTSEngine {
     }
 
     HashMap<String, String> map = new HashMap<String, String>();
+
     {
         map.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, UTTERANCE_ID_DONE);
     }
 
     HashMap<String, String> mapTemp = new HashMap<String, String>();
+
     {
         mapTemp.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "Temp");
     }
@@ -129,7 +102,7 @@ public class TTSEngine {
         synchronized (helpObject) {
 
             if (TTSEngine.get().isMp3() && mp == null) {
-                TTSEngine.get().loadMP3(AppState.get().mp3BookPath);
+                TTSEngine.get().loadMP3(BookCSS.get().mp3BookPath);
             }
 
             if (ttsEngine != null) {
@@ -174,7 +147,7 @@ public class TTSEngine {
             }
             ttsEngine = null;
         }
-        AppState.get().lastBookParagraph = 0;
+        AppTemp.get().lastBookParagraph = 0;
     }
 
     public synchronized TextToSpeech setTTSWithEngine(String engine) {
@@ -191,12 +164,12 @@ public class TTSEngine {
     public synchronized void speek(final String text) {
         this.text = text;
 
-        if (AppState.get().tempBookPage != AppState.get().lastBookPage) {
-            AppState.get().tempBookPage = AppState.get().lastBookPage;
-            AppState.get().lastBookParagraph = 0;
+        if (AppTemp.get().tempBookPage != AppTemp.get().lastBookPage) {
+            AppTemp.get().tempBookPage = AppTemp.get().lastBookPage;
+            AppTemp.get().lastBookParagraph = 0;
         }
 
-        LOG.d(TAG, "speek", AppState.get().lastBookPage, "par", AppState.get().lastBookParagraph);
+        LOG.d(TAG, "speek", AppTemp.get().lastBookPage, "par", AppTemp.get().lastBookParagraph);
 
         if (TxtUtils.isEmpty(text)) {
             return;
@@ -227,13 +200,13 @@ public class TTSEngine {
             AppState.get().ttsSpeed = 0.01f;
         }
         ttsEngine.setSpeechRate(AppState.get().ttsSpeed);
-        LOG.d(TAG, "Speek speed", AppState.get().ttsSpeed);
-        LOG.d(TAG, "Speek AppState.get().lastBookParagraph", AppState.get().lastBookParagraph);
+        LOG.d(TAG, "Speek s", AppState.get().ttsSpeed);
+        LOG.d(TAG, "Speek AppTemp.get().lastBookParagraph", AppTemp.get().lastBookParagraph);
 
         if (AppState.get().ttsPauseDuration > 0 && text.contains(TxtUtils.TTS_PAUSE)) {
             String[] parts = text.split(TxtUtils.TTS_PAUSE);
             ttsEngine.speak(" ", TextToSpeech.QUEUE_FLUSH, mapTemp);
-            for (int i = AppState.get().lastBookParagraph; i < parts.length; i++) {
+            for (int i = AppTemp.get().lastBookParagraph; i < parts.length; i++) {
 
                 String big = parts[i];
                 big = big.trim();
@@ -241,32 +214,9 @@ public class TTSEngine {
 
                     HashMap<String, String> mapTemp1 = new HashMap<String, String>();
                     mapTemp1.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, FINISHED + i);
-                    Log.e("Speek_part", "text = "+ big);
-try {
-    TextObject textObject = textObjectFactory.forText(big);
-    List<DetectedLanguage> probabilities = languageDetector.getProbabilities(textObject);
-    for (int i1 = 0; i1 < probabilities.size(); i1++) {
-        DetectedLanguage detectedLanguage = probabilities.get(i1);
-        Log.e("Speek_part", "detectedLanguage = "+ detectedLanguage);
-        String language = detectedLanguage.getLocale().getLanguage();
-        Log.e("Speek_part", "detectedLanguage = "+ language);
-        Locale locale = new Locale(language);
-        if (ttsEngine.isLanguageAvailable(locale) == TextToSpeech.LANG_AVAILABLE ||
-                ttsEngine.isLanguageAvailable(locale) == TextToSpeech.LANG_COUNTRY_AVAILABLE ||
-                ttsEngine.isLanguageAvailable(locale) == TextToSpeech.LANG_COUNTRY_VAR_AVAILABLE) {
-            ttsEngine.setLanguage(locale);
-            Log.e("Speek_part", "locale set = "+ locale);
-            break;
-        }
-    }
-}catch (Throwable e){
-    e.printStackTrace();
-}
+
                     ttsEngine.speak(big, TextToSpeech.QUEUE_ADD, mapTemp1);
-                    if (!big.endsWith(".")) {
-                        LOG.d("pageHTML-parts", i, "[playSilence]");
-                        ttsEngine.playSilence(AppState.get().ttsPauseDuration, TextToSpeech.QUEUE_ADD, mapTemp);
-                    }
+                    ttsEngine.playSilence(AppState.get().ttsPauseDuration, TextToSpeech.QUEUE_ADD, mapTemp);
                     LOG.d("pageHTML-parts", i, big);
                 }
             }
@@ -280,7 +230,7 @@ try {
     }
 
     public void speakToFile(final DocumentController controller, final ResultResponse<String> info) {
-        File dirFolder = new File(AppState.get().ttsSpeakPath, "TTS_" + controller.getCurrentBook().getName());
+        File dirFolder = new File(BookCSS.get().ttsSpeakPath, "TTS_" + controller.getCurrentBook().getName());
         if (!dirFolder.exists()) {
             dirFolder.mkdirs();
         }
@@ -337,17 +287,25 @@ try {
 
     }
 
-    public static void fastTTSBookmakr(Context c, float percent) {
-        int page = AppState.get().lastBookPage + 1;
-        boolean hasBookmark = AppSharedPreferences.get().hasBookmark(AppState.get().lastBookPath, page);
+    public static void fastTTSBookmakr(Context c, int page, int pages) {
+        LOG.d("fastTTSBookmakr", page, pages);
+
+        if (pages == 0) {
+            LOG.d("fastTTSBookmakr skip");
+            return;
+        }
+        boolean hasBookmark = BookmarksData.get().hasBookmark(AppTemp.get().lastBookPath, page, pages);
 
         if (!hasBookmark) {
-            final AppBookmark bookmark = new AppBookmark(AppState.get().lastBookPath, c.getString(R.string.fast_bookmark), page, AppState.get().lastBookTitle, percent);
-            AppSharedPreferences.get().addBookMark(bookmark);
+            final AppBookmark bookmark = new AppBookmark(AppTemp.get().lastBookPath, c.getString(R.string.fast_bookmark), MyMath.percent(page, pages));
+            BookmarksData.get().add(bookmark);
+
+            String TEXT = c.getString(R.string.fast_bookmark) + " " + TxtUtils.LONG_DASH1 + " " + c.getString(R.string.page) + " " + page + "";
+            Toast.makeText(c, TEXT, Toast.LENGTH_SHORT).show();
 
         }
         Vibro.vibrate();
-        LOG.d("Fast-bookmark", AppState.get().lastBookPage);
+
     }
 
     public synchronized boolean isPlaying() {
@@ -366,9 +324,6 @@ try {
         }
     }
 
-    public void playCurrent() {
-        speek(text);
-    }
 
     public boolean hasNoEngines() {
         try {
@@ -388,6 +343,19 @@ try {
             LOG.e(e);
         }
         return "---";
+    }
+
+    public int getEngineCount() {
+        try {
+            if (ttsEngine == null || ttsEngine.getEngines() == null) {
+                return -1;
+            }
+
+            return ttsEngine.getEngines().size();
+        } catch (Exception e) {
+            LOG.e(e);
+        }
+        return 0;
     }
 
     public String getCurrentEngineName() {
@@ -439,9 +407,11 @@ try {
                 @Override
                 public void run() {
                     AppState.get().mp3seek = mp.getCurrentPosition();
-                    LOG.d("Run timer-task");
+                    //LOG.d("Run timer-task");
                     EventBus.getDefault().post(new TtsStatus());
-                };
+                }
+
+                ;
             }, 1000, 1000);
 
         } catch (Exception e) {
@@ -480,7 +450,7 @@ try {
     public boolean isMp3PlayPause() {
         if (isMp3()) {
             if (mp == null) {
-                loadMP3(AppState.get().mp3BookPath);
+                loadMP3(BookCSS.get().mp3BookPath);
             }
             if (mp.isPlaying()) {
                 mp.pause();
@@ -506,7 +476,7 @@ try {
     }
 
     public boolean isMp3() {
-        return TxtUtils.isNotEmpty(AppState.get().mp3BookPath);
+        return TxtUtils.isNotEmpty(BookCSS.get().mp3BookPath);
     }
 
     public void seekTo(int i) {

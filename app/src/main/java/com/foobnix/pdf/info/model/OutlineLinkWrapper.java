@@ -1,9 +1,9 @@
 package com.foobnix.pdf.info.model;
 
+import android.graphics.RectF;
+
 import com.foobnix.ext.Fb2Extractor;
 import com.foobnix.pdf.info.PageUrl;
-
-import android.graphics.RectF;
 
 public class OutlineLinkWrapper implements CharSequence {
 

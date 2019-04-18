@@ -1,14 +1,14 @@
 package org.ebookdroid.core;
 
-import org.ebookdroid.common.settings.SettingsManager;
-import org.ebookdroid.common.settings.books.BookSettings;
-import org.ebookdroid.common.settings.types.DocumentViewMode;
-import org.ebookdroid.ui.viewer.IActivityController;
-
-import com.foobnix.android.utils.LOG;
-
 import android.graphics.Rect;
 import android.graphics.RectF;
+
+import com.foobnix.android.utils.LOG;
+import com.foobnix.model.AppBook;
+
+import org.ebookdroid.common.settings.SettingsManager;
+import org.ebookdroid.common.settings.types.DocumentViewMode;
+import org.ebookdroid.ui.viewer.IActivityController;
 
 public abstract class AbstractScrollController extends AbstractViewController {
 
@@ -73,10 +73,10 @@ public abstract class AbstractScrollController extends AbstractViewController {
     public final boolean onLayoutChanged(final boolean layoutChanged, final boolean layoutLocked, final Rect oldLaout,
             final Rect newLayout) {
         LOG.d("onLayoutChanged");
-        final BookSettings bs = SettingsManager.getBookSettings();
+        final AppBook bs = SettingsManager.getBookSettings();
         final int page = model != null ? model.getCurrentViewPageIndex() : -1;
-        final float offsetX = bs != null ? bs.offsetX : 0;
-        final float offsetY = bs != null ? bs.offsetY : 0;
+        final float offsetX = bs != null ? bs.x : 0;
+        final float offsetY = bs != null ? bs.y : 0;
 
         if (super.onLayoutChanged(layoutChanged, layoutLocked, oldLaout, newLayout)) {
             if (isShown && layoutChanged && page != -1) {

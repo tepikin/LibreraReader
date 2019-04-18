@@ -1,7 +1,5 @@
 package org.ebookdroid.common.bitmaps;
 
-import org.ebookdroid.core.PagePaint;
-
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.graphics.Canvas;
@@ -9,12 +7,15 @@ import android.graphics.Color;
 import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.RectF;
-import android.graphics.Region.Op;
+import android.graphics.Region;
 
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import com.foobnix.android.utils.LOG;
 
+import org.ebookdroid.core.PagePaint;
 import org.emdev.utils.LengthUtils;
 import org.emdev.utils.MathUtils;
+
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class Bitmaps {
 
@@ -209,7 +210,8 @@ public class Bitmaps {
             }
 
             final Rect orig = canvas.getClipBounds();
-            canvas.clipRect(cr.left - vb.x, cr.top - vb.y, cr.right - vb.x, cr.bottom - vb.y, Op.INTERSECT);
+            canvas.clipRect(cr.left - vb.x, cr.top - vb.y, cr.right - vb.x, cr.bottom - vb.y, Region.Op.INTERSECT);
+            //canvas.drawColor(Color.GREEN);
 
             final float offsetX = tr.left - vb.x;
             final float offsetY = tr.top - vb.y;
@@ -236,6 +238,7 @@ public class Bitmaps {
                                 src.set(0, 0, ref.bitmap.getWidth(), ref.bitmap.getHeight());
                                 canvas.drawBitmap(ref.bitmap, src, MathUtils.round(r), paint.bitmapPaint);
                             } catch (final Throwable th) {
+                                LOG.e(th);
                             }
                         }
                     } else {
@@ -250,8 +253,8 @@ public class Bitmaps {
                 rect.top += sizeY;
                 rect.bottom += sizeY;
             }
-            canvas.clipRect(orig, Op.REPLACE);
-            //canvas.clipRect(orig, Op.DIFFERENCE);
+
+            canvas.clipRect(orig, Region.Op.REPLACE);
             return res;
         } finally {
             lock.readLock().unlock();

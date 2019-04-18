@@ -1,23 +1,5 @@
 package com.foobnix.ui2.adapter;
 
-import com.foobnix.android.utils.Dips;
-import com.foobnix.android.utils.Keyboards;
-import com.foobnix.android.utils.ResultResponse;
-import com.foobnix.android.utils.TxtUtils;
-import com.foobnix.opds.Entry;
-import com.foobnix.opds.Link;
-import com.foobnix.opds.SamlibOPDS;
-import com.foobnix.pdf.info.IMG;
-import com.foobnix.pdf.info.R;
-import com.foobnix.pdf.info.TintUtil;
-import com.foobnix.pdf.info.Urls;
-import com.foobnix.pdf.info.view.EditTextHelper;
-import com.foobnix.pdf.info.view.ScaledImageView;
-import com.foobnix.pdf.info.widget.FileInformationDialog;
-import com.foobnix.pdf.info.wrapper.AppState;
-import com.foobnix.ui2.AppRecycleAdapter;
-import com.nostra13.universalimageloader.core.ImageLoader;
-
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
@@ -36,6 +18,24 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.foobnix.android.utils.Dips;
+import com.foobnix.android.utils.Keyboards;
+import com.foobnix.android.utils.ResultResponse;
+import com.foobnix.android.utils.TxtUtils;
+import com.foobnix.model.AppState;
+import com.foobnix.opds.Entry;
+import com.foobnix.opds.Link;
+import com.foobnix.opds.SamlibOPDS;
+import com.foobnix.pdf.info.IMG;
+import com.foobnix.pdf.info.R;
+import com.foobnix.pdf.info.TintUtil;
+import com.foobnix.pdf.info.Urls;
+import com.foobnix.pdf.info.view.EditTextHelper;
+import com.foobnix.pdf.info.view.ScaledImageView;
+import com.foobnix.pdf.info.widget.FileInformationDialog;
+import com.foobnix.ui2.AppRecycleAdapter;
+import com.nostra13.universalimageloader.core.ImageLoader;
 
 public class EntryAdapter extends AppRecycleAdapter<Entry, RecyclerView.ViewHolder> {
 
@@ -105,7 +105,6 @@ public class EntryAdapter extends AppRecycleAdapter<Entry, RecyclerView.ViewHold
             } else {
                 holder.expand.setVisibility(View.GONE);
             }
-
 
 
         } else {
@@ -320,9 +319,12 @@ public class EntryAdapter extends AppRecycleAdapter<Entry, RecyclerView.ViewHold
 
         bindItemClickAndLongClickListeners(holder.parent, entry);
 
-        if(AppState.get().appTheme == AppState.THEME_DARK_OLED){
+        if (AppState.get().appTheme == AppState.THEME_DARK_OLED) {
             holder.parent.setBackgroundColor(Color.BLACK);
         }
+
+
+        TxtUtils.setInkTextView(holder.title, holder.content, holder.author, holder.category, holder.expand);
     }
 
     @Override

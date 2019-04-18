@@ -536,4 +536,26 @@
    <string name="please_wait_books_are_being_processed_">Күте тұрыңыз, кітаптар өңделуде</string>
    <string name="system_brightness">Жүйенің жарықтығы</string>
    <string name="opening_books_in_the_specified_mode">Көрсетілген режимде кітаптар ашу</string>
+   <string name="dark_oled">Қараңғы</string>
+   <string name="profile">Профиль</string>
+   <string name="new_profile">Жаңа профиль</string>
+   <string name="main">Бастысы</string>
+   <string name="do_you_want_to_switch_profile_">Басқа профильге ауысу керек пе?</string>
+   <string name="sync_error">Синхрондау қатесі</string>
+   <string name="sign_in">Кіру</string>
+   <string name="sign_out">Шығу</string>
+   <string name="manual_sync_only">Қолмен синхрондау ғана</string>
+   <string name="wifi_sync_only">Тек Wi-Fi синхрондалуы</string>
+   <string name="sync_google_drive">Синхрондау (google drive)</string>
+   <string name="single_tap_to_select_text">Мәтінді таңдау үшін бір рет түртіңіз</string>
+   <string name="sync_book">Кітапты синхрондау</string>
+   <string name="sync">Синхрондау</string>
+   <string name="synchronized_folder">Синхрондалған қалта</string>
+   <string name="today">Бүгін</string>
+   <string name="downloads">Жүктеулер</string>
+   <string name="delete_the_directory_all_the_files_in_the_directory_">Қалта бос емес. бәрібір жою керек пе?</string>
+   <string name="synchronized_books">Синхрондалған кітаптар</string>
+   <string name="show_sync_wheel">Синхрондау дөңгелегін көрсету</string>
+   <string name="publication_date">Жариялау күні</string>
+   <string name="empy">Бос</string>
 </resources>

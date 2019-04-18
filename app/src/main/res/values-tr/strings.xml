@@ -536,4 +536,26 @@
    <string name="please_wait_books_are_being_processed_">Lütfen bekleyin, kitaplar işleniyor</string>
    <string name="system_brightness">Sistem parlaklığı</string>
    <string name="opening_books_in_the_specified_mode">Kitapların belirtilen modda açılması</string>
+   <string name="dark_oled">Karanlık oled</string>
+   <string name="profile">Profil</string>
+   <string name="new_profile">Yeni profil</string>
+   <string name="main">Ana</string>
+   <string name="do_you_want_to_switch_profile_">Başka bir profile geçilsin mi?</string>
+   <string name="sync_error">Senkronizasyon hatası</string>
+   <string name="sign_in">Oturum aç</string>
+   <string name="sign_out">Oturumu Kapat</string>
+   <string name="manual_sync_only">Sadece manuel senkronizasyon</string>
+   <string name="wifi_sync_only">Yalnızca wifi senkronizasyonu</string>
+   <string name="sync_google_drive">Senkronizasyon (google drive)</string>
+   <string name="single_tap_to_select_text">Metni seçmek için tek dokunuşla</string>
+   <string name="sync_book">Bir kitabı senkronize et</string>
+   <string name="sync">Senkronize etmek</string>
+   <string name="synchronized_folder">Senkronize klasör</string>
+   <string name="today">Bugün</string>
+   <string name="downloads">Indirmeler</string>
+   <string name="delete_the_directory_all_the_files_in_the_directory_">Klasör boş değil. Yine de silinsin mi?</string>
+   <string name="synchronized_books">Senkronize kitaplar</string>
+   <string name="show_sync_wheel">Senkronizasyon tekerleğini göster</string>
+   <string name="publication_date">Yayın tarihi</string>
+   <string name="empy">Boş</string>
 </resources>

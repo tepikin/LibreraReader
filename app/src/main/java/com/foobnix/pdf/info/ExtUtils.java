@@ -40,6 +40,7 @@ import android.widget.Toast;
 
 import com.foobnix.android.utils.Apps;
 import com.foobnix.android.utils.Dips;
+import com.foobnix.android.utils.Intents;
 import com.foobnix.android.utils.Keyboards;
 import com.foobnix.android.utils.LOG;
 import com.foobnix.android.utils.ResultResponse2;
@@ -49,11 +50,13 @@ import com.foobnix.android.utils.Views;
 import com.foobnix.dao2.FileMeta;
 import com.foobnix.ext.CacheZipUtils;
 import com.foobnix.ext.Fb2Extractor;
+import com.foobnix.model.AppBookmark;
+import com.foobnix.model.AppProfile;
+import com.foobnix.model.AppState;
+import com.foobnix.model.AppTemp;
 import com.foobnix.pdf.info.model.BookCSS;
 import com.foobnix.pdf.info.widget.ChooserDialogFragment;
 import com.foobnix.pdf.info.widget.PrefDialogs;
-import com.foobnix.pdf.info.wrapper.AppBookmark;
-import com.foobnix.pdf.info.wrapper.AppState;
 import com.foobnix.pdf.info.wrapper.DocumentController;
 import com.foobnix.pdf.search.activity.HorizontalModeController;
 import com.foobnix.pdf.search.activity.HorizontalViewActivity;
@@ -68,7 +71,6 @@ import org.ebookdroid.core.codec.CodecDocument;
 import org.ebookdroid.core.codec.CodecPage;
 import org.ebookdroid.core.codec.OutlineLink;
 import org.ebookdroid.ui.viewer.VerticalViewActivity;
-import org.json.JSONObject;
 import org.mozilla.universalchardet.UniversalDetector;
 
 import java.io.BufferedReader;
@@ -130,6 +132,8 @@ public class ExtUtils {
         mimeCache.put(".jpeg", "image/jpeg");
         mimeCache.put(".jpg", "image/jpeg");
         mimeCache.put(".png", "image/png");
+
+        mimeCache.put(".json", "text/plain");
 
         mimeCache.put(".chm", "application/x-chm");
         mimeCache.put(".xps", "application/vnd.ms-xpsdocument");
@@ -193,7 +197,7 @@ public class ExtUtils {
         }
         if (AppState.get().supportDOCX) {
             result.add(".doc");
-            if(AppsConfig.isDOCXSupported){
+            if (AppsConfig.isDOCXSupported) {
                 result.add(".docx");
             }
         }
@@ -242,7 +246,7 @@ public class ExtUtils {
             result.addAll(lirbeExt);
             result.add(".prc");
             result.add(".pdb");
-            if(!AppsConfig.isDOCXSupported){
+            if (!AppsConfig.isDOCXSupported) {
                 result.add(".docx");
             }
 
@@ -372,7 +376,7 @@ public class ExtUtils {
     }
 
     public static boolean isNotSupportedFile(File file) {
-        return !BookType.isSupportedExtByPath(file.getPath()) ;
+        return !BookType.isSupportedExtByPath(file.getPath());
     }
 
     public static boolean isImageOrEpub(File file) {
@@ -546,7 +550,7 @@ public class ExtUtils {
         if (name == null) {
             return "";
         }
-        if(name.endsWith("fb2.zip")){
+        if (name.endsWith("fb2.zip")) {
             return "fb2";
         }
 
@@ -572,6 +576,9 @@ public class ExtUtils {
     }
 
     public static String getFileName(String name) {
+        if (TxtUtils.isEmpty(name)) {
+            return "";
+        }
         if (!name.contains("/")) {
             return name;
         }
@@ -622,11 +629,7 @@ public class ExtUtils {
         if (path == null) {
             return false;
         }
-        return BookType.ZIP.is(path) || BookType.EPUB.is(path) //
-                || BookType.FB2.is(path) || BookType.TXT.is(path) //
-                || BookType.RTF.is(path) || BookType.HTML.is(path) //
-                || BookType.MHT.is(path) || BookType.MOBI.is(path) //
-                || BookType.ODT.is(path) || BookType.DOCX.is(path)|| BookType.DOC.is(path);//
+        return BookType.isTextFormat(path);
     }
 
     public static synchronized boolean isZip(File path) {
@@ -648,7 +651,12 @@ public class ExtUtils {
     }
 
     public static String getDateTimeFormat(File file) {
-        return dateFormat.format(file.lastModified()) + " " + timeFormat.format(file.lastModified());
+        try {
+            return dateFormat.format(file.lastModified()) + " " + timeFormat.format(file.lastModified());
+        } catch (Exception e) {
+            LOG.e(e);
+            return "" + file.lastModified();
+        }
     }
 
     public static String getDateFormat(File file) {
@@ -665,7 +673,7 @@ public class ExtUtils {
         }
         if (size <= 0)
             return "0";
-        final String[] units = new String[] { "B", "KB", "MB", "GB", "TB" };
+        final String[] units = new String[]{"B", "KB", "MB", "GB", "TB"};
         int digitGroups = (int) (Math.log10(size) / Math.log10(1024));
         return new DecimalFormat("#,##0").format(size / Math.pow(1024, digitGroups)) + "" + units[digitGroups];
     }
@@ -706,34 +714,30 @@ public class ExtUtils {
     }
 
     public static boolean showDocument(final Context c, final File file) {
-        return showDocument(c, file, -1);
-    }
-
-    public static boolean showDocument(final Context c, final File file, final int page) {
 
         ImageLoader.getInstance().clearAllTasks();
 
 
-        if(AppState.get().isPrefFormatMode){
+        if (AppState.get().isPrefFormatMode) {
 
             String ext = getFileExtension(file.getName().toLowerCase());
 
-            if(AppState.get().prefScrollMode.contains(ext)){
-                AppState.get().readingMode = AppState.READING_MODE_SCROLL;
-                showDocumentWithoutDialog(c, file, page, null);
+            if (AppState.get().prefScrollMode.contains(ext)) {
+                AppTemp.get().readingMode = AppState.READING_MODE_SCROLL;
+                showDocumentWithoutDialog(c, file, null);
                 return true;
-            }else  if(AppState.get().prefBookMode.contains(ext)) {
-                AppState.get().readingMode = AppState.READING_MODE_BOOK;
-                showDocumentWithoutDialog(c, file, page, null);
+            } else if (AppState.get().prefBookMode.contains(ext)) {
+                AppTemp.get().readingMode = AppState.READING_MODE_BOOK;
+                showDocumentWithoutDialog(c, file, null);
                 return true;
-            }else  if(AppState.get().prefMusicianMode.contains(ext)) {
-                AppState.get().readingMode = AppState.READING_MODE_MUSICIAN;
-                showDocumentWithoutDialog(c, file, page, null);
+            } else if (AppState.get().prefMusicianMode.contains(ext)) {
+                AppTemp.get().readingMode = AppState.READING_MODE_MUSICIAN;
+                showDocumentWithoutDialog(c, file, null);
                 return true;
             }
         }
         if (AppState.get().isRememberMode) {
-            showDocumentWithoutDialog(c, file, page, null);
+            showDocumentWithoutDialog(c, file, null);
             return true;
         }
 
@@ -777,7 +781,7 @@ public class ExtUtils {
                 horizontal.setText(AppState.get().nameHorizontalMode);
                 music.setText(AppState.get().nameMusicianMode);
 
-                AppState.get().save(c);
+                AppProfile.save(c);
 
                 return true;
             }
@@ -814,7 +818,7 @@ public class ExtUtils {
                     Views.visible(verticalEdit, horizontalEdit, musicEdit);
                     Views.gone(vertical, horizontal, music);
 
-                    AppState.get().save(c);
+                    AppProfile.save(c);
 
                 } else { // text view
                     editNames.setText(R.string.edit);
@@ -841,8 +845,14 @@ public class ExtUtils {
             }
         });
 
+
         AlertDialog.Builder builder = new AlertDialog.Builder(c);
         builder.setTitle(R.string.select_the_reading_mode);
+
+        if (AppState.get().appTheme == AppState.THEME_INK) {
+            TxtUtils.setInkTextView(view);
+        }
+
         builder.setView(view);
         builder.setCancelable(true);
         final AlertDialog dialog = builder.show();
@@ -852,8 +862,8 @@ public class ExtUtils {
             @Override
             public void onClick(View v) {
                 dialog.dismiss();
-                AppState.get().readingMode = AppState.READING_MODE_SCROLL;
-                showDocumentWithoutDialog(c, file, page, null);
+                AppTemp.get().readingMode = AppState.READING_MODE_SCROLL;
+                showDocumentWithoutDialog(c, file, null);
             }
         });
         horizontal.setOnClickListener(new View.OnClickListener() {
@@ -861,8 +871,8 @@ public class ExtUtils {
             @Override
             public void onClick(View v) {
                 dialog.dismiss();
-                AppState.get().readingMode = AppState.READING_MODE_BOOK;
-                showDocumentWithoutDialog(c, file, page, null);
+                AppTemp.get().readingMode = AppState.READING_MODE_BOOK;
+                showDocumentWithoutDialog(c, file, null);
             }
         });
 
@@ -871,8 +881,8 @@ public class ExtUtils {
             @Override
             public void onClick(View v) {
                 dialog.dismiss();
-                AppState.get().readingMode = AppState.READING_MODE_MUSICIAN;
-                showDocumentWithoutDialog(c, file, page, null);
+                AppTemp.get().readingMode = AppState.READING_MODE_MUSICIAN;
+                showDocumentWithoutDialog(c, file, null);
             }
         });
 
@@ -892,32 +902,31 @@ public class ExtUtils {
 
     }
 
-    public static void showDocumentWithoutDialog(final Context c, final File file, final int page, String playlist) {
-        showDocument(c, Uri.fromFile(file), page, playlist);
+    public static void showDocumentWithoutDialog(final Context c, final File file, String playlist) {
+        showDocument(c, Uri.fromFile(file), 0.0f, playlist);
     }
 
 
-
-    public static void showDocument(final Context c, final Uri uri, final int page, final String playList) {
+    public static void showDocument(final Context c, final Uri uri, final float percent, final String playList) {
         Safe.run(new Runnable() {
 
             @Override
             public void run() {
-                showDocumentInner(c, uri, page, playList);
+                showDocumentInner(c, uri, percent, playList);
             }
         });
 
     }
 
-    public static void showDocumentInner(final Context c, final Uri uri, final int page, String playlist) {
+    public static void showDocumentInner(final Context c, final Uri uri, final float percent, String playlist) {
         if (!isValidFile(uri)) {
             Toast.makeText(c, R.string.file_not_found, Toast.LENGTH_LONG).show();
             return;
         }
         LOG.d("showDocument", uri.getPath(), playlist);
 
-        if (AppState.get().readingMode == AppState.READING_MODE_BOOK) {
-            openHorizontalView(c, uri, page - 1, playlist);
+        if (AppTemp.get().readingMode == AppState.READING_MODE_BOOK) {
+            openHorizontalView(c, uri, percent, playlist);
             return;
         }
 
@@ -929,10 +938,10 @@ public class ExtUtils {
         }
         intent.setData(checkPlaylisturi(uri, intent, playlist));
 
-        if (page > 0) {
-            intent.putExtra(DocumentController.EXTRA_PAGE, page);
-
-        }
+//        if (percent > 0f) {
+//            Intents.putFloat(intent,DocumentController.EXTRA_PERCENT, percent);
+//
+//        }
         c.startActivity(intent);
     }
 
@@ -951,7 +960,7 @@ public class ExtUtils {
         return uri;
     }
 
-    private static void openHorizontalView(final Context c, final Uri uri, final int page, String playlist) {
+    private static void openHorizontalView(final Context c, final Uri uri, final float percent, String playlist) {
         if (uri == null) {
             Toast.makeText(c, R.string.file_not_found, Toast.LENGTH_LONG).show();
             return;
@@ -970,8 +979,8 @@ public class ExtUtils {
             LOG.e(e);
         }
 
-        if (page > 0) {
-            intent.putExtra(DocumentController.EXTRA_PAGE, page);
+        if (percent > 0f) {
+            Intents.putFloat(intent, DocumentController.EXTRA_PERCENT, percent);
         }
         c.startActivity(intent);
 
@@ -1039,7 +1048,7 @@ public class ExtUtils {
         }
         Intent remove = targetedOpenIntents.remove(targetedOpenIntents.size() - 1);
         Intent createChooser = Intent.createChooser(remove, context.getString(R.string.open_with));
-        Intent chooserIntent = createChooser.putExtra(Intent.EXTRA_INITIAL_INTENTS, targetedOpenIntents.toArray(new Parcelable[] {}));
+        Intent chooserIntent = createChooser.putExtra(Intent.EXTRA_INITIAL_INTENTS, targetedOpenIntents.toArray(new Parcelable[]{}));
 
         return chooserIntent;
     }
@@ -1085,7 +1094,7 @@ public class ExtUtils {
         try {
             final Intent intent = new Intent(Intent.ACTION_SEND);
 
-            intent.putExtra(Intent.EXTRA_EMAIL, new String[] { "" });
+            intent.putExtra(Intent.EXTRA_EMAIL, new String[]{""});
             intent.setType(getMimeType(file));
             intent.putExtra(Intent.EXTRA_STREAM, getUriProvider(a, file));
             intent.putExtra(Intent.EXTRA_SUBJECT, "");
@@ -1148,7 +1157,7 @@ public class ExtUtils {
             out.close();
 
             AppState.get().fileToDelete = pathofBmp;
-            AppState.get().save(a);
+            AppProfile.save(a);
 
             Intent shareIntent = new Intent();
             shareIntent.setAction(Intent.ACTION_SEND);
@@ -1170,7 +1179,7 @@ public class ExtUtils {
             return;
         }
 
-        final List<AppBookmark> bookmarksByBook = AppSharedPreferences.get().getBookmarksByBook(file);
+        final List<AppBookmark> bookmarksByBook = BookmarksData.get().getBookmarksByBook(file);
 
         final Intent intent = new Intent(Intent.ACTION_SEND);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -1178,10 +1187,10 @@ public class ExtUtils {
 
         if (bookmarksByBook != null && !bookmarksByBook.isEmpty()) {
             final StringBuilder result = new StringBuilder();
-            result.append(a.getString(R.string.bookmarks) + "\n\n");
-            result.append(file.getName() + "\n");
+            //result.append(a.getString(R.string.bookmarks) + "\n\n");
+            result.append(file.getName() + "\n\n");
             for (final AppBookmark book : bookmarksByBook) {
-                result.append(String.format("%s. %s \n", book.getPage(), book.getText()));
+                result.append(String.format("*%s\n", book.getText().trim()));
             }
             intent.putExtra(Intent.EXTRA_TEXT, result.toString());
         }
@@ -1190,7 +1199,7 @@ public class ExtUtils {
     }
 
     public static void exportAllBookmarksToFile(final FragmentActivity a) {
-        String sampleName = "Bookmarks-All-" + ExportSettingsManager.getInstance(a).getSampleJsonConfigName(a, ".TXT.txt");
+        String sampleName = "Bookmarks-All-" + ExportSettingsManager.getSampleJsonConfigName(a, ".TXT.txt");
 
         ChooserDialogFragment.createFile(a, sampleName).setOnSelectListener(new ResultResponse2<String, Dialog>() {
             @Override
@@ -1204,7 +1213,7 @@ public class ExtUtils {
                 try {
                     LOG.d("exportAllBookmarksToFile 2", toFile);
                     FileWriter writer = new FileWriter(toFile);
-                    writer.write(getAllExportString(a, AppSharedPreferences.get()));
+                    writer.write(getAllExportString(a, BookmarksData.get()));
                     writer.flush();
                     writer.close();
                     Toast.makeText(a, R.string.success, Toast.LENGTH_LONG).show();
@@ -1224,7 +1233,7 @@ public class ExtUtils {
             return;
         }
 
-        String sampleName = "Bookmarks-All-" + ExportSettingsManager.getInstance(a).getSampleJsonConfigName(a, ".JSON.txt");
+        String sampleName = "Bookmarks-All-" + ExportSettingsManager.getSampleJsonConfigName(a, ".JSON.txt");
         ChooserDialogFragment.chooseFile(a, sampleName).setOnSelectListener(new ResultResponse2<String, Dialog>() {
             @Override
             public boolean onResultRecive(String nPath, Dialog dialog) {
@@ -1237,12 +1246,12 @@ public class ExtUtils {
                 try {
                     String json = new Scanner(toFile).useDelimiter("\\A").next();
 
-                    JSONObject jsonObject = new JSONObject(json);
-                    if (jsonObject.has(ExportSettingsManager.PREFIX_BOOKMARKS_PREFERENCES)) {
-                        jsonObject = jsonObject.getJSONObject(ExportSettingsManager.PREFIX_BOOKMARKS_PREFERENCES);
-                    }
+//                    JSONObject jsonObject = new JSONObject(json);
+//                    if (jsonObject.has(ExportSettingsManager.PREFIX_BOOKMARKS_PREFERENCES)) {
+//                        jsonObject = jsonObject.getJSONObject(ExportSettingsManager.PREFIX_BOOKMARKS_PREFERENCES);
+//                    }
 
-                    ExportSettingsManager.importFromJSon(jsonObject, AppSharedPreferences.get().getBookmarkPreferences());
+                    // ExportSettingsManager.importFromJSon(jsonObject, BookmarksData.get().getBookmarkPreferences());
                     Toast.makeText(a, R.string.success, Toast.LENGTH_LONG).show();
                     onSuccess.run();
                 } catch (Exception e) {
@@ -1261,9 +1270,9 @@ public class ExtUtils {
             return;
         }
 
-        String sampleName = "Bookmarks-All-" + ExportSettingsManager.getInstance(a).getSampleJsonConfigName(a, ".JSON.txt");
+        String sampleName = "Bookmarks-All-" + ExportSettingsManager.getSampleJsonConfigName(a, ".JSON.txt");
         if (book != null) {
-            sampleName = book.getName() + "-" + ExportSettingsManager.getInstance(a).getSampleJsonConfigName(a, ".JSON.txt");
+            sampleName = book.getName() + "-" + ExportSettingsManager.getSampleJsonConfigName(a, ".JSON.txt");
         }
         sampleName = TxtUtils.fixFileName(sampleName);
 
@@ -1277,17 +1286,17 @@ public class ExtUtils {
                     return false;
                 }
 
-                try {
-                    JSONObject result = ExportSettingsManager.exportToJSon("bookmarks", AppSharedPreferences.get().getBookmarkPreferences(), AppSharedPreferences.RECENT_, book != null ? AppBookmark.fixText(book.getPath()) : null);
-                    FileWriter writer = new FileWriter(toFile);
-                    writer.write(result.toString(2));
-                    writer.flush();
-                    writer.close();
-                    Toast.makeText(a, R.string.success, Toast.LENGTH_LONG).show();
-                } catch (Exception e) {
-                    LOG.e(e);
-                    Toast.makeText(a, e.getLocalizedMessage(), Toast.LENGTH_LONG).show();
-                }
+//                try {
+//                    JSONObject result = ExportSettingsManager.exportToJSon("bookmarks", BookmarksData.get().getBookmarkPreferences(), BookmarksData.RECENT_, book != null ? AppBookmark.fixText(book.getPath()) : null);
+//                    FileWriter writer = new FileWriter(toFile);
+//                    writer.write(result.toString(2));
+//                    writer.flush();
+//                    writer.close();
+//                    Toast.makeText(a, R.string.success, Toast.LENGTH_LONG).show();
+//                } catch (Exception e) {
+//                    LOG.e(e);
+//                    Toast.makeText(a, e.getLocalizedMessage(), Toast.LENGTH_LONG).show();
+//                }
                 dialog.dismiss();
                 return false;
             }
@@ -1295,7 +1304,7 @@ public class ExtUtils {
 
     }
 
-    public static String getAllExportString(final Activity a, AppSharedPreferences viewerPreferences) {
+    public static String getAllExportString(final Activity a, BookmarksData viewerPreferences) {
         final StringBuilder out = new StringBuilder();
         Map<String, List<AppBookmark>> bookmarks = viewerPreferences.getBookmarksMap();
 
@@ -1304,7 +1313,7 @@ public class ExtUtils {
 
         for (String path : bookmarks.keySet()) {
             List<AppBookmark> list = bookmarks.get(path);
-            Collections.sort(list, AppSharedPreferences.COMPARE_BY_PAGE);
+            // Collections.sort(list, BookmarksData.COMPARE_BY_PAGE);
             File file = new File(path);
             if (file.isFile()) {
                 path = file.getName();
@@ -1312,7 +1321,7 @@ public class ExtUtils {
             out.append(path + "\n");
             out.append("\n");
             for (AppBookmark item : list) {
-                out.append(String.format("%s. %s \n", item.getPage(), item.getText()));
+                out.append(String.format("%s. %s \n", item.p, item.getText()));
             }
             out.append("\n");
 
@@ -1324,7 +1333,7 @@ public class ExtUtils {
         final Intent intent = new Intent(Intent.ACTION_SEND);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         intent.setType("text/plain");
-        intent.putExtra(Intent.EXTRA_TEXT, getAllExportString(a, AppSharedPreferences.get()));
+        intent.putExtra(Intent.EXTRA_TEXT, getAllExportString(a, BookmarksData.get()));
         a.startActivity(Intent.createChooser(intent, a.getString(R.string.export_bookmarks)));
     }
 
@@ -1351,7 +1360,9 @@ public class ExtUtils {
                     @Override
                     public void handleMessage(android.os.Message msg) {
                         text.setText(a.getString(R.string.please_wait) + " " + msg.what + "/100%");
-                    };
+                    }
+
+                    ;
                 };
 
                 ImageView image = (ImageView) view.findViewById(R.id.onCancel);
@@ -1372,7 +1383,9 @@ public class ExtUtils {
                 dialog = builder.show();
                 dialog.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
 
-            };
+            }
+
+            ;
 
             @Override
             protected Object doInBackground(Object... params) {
@@ -1382,7 +1395,9 @@ public class ExtUtils {
                     LOG.e(e);
                     return null;
                 }
-            };
+            }
+
+            ;
 
             @Override
             protected void onPostExecute(final Object result) {
@@ -1402,12 +1417,12 @@ public class ExtUtils {
                         @Override
                         public void run() {
                             if (a instanceof VerticalViewActivity) {
-                                AppState.get().readingMode = AppState.READING_MODE_SCROLL;
-                                showDocumentWithoutDialog(a, (File) result, page, null);
+                                AppTemp.get().readingMode = AppState.READING_MODE_SCROLL;
+                                showDocumentWithoutDialog(a, (File) result, null);
 
                             } else if (a instanceof HorizontalViewActivity) {
-                                AppState.get().readingMode = AppState.READING_MODE_BOOK;
-                                showDocumentWithoutDialog(a, (File) result, page, null);
+                                AppTemp.get().readingMode = AppState.READING_MODE_BOOK;
+                                showDocumentWithoutDialog(a, (File) result, null);
                             } else {
                                 showDocument(a, (File) result);
                             }
@@ -1420,14 +1435,16 @@ public class ExtUtils {
                     }
 
                 }
-            };
+            }
+
+            ;
 
         }.execute();
     }
 
     public static File openPDFInTextReflowAsync(Activity a, final File file, Handler dialog) {
         try {
-            File bookTempRoot = new File(AppState.get().downlodsPath, "temp-dir-" + file.getName());
+            File bookTempRoot = new File(BookCSS.get().downlodsPath, "temp-dir-" + file.getName());
             if (!bookTempRoot.exists()) {
                 bookTempRoot.mkdirs();
             } else {
@@ -1539,7 +1556,7 @@ public class ExtUtils {
                 return null;
             }
 
-            File epubOutpub = new File(AppState.get().downlodsPath, file.getName() + REFLOW_EPUB);
+            File epubOutpub = new File(BookCSS.get().downlodsPath, file.getName() + REFLOW_EPUB);
             if (epubOutpub.isFile()) {
                 epubOutpub.delete();
             }
@@ -1639,8 +1656,8 @@ public class ExtUtils {
         return null;
     }
 
-    public  static boolean isMounted(File file){
-            return Environment.MEDIA_MOUNTED.equals(EnvironmentCompat.getStorageState(file));
+    public static boolean isMounted(File file) {
+        return Environment.MEDIA_MOUNTED.equals(EnvironmentCompat.getStorageState(file));
     }
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
@@ -1806,6 +1823,26 @@ public class ExtUtils {
             LOG.e(e);
         }
         return encoding == null ? "UTF-8" : encoding;
+    }
+
+    public static boolean deleteRecursive(File fileOrDirectory) {
+        try {
+            LOG.d("deleteRecursive", fileOrDirectory);
+            if (fileOrDirectory.isDirectory()) {
+                final File[] files = fileOrDirectory.listFiles();
+                if (files == null) {
+                    return true;
+                }
+                for (File child : files) {
+                    deleteRecursive(child);
+                }
+            }
+            fileOrDirectory.delete();
+        } catch (Exception e) {
+            LOG.e(e);
+            return false;
+        }
+        return true;
     }
 
 }

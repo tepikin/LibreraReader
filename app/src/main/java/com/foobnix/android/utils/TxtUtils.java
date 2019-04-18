@@ -1,5 +1,31 @@
 package com.foobnix.android.utils;
 
+import android.annotation.TargetApi;
+import android.content.Context;
+import android.content.res.Configuration;
+import android.content.res.Resources;
+import android.content.res.TypedArray;
+import android.graphics.Color;
+import android.graphics.Typeface;
+import android.net.Uri;
+import android.os.Build;
+import android.support.v4.util.Pair;
+import android.text.Html;
+import android.text.Spanned;
+import android.text.SpannedString;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.CheckBox;
+import android.widget.TextView;
+
+import com.foobnix.dao2.FileMeta;
+import com.foobnix.model.AppState;
+import com.foobnix.model.AppTemp;
+import com.foobnix.pdf.info.R;
+import com.foobnix.sys.TempHolder;
+
+import org.ebookdroid.LibreraApp;
+
 import java.io.UnsupportedEncodingException;
 import java.lang.Character.UnicodeBlock;
 import java.nio.charset.Charset;
@@ -10,30 +36,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import org.ebookdroid.LibreraApp;
-
-import com.foobnix.dao2.FileMeta;
-import com.foobnix.pdf.info.R;
-import com.foobnix.pdf.info.model.BookCSS;
-import com.foobnix.pdf.info.wrapper.AppState;
-import com.foobnix.sys.TempHolder;
-
-import android.annotation.TargetApi;
-import android.content.Context;
-import android.content.res.Configuration;
-import android.content.res.Resources;
-import android.content.res.TypedArray;
-import android.graphics.Typeface;
-import android.net.Uri;
-import android.os.Build;
-import android.support.v4.util.Pair;
-import android.text.Html;
-import android.text.Spanned;
-import android.text.SpannedString;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.TextView;
 
 public class TxtUtils {
 
@@ -138,6 +140,10 @@ public class TxtUtils {
         return String.format("%.1f", f) + "%";
     }
 
+    public static String percentFormatInt(float f) {
+        return Math.round(f * 100) + "%";
+    }
+
     public static String deltaPageMax(int current) {
         if (AppState.get().pageNumberFormat == AppState.PAGE_NUMBER_FORMAT_PERCENT) {
             return "100%";
@@ -235,7 +241,7 @@ public class TxtUtils {
         String firstPart = max > 0 ? text.substring(0, max + 1) : text;
         String secondPart = max > 0 ? text.substring(max + 1) : "";
 
-        return new String[] { firstPart, secondPart };
+        return new String[]{firstPart, secondPart};
 
     }
 
@@ -275,7 +281,7 @@ public class TxtUtils {
         pageHTML = pageHTML.replace("[image]", "");
         if (AppState.get().isShowFooterNotesInText) {
             try {
-                String string = getLocaleStringResource(new Locale(BookCSS.get().hypenLang), R.string.foot_notes, LibreraApp.context);
+                String string = getLocaleStringResource(new Locale(AppTemp.get().hypenLang), R.string.foot_notes, LibreraApp.context);
                 pageHTML = pageHTML.replaceAll("[\\[{][0-9]+[\\]}]", ". " + string + ".");
             } catch (Exception e) {
                 LOG.e(e);
@@ -288,8 +294,8 @@ public class TxtUtils {
         LOG.d("pageHTML [after] ", pageHTML);
 
         if (AppState.get().ttsDoNotReadCharsEnable) {
-            for (int i = 0; i < AppState.get().ttsDoNotReadChars.length(); i++) {
-                String s = String.valueOf(AppState.get().ttsDoNotReadChars.charAt(i));
+            for (int i = 0; i < AppState.get().ttsSkipChars.length(); i++) {
+                String s = String.valueOf(AppState.get().ttsSkipChars.charAt(i));
                 pageHTML = pageHTML.replace(s, " ");
             }
 
@@ -428,6 +434,19 @@ public class TxtUtils {
         } catch (Exception e) {
             try {
                 return Html.fromHtml("<u>" + text + "</u>", Html.FROM_HTML_MODE_LEGACY);
+            } catch (Exception e1) {
+                return new SpannedString(text);
+            }
+        }
+    }
+
+    @TargetApi(24)
+    public static Spanned fromHtml(final String text) {
+        try {
+            return Html.fromHtml(text);
+        } catch (Exception e) {
+            try {
+                return Html.fromHtml(text, Html.FROM_HTML_MODE_LEGACY);
             } catch (Exception e1) {
                 return new SpannedString(text);
             }
@@ -594,9 +613,6 @@ public class TxtUtils {
         return textView;
     }
 
-    public static Spanned bold(String text) {
-        return Html.fromHtml("<u>" + text + "</u>");
-    }
 
     public static char getLastChar(String line) {
         if (line == null || line.isEmpty()) {
@@ -828,7 +844,7 @@ public class TxtUtils {
 
     /**
      * Replace string "My name is @firstName @lastName"
-     * 
+     *
      * @param str
      * @param keys
      * @return
@@ -864,7 +880,7 @@ public class TxtUtils {
         return SIMPLE_EMAIL_PATTERN.matcher(email).matches();
     }
 
-    public static boolean isListNotEmpty(List<?> objects) {
+    public static boolean isListNotEmpty(Collection<?> objects) {
         return objects != null && objects.size() >= 1;
     }
 
@@ -899,7 +915,7 @@ public class TxtUtils {
                 if (AppState.get().isUiTextColor) {
                     TxtUtils.updateAllLinks((ViewGroup) parent, AppState.get().uiTextColor);
                 } else {
-                    TypedArray out = parent.getContext().getTheme().obtainStyledAttributes(new int[] { android.R.attr.textColorLink });
+                    TypedArray out = parent.getContext().getTheme().obtainStyledAttributes(new int[]{android.R.attr.textColorLink});
                     int systemLinkColor = out.getColor(0, 0);
 
                     TxtUtils.updateAllLinks((ViewGroup) parent, systemLinkColor);
@@ -955,5 +971,38 @@ public class TxtUtils {
 
         return buf.toString();
     }
+
+
+    public static void updateinks(ViewGroup parent, int color) {
+        int childCount = parent.getChildCount();
+        for (int i = 0; i < childCount; i++) {
+            View child = parent.getChildAt(i);
+            if (child instanceof ViewGroup) {
+                updateinks((ViewGroup) child, color);
+            } else if (child instanceof TextView) {
+                final TextView it = (TextView) child;
+                if (it.getTextColors().getDefaultColor() != Color.WHITE) {
+                    it.setTextColor(color);
+                }
+            } else if (child instanceof CheckBox) {
+                ((CheckBox) child).setTextColor(color);
+            }
+        }
+    }
+
+
+    public static void setInkTextView(View... parents) {
+        if (AppState.get().appTheme != AppState.THEME_INK) {
+            return;
+        }
+        for (View parent : parents) {
+            if (parent instanceof ViewGroup) {
+                updateinks((ViewGroup) parent, Color.BLACK);
+            } else if (parent instanceof TextView) {
+                ((TextView) parent).setTextColor(Color.BLACK);
+            }
+        }
+    }
+
 
 }

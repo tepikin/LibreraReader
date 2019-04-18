@@ -536,4 +536,26 @@
    <string name="please_wait_books_are_being_processed_">Per favore aspetta, i libri sono in fase di elaborazione</string>
    <string name="system_brightness">Luminosità del sistema</string>
    <string name="opening_books_in_the_specified_mode">Aprire i libri nella modalità specificata</string>
+   <string name="dark_oled">Dark oled</string>
+   <string name="profile">Profilo</string>
+   <string name="new_profile">Nuovo profilo</string>
+   <string name="main">Principale</string>
+   <string name="do_you_want_to_switch_profile_">Passare a un altro profilo?</string>
+   <string name="sync_error">Errore di sincronizzazione</string>
+   <string name="sign_in">Registrati</string>
+   <string name="sign_out">Disconnessione</string>
+   <string name="manual_sync_only">Solo sincronizzazione manuale</string>
+   <string name="wifi_sync_only">Solo sincronizzazione wifi</string>
+   <string name="sync_google_drive">Sincronizzazione (google drive)</string>
+   <string name="single_tap_to_select_text">Tocca un solo tocco per selezionare il testo</string>
+   <string name="sync_book">Sincronizza un libro</string>
+   <string name="sync">Sincronizzare</string>
+   <string name="synchronized_folder">Cartella sincronizzata</string>
+   <string name="today">Oggi</string>
+   <string name="downloads">I download</string>
+   <string name="delete_the_directory_all_the_files_in_the_directory_">La cartella non è vuota cancellare comunque?</string>
+   <string name="synchronized_books">Libri sincronizzati</string>
+   <string name="show_sync_wheel">Mostra la rotella di sincronizzazione</string>
+   <string name="publication_date">Data di pubblicazione</string>
+   <string name="empy">Vuoto</string>
 </resources>

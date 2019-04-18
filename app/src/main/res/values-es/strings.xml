@@ -536,4 +536,26 @@
    <string name="please_wait_books_are_being_processed_">Por favor espere, los libros están siendo procesados.</string>
    <string name="system_brightness">Brillo del sistema</string>
    <string name="opening_books_in_the_specified_mode">Abriendo libros en el modo especificado</string>
+   <string name="dark_oled">Oled oscuro</string>
+   <string name="profile">Perfil</string>
+   <string name="new_profile">Nuevo perfil</string>
+   <string name="main">Principal</string>
+   <string name="do_you_want_to_switch_profile_">Cambiar a otro perfil?</string>
+   <string name="sync_error">Error de sincronización</string>
+   <string name="sign_in">Registrarse</string>
+   <string name="sign_out">Desconectar</string>
+   <string name="manual_sync_only">Solo sincronización manual</string>
+   <string name="wifi_sync_only">Solo sincronización wifi</string>
+   <string name="sync_google_drive">Sincronizar (unidad de google)</string>
+   <string name="single_tap_to_select_text">Solo toque para seleccionar texto</string>
+   <string name="sync_book">Sincronizar un libro</string>
+   <string name="sync">Sincronizar</string>
+   <string name="synchronized_folder">Carpeta sincronizada</string>
+   <string name="today">Hoy</string>
+   <string name="downloads">Las descargas</string>
+   <string name="delete_the_directory_all_the_files_in_the_directory_">Carpeta no está vacía. borrar de todos modos?</string>
+   <string name="synchronized_books">Libros sincronizados</string>
+   <string name="show_sync_wheel">Mostrar la rueda de sincronización</string>
+   <string name="publication_date">Fecha de publicación</string>
+   <string name="empy">Vacío</string>
 </resources>

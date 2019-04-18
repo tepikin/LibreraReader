@@ -17,16 +17,19 @@ import com.foobnix.android.utils.ResultResponse;
 import com.foobnix.android.utils.TxtUtils;
 import com.foobnix.dao2.FileMeta;
 import com.foobnix.ext.CacheZipUtils;
+import com.foobnix.model.AppData;
+import com.foobnix.model.AppState;
+import com.foobnix.model.SimpleMeta;
 import com.foobnix.pdf.info.R;
 import com.foobnix.pdf.info.TintUtil;
 import com.foobnix.pdf.info.view.AlertDialogs;
 import com.foobnix.pdf.info.view.MyPopupMenu;
 import com.foobnix.pdf.info.widget.RecentUpates;
-import com.foobnix.pdf.info.wrapper.AppState;
 import com.foobnix.pdf.info.wrapper.PopupHelper;
 import com.foobnix.ui2.AppDB;
 import com.foobnix.ui2.adapter.FileMetaAdapter;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 
@@ -66,8 +69,7 @@ public class RecentFragment2 extends UIFragment<FileMeta> {
                     @Override
                     public void run() {
                         clearAllRecent.run();
-                        RecentUpates.updateAll(getActivity());
-                        CacheZipUtils.removeFiles(CacheZipUtils.CACHE_RECENT.listFiles());
+
                     }
                 });
 
@@ -100,8 +102,16 @@ public class RecentFragment2 extends UIFragment<FileMeta> {
         public boolean onResultRecive(FileMeta result) {
             result.setIsRecent(false);
             AppDB.get().update(result);
+
+            if(result.getPath().startsWith(CacheZipUtils.CACHE_RECENT.getPath())){
+                new File(result.getPath()).delete();
+                LOG.d("Delete cache recent file", result.getPath());
+            }
+            AppData.get().removeRecent(new SimpleMeta(result.getPath()));
+
             populate();
             RecentUpates.updateAll(getActivity());
+
             return false;
         }
     };
@@ -111,6 +121,12 @@ public class RecentFragment2 extends UIFragment<FileMeta> {
         @Override
         public void run() {
             AppDB.get().clearAllRecent();
+
+            RecentUpates.updateAll(getActivity());
+            CacheZipUtils.removeFiles(CacheZipUtils.CACHE_RECENT.listFiles());
+
+            AppData.get().clearRecents();
+
             populate();
         }
     };
@@ -121,7 +137,8 @@ public class RecentFragment2 extends UIFragment<FileMeta> {
 
     @Override
     public List<FileMeta> prepareDataInBackground() {
-        return AppDB.get().getAllRecentWithProgress();
+        List<FileMeta> allRecent = AppData.get().getAllRecent();
+        return allRecent;
     }
 
     @Override

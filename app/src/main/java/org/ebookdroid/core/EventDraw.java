@@ -1,17 +1,5 @@
 package org.ebookdroid.core;
 
-import java.util.Queue;
-
-import org.ebookdroid.LibreraApp;
-import org.ebookdroid.core.codec.PageLink;
-import org.ebookdroid.ui.viewer.IActivityController;
-import org.emdev.utils.LengthUtils;
-
-import com.foobnix.android.utils.Dips;
-import com.foobnix.pdf.info.R;
-import com.foobnix.pdf.info.wrapper.AppState;
-import com.foobnix.pdf.info.wrapper.MagicHelper;
-
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -20,6 +8,19 @@ import android.graphics.Paint;
 import android.graphics.Paint.Style;
 import android.graphics.RectF;
 import android.text.TextPaint;
+
+import com.foobnix.android.utils.Dips;
+import com.foobnix.model.AppState;
+import com.foobnix.pdf.info.R;
+import com.foobnix.pdf.info.model.BookCSS;
+import com.foobnix.pdf.info.wrapper.MagicHelper;
+
+import org.ebookdroid.LibreraApp;
+import org.ebookdroid.core.codec.PageLink;
+import org.ebookdroid.ui.viewer.IActivityController;
+import org.emdev.utils.LengthUtils;
+
+import java.util.Queue;
 
 public class EventDraw implements IEvent {
 
@@ -76,7 +77,9 @@ public class EventDraw implements IEvent {
             } else {
                 viewState.paint.backgroundFillPaint.setColor(MagicHelper.ligtherColor(MagicHelper.getBgColor()));
             }
-            canvas.drawRect(canvas.getClipBounds(), viewState.paint.backgroundFillPaint);
+            if(canvas!=null) {
+                canvas.drawRect(canvas.getClipBounds(), viewState.paint.backgroundFillPaint);
+            }
 
             viewState.ctrl.drawView(this);
             return viewState;
@@ -125,7 +128,7 @@ public class EventDraw implements IEvent {
 
         // TODO Draw there
         // drawLine(page);
-        if (!AppState.get().isTextFormat()) {
+        if (!BookCSS.get().isTextFormat()) {
         drawPageLinks(page);
         }
         // drawSomething(page);
@@ -184,7 +187,7 @@ public class EventDraw implements IEvent {
         canvas.drawRect(fixedPageBounds, viewState.paint.fillPaint);
 
         final TextPaint textPaint = viewState.paint.textPaint;
-        // textPaint.setTextSize(20 * viewState.zoom);
+        // textPaint.setTextSize(20 * viewState.z);
         textPaint.setTextSize(Dips.spToPx(16));
         textPaint.setColor(MagicHelper.getTextColor());
 

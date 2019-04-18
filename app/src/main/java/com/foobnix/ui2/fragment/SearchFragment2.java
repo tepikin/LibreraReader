@@ -7,6 +7,7 @@ import android.content.DialogInterface;
 import android.content.DialogInterface.OnDismissListener;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -37,16 +38,18 @@ import com.foobnix.android.utils.BaseItemLayoutAdapter;
 import com.foobnix.android.utils.Keyboards;
 import com.foobnix.android.utils.LOG;
 import com.foobnix.android.utils.ResultResponse;
+import com.foobnix.android.utils.StringDB;
 import com.foobnix.android.utils.TxtUtils;
 import com.foobnix.dao2.FileMeta;
+import com.foobnix.model.AppState;
 import com.foobnix.pdf.info.R;
 import com.foobnix.pdf.info.TintUtil;
+import com.foobnix.pdf.info.model.BookCSS;
 import com.foobnix.pdf.info.view.EditTextHelper;
 import com.foobnix.pdf.info.view.KeyCodeDialog;
 import com.foobnix.pdf.info.view.MyPopupMenu;
 import com.foobnix.pdf.info.widget.DialogTranslateFromTo;
 import com.foobnix.pdf.info.widget.PrefDialogs;
-import com.foobnix.pdf.info.wrapper.AppState;
 import com.foobnix.pdf.info.wrapper.PopupHelper;
 import com.foobnix.pdf.search.activity.msg.OpenTagMessage;
 import com.foobnix.ui2.AppDB;
@@ -55,9 +58,6 @@ import com.foobnix.ui2.AppDB.SORT_BY;
 import com.foobnix.ui2.BooksService;
 import com.foobnix.ui2.adapter.AuthorsAdapter2;
 import com.foobnix.ui2.adapter.FileMetaAdapter;
-import com.foobnix.ui2.fast.FastScrollRecyclerView;
-import com.foobnix.ui2.fast.FastScrollStateChangeListener;
-import com.nostra13.universalimageloader.core.ImageLoader;
 
 import org.greenrobot.eventbus.Subscribe;
 
@@ -110,12 +110,27 @@ public class SearchFragment2 extends UIFragment<FileMeta> {
         int colorTheme = TintUtil.getColorInDayNighth();
         colorTheme = ColorUtils.setAlphaComponent(colorTheme, 230);
 
-        TintUtil.setStrokeColor(searchEditText, colorTheme);
         TintUtil.setUITextColor(countBooks, colorTheme);
-        TintUtil.setUITextColor(searchEditText, colorTheme);
 
         TintUtil.setTintImageNoAlpha(cleanFilter, colorTheme);
         TintUtil.setTintImageNoAlpha(myAutoCompleteImage, colorTheme);
+
+        if (AppState.get().appTheme == AppState.THEME_DARK_OLED || (AppState.get().appTheme == AppState.THEME_DARK && TintUtil.color == Color.BLACK)) {
+            searchEditText.setBackgroundResource(R.drawable.bg_search_edit_night);
+        } else {
+            searchEditText.setBackgroundResource(R.drawable.bg_search_edit);
+        }
+        TintUtil.setStrokeColor(searchEditText, colorTheme);
+        TintUtil.setUITextColor(searchEditText, colorTheme);
+
+        if (AppState.get().appTheme == AppState.THEME_INK) {
+            searchEditText.setBackgroundResource(R.drawable.bg_search_edit);
+            TintUtil.setStrokeColor(searchEditText, Color.BLACK);
+            TintUtil.setUITextColor(searchEditText, Color.BLACK);
+            countBooks.setTextColor(Color.BLACK);
+
+        }
+
 
     }
 
@@ -136,7 +151,7 @@ public class SearchFragment2 extends UIFragment<FileMeta> {
         autocomplitions.add(CMD_KEYCODE);
         autocomplitions.add(CMD_EDIT_AUTO_COMPLETE);
 
-        autocomplitions.addAll(AppState.get().myAutoComplete);
+        autocomplitions.addAll(StringDB.asList(AppState.get().myAutoCompleteDb));
 
         updateFilterListAdapter();
     }
@@ -173,26 +188,12 @@ public class SearchFragment2 extends UIFragment<FileMeta> {
         searchEditText = (AutoCompleteTextView) view.findViewById(R.id.filterLine);
         recyclerView = (RecyclerView) view.findViewById(R.id.recyclerView);
 
-        if(AppState.get().appTheme == AppState.THEME_DARK_OLED || AppState.get().appTheme == AppState.THEME_DARK){
+        if (AppState.get().appTheme == AppState.THEME_DARK_OLED || (AppState.get().appTheme == AppState.THEME_DARK && TintUtil.color == Color.BLACK)) {
             searchEditText.setBackgroundResource(R.drawable.bg_search_edit_night);
         }
 
         myAutoCompleteImage.setVisibility(View.GONE);
 
-        ((FastScrollRecyclerView) recyclerView).setFastScrollStateChangeListener(new FastScrollStateChangeListener() {
-
-            @Override
-            public void onFastScrollStop() {
-                ImageLoader.getInstance().resume();
-                LOG.d("ImageLoader resume");
-            }
-
-            @Override
-            public void onFastScrollStart() {
-                LOG.d("ImageLoader pause");
-                ImageLoader.getInstance().pause();
-            }
-        });
 
         searchEditText.addTextChangedListener(filterTextWatcher);
         searchEditText.setImeOptions(EditorInfo.IME_ACTION_SEARCH);
@@ -234,7 +235,7 @@ public class SearchFragment2 extends UIFragment<FileMeta> {
 
                     @Override
                     public void run() {
-                        AppState.get().searchPaths = AppState.get().searchPaths.replace("//", "/");
+                        BookCSS.get().searchPaths = BookCSS.get().searchPaths.replace("//", "/");
                     }
                 }, new Runnable() {
 
@@ -340,7 +341,7 @@ public class SearchFragment2 extends UIFragment<FileMeta> {
 
         final ListView list = new ListView(getActivity());
 
-        final List<String> items = new ArrayList<String>(AppState.get().myAutoComplete);
+        final List<String> items = new ArrayList<String>(StringDB.asList(AppState.get().myAutoCompleteDb));
         Collections.sort(items);
         BaseItemLayoutAdapter<String> adapter = new BaseItemLayoutAdapter<String>(getActivity(), R.layout.path_item, items) {
             @Override
@@ -356,7 +357,8 @@ public class SearchFragment2 extends UIFragment<FileMeta> {
                     public void onClick(View v) {
                         autocomplitions.remove(item);
                         items.remove(item);
-                        AppState.get().myAutoComplete.remove(item);
+
+                        StringDB.delete(AppState.get().myAutoCompleteDb, item, (db) -> AppState.get().myAutoCompleteDb = db);
                         notifyDataSetChanged();
                     }
                 });
@@ -569,15 +571,24 @@ public class SearchFragment2 extends UIFragment<FileMeta> {
                 }
             }
 
-            if (AppState.get().sortBy == SORT_BY.PATH.getIndex() || AppState.get().sortBy == SORT_BY.LANGUAGE.getIndex()) {
+            if (//
+                    AppState.get().sortBy == SORT_BY.PATH.getIndex() ||//
+                            AppState.get().sortBy == SORT_BY.LANGUAGE.getIndex() ||//
+                            AppState.get().sortBy == SORT_BY.PUBLICATION_YEAR.getIndex() ||
+                            AppState.get().sortBy == SORT_BY.PUBLISHER.getIndex()) {//
+
                 List<FileMeta> res = new ArrayList<FileMeta>();
                 String last = null;
 
                 String extDir = Environment.getExternalStorageDirectory().getPath();
 
                 for (FileMeta it : searchBy) {
-                    String parentName = null;
-                    if (AppState.get().sortBy == SORT_BY.PATH.getIndex()) {
+                    String parentName = "";
+                    if (AppState.get().sortBy == SORT_BY.PUBLISHER.getIndex()) {
+                        parentName = "" + it.getPublisher();
+                    } else if (AppState.get().sortBy == SORT_BY.PUBLICATION_YEAR.getIndex()) {
+                        parentName = "" + it.getYear();
+                    } else if (AppState.get().sortBy == SORT_BY.PATH.getIndex()) {
                         parentName = it.getParentPath();
                         parentName = parentName.replace(extDir, "");
                     } else if (AppState.get().sortBy == SORT_BY.LANGUAGE.getIndex()) {
@@ -694,6 +705,12 @@ public class SearchFragment2 extends UIFragment<FileMeta> {
             } else if (AppState.get().libraryMode == AppState.MODE_LANGUAGES) {
                 searchEditText.setHint(R.string.language);
                 empty = EMPTY_ID + getActivity().getString(R.string.no_language);
+            } else if (AppState.get().libraryMode == AppState.MODE_PUBLICATION_DATE) {
+                searchEditText.setHint(R.string.publication_date);
+                empty = EMPTY_ID + getActivity().getString(R.string.empy);
+            } else if (AppState.get().libraryMode == AppState.MODE_PUBLISHER) {
+                searchEditText.setHint(R.string.publisher);
+                empty = EMPTY_ID + getActivity().getString(R.string.empy);
             }
 
             authorsAdapter.clearItems();
@@ -719,6 +736,10 @@ public class SearchFragment2 extends UIFragment<FileMeta> {
                 list = res;
 
             }
+            if (AppState.get().libraryMode == AppState.MODE_PUBLICATION_DATE) {
+                Collections.reverse(list);
+            }
+
             list.add(0, empty);
             authorsAdapter.getItemsList().addAll(list);
             authorsAdapter.notifyDataSetChanged();
@@ -753,9 +774,9 @@ public class SearchFragment2 extends UIFragment<FileMeta> {
         @Override
         public void run() {
             String txt = searchEditText.getText().toString().trim();
-            if (TxtUtils.isNotEmpty(txt) && !txt.startsWith("@@") && !AppState.get().myAutoComplete.contains(txt)) {
+            if (TxtUtils.isNotEmpty(txt) && !txt.startsWith("@@") && !StringDB.contains(AppState.get().myAutoCompleteDb, txt)) {
                 if (!searchAdapter.getItemsList().isEmpty()) {
-                    AppState.get().myAutoComplete.add(txt);
+                    StringDB.add(AppState.get().myAutoCompleteDb, txt, (db) -> AppState.get().myAutoCompleteDb = db);
                     autocomplitions.add(txt);
                     updateFilterListAdapter();
                     myAutoCompleteImage.setVisibility(View.VISIBLE);
@@ -779,10 +800,10 @@ public class SearchFragment2 extends UIFragment<FileMeta> {
         @Override
         public void onTextChanged(final CharSequence s, final int start, final int before, final int count) {
             if (//
-            AppState.get().libraryMode == AppState.MODE_GRID || //
-            AppState.get().libraryMode == AppState.MODE_LIST || //
-            AppState.get().libraryMode == AppState.MODE_LIST_COMPACT || //
-            AppState.get().libraryMode == AppState.MODE_COVERS//
+                    AppState.get().libraryMode == AppState.MODE_GRID || //
+                            AppState.get().libraryMode == AppState.MODE_LIST || //
+                            AppState.get().libraryMode == AppState.MODE_LIST_COMPACT || //
+                            AppState.get().libraryMode == AppState.MODE_COVERS//
             ) {
                 handler.removeCallbacks(sortAndSeach);
                 handler.removeCallbacks(hideKeyboard);
@@ -796,7 +817,7 @@ public class SearchFragment2 extends UIFragment<FileMeta> {
             myAutoCompleteImage.setVisibility(View.GONE);
             handler.removeCallbacks(saveAutoComplete);
 
-            if (AppState.get().myAutoComplete.contains(s.toString().trim())) {
+            if (StringDB.contains(AppState.get().myAutoCompleteDb, s.toString().trim())) {
                 myAutoCompleteImage.setVisibility(View.VISIBLE);
             } else {
                 handler.postDelayed(saveAutoComplete, 10000);
@@ -841,7 +862,9 @@ public class SearchFragment2 extends UIFragment<FileMeta> {
                 R.string.serie, //
                 R.string.keywords, //
                 R.string.language, //
-                R.string.my_tags //
+                R.string.my_tags,
+                R.string.publisher,
+                R.string.publication_date//
         );
 
         final List<Integer> icons = Arrays.asList(R.drawable.glyphicons_114_justify, //
@@ -853,7 +876,10 @@ public class SearchFragment2 extends UIFragment<FileMeta> {
                 R.drawable.glyphicons_710_list_numbered, //
                 R.drawable.glyphicons_67_keywords, //
                 R.drawable.glyphicons_basic_417_globe, //
-                R.drawable.glyphicons_67_tags);
+                R.drawable.glyphicons_67_tags,
+                R.drawable.glyphicons_4_thumbs_up,
+                R.drawable.glyphicons_2_book_open
+        );
         final List<Integer> actions = Arrays.asList(AppState.MODE_LIST, AppState.MODE_LIST_COMPACT, //
                 AppState.MODE_GRID, //
                 AppState.MODE_COVERS, //
@@ -862,7 +888,9 @@ public class SearchFragment2 extends UIFragment<FileMeta> {
                 AppState.MODE_SERIES, //
                 AppState.MODE_KEYWORDS, //
                 AppState.MODE_LANGUAGES, //
-                AppState.MODE_USER_TAGS); //
+                AppState.MODE_USER_TAGS,
+                AppState.MODE_PUBLISHER,
+                AppState.MODE_PUBLICATION_DATE); //
 
         for (int i = 0; i < names.size(); i++) {
             final int index = i;
@@ -873,7 +901,7 @@ public class SearchFragment2 extends UIFragment<FileMeta> {
                     AppState.get().libraryMode = actions.get(index);
                     onGridList.setImageResource(icons.get(index));
 
-                    if (Arrays.asList(AppState.MODE_AUTHORS, AppState.MODE_SERIES, AppState.MODE_GENRE, AppState.MODE_USER_TAGS, AppState.MODE_KEYWORDS, AppState.MODE_LANGUAGES).contains(AppState.get().libraryMode)) {
+                    if (Arrays.asList(AppState.MODE_PUBLICATION_DATE, AppState.MODE_PUBLISHER, AppState.MODE_AUTHORS, AppState.MODE_SERIES, AppState.MODE_GENRE, AppState.MODE_USER_TAGS, AppState.MODE_KEYWORDS, AppState.MODE_LANGUAGES).contains(AppState.get().libraryMode)) {
                         searchEditText.setText("");
                     }
 
@@ -907,6 +935,9 @@ public class SearchFragment2 extends UIFragment<FileMeta> {
             if (searchText.startsWith("@")) {
                 try {
                     prevText.pop();
+                    if(prevText.empty()){
+                        return false;
+                    }
                     String pop = prevText.pop();
                     LOG.d("pop", pop);
                     if (TxtUtils.isNotEmpty(pop)) {

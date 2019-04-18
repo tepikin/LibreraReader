@@ -1,11 +1,22 @@
 package org.ebookdroid.core;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
+import android.graphics.PointF;
+import android.graphics.Rect;
+import android.graphics.RectF;
+import android.view.GestureDetector.SimpleOnGestureListener;
+import android.view.MotionEvent;
+
+import com.foobnix.android.utils.LOG;
+import com.foobnix.android.utils.TxtUtils;
+import com.foobnix.model.AppBook;
+import com.foobnix.model.AppState;
+import com.foobnix.pdf.info.R;
+import com.foobnix.pdf.info.model.BookCSS;
+import com.foobnix.pdf.info.view.AlertDialogs;
+import com.foobnix.sys.AdvGuestureDetector;
+import com.foobnix.sys.TempHolder;
 
 import org.ebookdroid.common.settings.SettingsManager;
-import org.ebookdroid.common.settings.books.BookSettings;
 import org.ebookdroid.common.settings.types.DocumentViewMode;
 import org.ebookdroid.common.settings.types.PageAlign;
 import org.ebookdroid.common.settings.types.PageType;
@@ -28,23 +39,12 @@ import org.emdev.ui.actions.params.Constant;
 import org.emdev.ui.progress.IProgressIndicator;
 import org.emdev.utils.LengthUtils;
 
-import com.foobnix.android.utils.LOG;
-import com.foobnix.android.utils.TxtUtils;
-import com.foobnix.pdf.info.R;
-import com.foobnix.pdf.info.view.AlertDialogs;
-import com.foobnix.pdf.info.wrapper.AppState;
-import com.foobnix.sys.AdvGuestureDetector;
-import com.foobnix.sys.TempHolder;
-
-import android.graphics.PointF;
-import android.graphics.Rect;
-import android.graphics.RectF;
-import android.view.GestureDetector.SimpleOnGestureListener;
-import android.view.MotionEvent;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class AbstractViewController extends AbstractComponentController<IView> implements IViewController {
 
-    public static final int DOUBLE_TAP_TIME = 500;
 
     public final IActivityController base;
 
@@ -60,7 +60,7 @@ public abstract class AbstractViewController extends AbstractComponentController
 
     protected final AtomicBoolean inQuickZoom = new AtomicBoolean();
 
-    protected final PageIndex pageToGo;
+    //protected final PageIndex pageToGo;
 
     protected int firstVisiblePage;
 
@@ -80,7 +80,7 @@ public abstract class AbstractViewController extends AbstractComponentController
         this.firstVisiblePage = -1;
         this.lastVisiblePage = -1;
 
-        this.pageToGo = SettingsManager.getBookSettings().getCurrentPage();
+        //this.pageToGo = SettingsManager.getBookSettings().getCurrentPage(base.getDocumentModel().getPageCount());
 
         createAction(R.id.adFrame, new Constant("direction", -1));
         createAction(R.id.adFrame, new Constant("direction", +1));
@@ -161,11 +161,11 @@ public abstract class AbstractViewController extends AbstractComponentController
 
             invalidatePageSizes(InvalidateSizeReason.INIT, null);
 
-            final BookSettings bs = SettingsManager.getBookSettings();
-            final Page page = pageToGo.getActualPage(model, bs);
+            final AppBook bs = SettingsManager.getBookSettings();
+            final Page page = bs.getCurrentPage(getBase().getDocumentModel().getPageCount()).getActualPage(model, bs);
             final int toPage = page != null ? page.index.viewIndex : 0;
 
-            goToPage(toPage, bs.offsetX, bs.offsetY);
+            goToPage(toPage, bs.x, bs.y);
 
         }
     }
@@ -398,7 +398,7 @@ public abstract class AbstractViewController extends AbstractComponentController
                     for (final TextWord[] lines : page.texts) {
                         final TextWord current[] = lines;
                         for (final TextWord line : current) {
-                            if (!AppState.get().isTextFormat() && (line.left < 0 || line.top < 0)) {
+                            if (!BookCSS.get().isTextFormat() && (line.left < 0 || line.top < 0)) {
                                 continue;
                             }
                             RectF wordRect = page.getPageRegion(bounds, line);
@@ -652,12 +652,6 @@ public abstract class AbstractViewController extends AbstractComponentController
         return true;
     }
 
-    /**
-     * {@inheritDoc}
-     * 
-     * @see org.ebookdroid.ui.viewer.IViewController#goToLink(int,
-     *      android.graphics.RectF)
-     */
     @Override
     public ViewState goToLink(final int pageDocIndex, final RectF targetRect, final boolean addToHistory) {
         if (pageDocIndex >= 0) {
@@ -776,33 +770,20 @@ public abstract class AbstractViewController extends AbstractComponentController
             // processTap(TouchManager.Touch.LongTap, e);
         }
 
-        /**
-         * {@inheritDoc}
-         * 
-         * @see org.ebookdroid.common.touch.IMultiTouchListener#onTwoFingerPinch(float,
-         *      float)
-         */
+
         @Override
         public void onTwoFingerPinch(final MotionEvent e, final float oldDistance, final float newDistance) {
             final float factor = (float) Math.sqrt(newDistance / oldDistance);
             base.getZoomModel().scaleZoom(factor);
         }
 
-        /**
-         * {@inheritDoc}
-         * 
-         * @see org.ebookdroid.common.touch.IMultiTouchListener#onTwoFingerPinchEnd()
-         */
+
         @Override
         public void onTwoFingerPinchEnd(final MotionEvent e) {
             base.getZoomModel().commit();
         }
 
-        /**
-         * {@inheritDoc}
-         * 
-         * @see org.ebookdroid.common.touch.IMultiTouchListener#onTwoFingerTap()
-         */
+
         @Override
         public void onTwoFingerTap(final MotionEvent e) {
             processTap(TouchManager.Touch.TwoFingerTap, e);

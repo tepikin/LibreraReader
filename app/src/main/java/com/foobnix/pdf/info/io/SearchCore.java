@@ -2,9 +2,9 @@ package com.foobnix.pdf.info.io;
 
 import com.foobnix.android.utils.LOG;
 import com.foobnix.dao2.FileMeta;
+import com.foobnix.model.AppState;
 import com.foobnix.pdf.info.ExtUtils;
 import com.foobnix.pdf.info.Playlists;
-import com.foobnix.pdf.info.wrapper.AppState;
 import com.foobnix.ui2.AppDB;
 import com.foobnix.ui2.FileMetaCore;
 import com.foobnix.ui2.adapter.FileMetaAdapter;
@@ -20,6 +20,10 @@ import java.util.Locale;
 
 public class SearchCore {
     public static boolean endWith(String name, List<String> exts) {
+        if (exts == null) {
+            return true;
+        }
+
         for (String ext : exts) {
             if (name.endsWith(ext)) {
                 return true;
@@ -45,7 +49,7 @@ public class SearchCore {
     }
 
     public static void search(List<FileMeta> items, File root, List<String> exts) {
-        if(root.getPath().equals("/")){
+        if (root.getPath().equals("/")) {
             LOG.d("Skip search in root");
             return;
         }
@@ -55,7 +59,9 @@ public class SearchCore {
 
     private static void search(File root, List<String> exts, List<FileMeta> items) {
         if (root.isFile() && endWith(root.getName(), exts)) {
-            items.add(new FileMeta(root.getPath()));
+            final FileMeta e = new FileMeta(root.getPath());
+            e.setTitle(root.getName());
+            items.add(e);
             return;
         } else if (root.isFile()) {
             return;
@@ -76,7 +82,9 @@ public class SearchCore {
 
                 search(file, exts, items);
             } else if (endWith(file.getName(), exts)) {
-                items.add(new FileMeta(file.getPath()));
+                final FileMeta e = new FileMeta(file.getPath());
+                e.setTitle(file.getName());
+                items.add(e);
             }
         }
         return;

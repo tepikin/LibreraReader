@@ -1,24 +1,5 @@
 package com.foobnix.tts;
 
-import java.io.File;
-
-import org.ebookdroid.LibreraApp;
-import org.ebookdroid.ui.viewer.VerticalViewActivity;
-
-import com.foobnix.android.utils.LOG;
-import com.foobnix.android.utils.TxtUtils;
-import com.foobnix.dao2.FileMeta;
-import com.foobnix.pdf.info.AppsConfig;
-import com.foobnix.pdf.info.ExtUtils;
-import com.foobnix.pdf.info.IMG;
-import com.foobnix.pdf.info.R;
-import com.foobnix.pdf.info.TintUtil;
-import com.foobnix.pdf.info.wrapper.AppState;
-import com.foobnix.pdf.search.activity.HorizontalViewActivity;
-import com.foobnix.sys.ImageExtractor;
-import com.foobnix.ui2.AppDB;
-import com.nostra13.universalimageloader.core.ImageLoader;
-
 import android.annotation.TargetApi;
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -33,6 +14,26 @@ import android.os.Handler;
 import android.support.v4.app.NotificationCompat;
 import android.view.View;
 import android.widget.RemoteViews;
+
+import com.foobnix.android.utils.Apps;
+import com.foobnix.android.utils.LOG;
+import com.foobnix.android.utils.TxtUtils;
+import com.foobnix.dao2.FileMeta;
+import com.foobnix.model.AppTemp;
+import com.foobnix.pdf.info.ExtUtils;
+import com.foobnix.pdf.info.IMG;
+import com.foobnix.pdf.info.R;
+import com.foobnix.pdf.info.TintUtil;
+import com.foobnix.pdf.info.model.BookCSS;
+import com.foobnix.pdf.search.activity.HorizontalViewActivity;
+import com.foobnix.sys.ImageExtractor;
+import com.foobnix.ui2.AppDB;
+import com.nostra13.universalimageloader.core.ImageLoader;
+
+import org.ebookdroid.LibreraApp;
+import org.ebookdroid.ui.viewer.VerticalViewActivity;
+
+import java.io.File;
 
 public class TTSNotification {
 
@@ -67,7 +68,7 @@ public class TTSNotification {
             return;
         }
         NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-        NotificationChannel channel = new NotificationChannel(DEFAULT, AppsConfig.TXT_APP_NAME, NotificationManager.IMPORTANCE_DEFAULT);
+        NotificationChannel channel = new NotificationChannel(DEFAULT, Apps.getApplicationName(context), NotificationManager.IMPORTANCE_DEFAULT);
         channel.setImportance(NotificationManager.IMPORTANCE_LOW);
         notificationManager.createNotificationChannel(channel);
 
@@ -84,7 +85,7 @@ public class TTSNotification {
 
             FileMeta fileMeta = AppDB.get().getOrCreate(bookPath);
 
-            Intent intent = new Intent(context, HorizontalViewActivity.class.getSimpleName().equals(AppState.get().lastMode) ? HorizontalViewActivity.class : VerticalViewActivity.class);
+            Intent intent = new Intent(context, HorizontalViewActivity.class.getSimpleName().equals(AppTemp.get().lastMode) ? HorizontalViewActivity.class : VerticalViewActivity.class);
             intent.setAction(ACTION_TTS);
             intent.setData(Uri.fromFile(new File(bookPath)));
             if (page > 0) {
@@ -135,8 +136,8 @@ public class TTSNotification {
 
             String textLine = pageNumber + " " + fileMetaBookName;
 
-            if (TxtUtils.isNotEmpty(AppState.get().mp3BookPath)) {
-                textLine = "[" + ExtUtils.getFileName(AppState.get().mp3BookPath) + "] " + textLine;
+            if (TxtUtils.isNotEmpty(BookCSS.get().mp3BookPath)) {
+                textLine = "[" + ExtUtils.getFileName(BookCSS.get().mp3BookPath) + "] " + textLine;
             }
 
             remoteViews.setTextViewText(R.id.bookInfo, textLine.trim());
@@ -172,6 +173,7 @@ public class TTSNotification {
 
     public static void hideNotification() {
         try {
+            LOG.d("Notification hideNotification");
             NotificationManager nm = (NotificationManager) LibreraApp.context.getSystemService(Context.NOTIFICATION_SERVICE);
             nm.cancel(NOT_ID);
         } catch (Exception e) {
@@ -180,6 +182,7 @@ public class TTSNotification {
     }
 
     public static void showLast() {
+        LOG.d("Notification showLast");
         if (TTSEngine.get().isShutdown()) {
             hideNotification();
         } else if (handler != null) {

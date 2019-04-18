@@ -18,9 +18,9 @@ import com.foobnix.ext.EpubExtractor;
 import com.foobnix.ext.Fb2Extractor;
 import com.foobnix.ext.MobiExtract;
 import com.foobnix.ext.PdfExtract;
+import com.foobnix.model.AppState;
 import com.foobnix.pdf.info.Clouds;
 import com.foobnix.pdf.info.ExtUtils;
-import com.foobnix.pdf.info.wrapper.AppState;
 
 import org.ebookdroid.BookType;
 import org.ebookdroid.droids.FolderContext;
@@ -146,6 +146,8 @@ public class FileMetaCore {
             ebookMeta = DjvuExtract.getBookMetaInformation(unZipPath);
         } else if (BookType.DOCX.is(unZipPath)) {
             ebookMeta.setLang(DocxExtractor.getLang(unZipPath));
+        } else if (BookType.JSON.is(unZipPath)) {
+            ebookMeta.setLang("en");
         } else if (BookType.PDF.is(unZipPath)) {
             boolean needExtractMeta = AppState.get().isAuthorTitleFromMetaPDF ? true : isNeedToExtractPDFMeta(unZipPath);
             EbookMeta local = PdfExtract.getBookMetaInformation(unZipPath);
@@ -204,7 +206,7 @@ public class FileMetaCore {
             ebookMeta.setTitle(ebookMeta.getTitle() + " [" + ebookMeta.getsIndex() + "]");
         }
 
-        if (path.endsWith(".zip") && !path.endsWith("fb2.zip")) {
+        if (path.endsWith(".zip") && !unZipPath.endsWith("fb2")) {
             ebookMeta.setTitle("{" + fileNameOriginal + "} " + ebookMeta.getTitle());
         }
 

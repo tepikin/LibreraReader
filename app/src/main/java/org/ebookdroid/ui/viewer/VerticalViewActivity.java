@@ -7,7 +7,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Configuration;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -18,9 +17,14 @@ import android.view.WindowManager;
 import android.widget.FrameLayout;
 
 import com.foobnix.android.utils.Dips;
+import com.foobnix.android.utils.Intents;
 import com.foobnix.android.utils.Keyboards;
 import com.foobnix.android.utils.LOG;
-import com.foobnix.android.utils.TxtUtils;
+import com.foobnix.drive.GFile;
+import com.foobnix.model.AppBook;
+import com.foobnix.model.AppProfile;
+import com.foobnix.model.AppState;
+import com.foobnix.model.AppTemp;
 import com.foobnix.pdf.info.ADS;
 import com.foobnix.pdf.info.Android6;
 import com.foobnix.pdf.info.ExtUtils;
@@ -29,7 +33,6 @@ import com.foobnix.pdf.info.R;
 import com.foobnix.pdf.info.model.BookCSS;
 import com.foobnix.pdf.info.view.BrightnessHelper;
 import com.foobnix.pdf.info.widget.RecentUpates;
-import com.foobnix.pdf.info.wrapper.AppState;
 import com.foobnix.pdf.info.wrapper.DocumentController;
 import com.foobnix.pdf.search.view.CloseAppDialog;
 import com.foobnix.sys.TempHolder;
@@ -39,7 +42,6 @@ import com.foobnix.ui2.MainTabs2;
 import com.foobnix.ui2.MyContextWrapper;
 
 import org.ebookdroid.common.settings.SettingsManager;
-import org.ebookdroid.common.settings.books.BookSettings;
 import org.ebookdroid.ui.viewer.viewers.PdfSurfaceView;
 import org.emdev.ui.AbstractActionActivity;
 
@@ -72,7 +74,7 @@ public class VerticalViewActivity extends AbstractActionActivity<VerticalViewAct
 
     /**
      * {@inheritDoc}
-     * 
+     *
      * @see org.emdev.ui.AbstractActionActivity#createController()
      */
     @Override
@@ -91,90 +93,53 @@ public class VerticalViewActivity extends AbstractActionActivity<VerticalViewAct
         intetrstialTimeoutSec = ADS.FULL_SCREEN_TIMEOUT_SEC;
         DocumentController.doRotation(this);
 
-        AppState.get().load(this);
 
         FileMetaCore.checkOrCreateMetaInfo(this);
 
-        // check uri
-
-        if (false) {
-            try {
-                Uri uri = getIntent().getData();
-                String page = uri.getQueryParameter(DocumentController.EXTRA_PAGE);
-                String password = uri.getQueryParameter(DocumentController.EXTRA_PASSWORD);
-
-                LOG.d("getIntent-1", getIntent());
-                if (TxtUtils.isNotEmpty(page) || TxtUtils.isNotEmpty(password)) {
-                    Uri data = Uri.parse(uri.getScheme() + "://" + uri.getPath());
-                    getIntent().setData(data);
-                    if (TxtUtils.isNotEmpty(page)) {
-                        try {
-                            getIntent().putExtra(DocumentController.EXTRA_PAGE, Integer.parseInt(page));
-                        } catch (Exception e) {
-                            LOG.e(e);
-                        }
-                    }
-
-                    if (TxtUtils.isNotEmpty(password)) {
-                        getIntent().putExtra(DocumentController.EXTRA_PASSWORD, password);
-                    }
+        if (getIntent().getData() != null) {
+            String path = getIntent().getData().getPath();
+            final AppBook bs = SettingsManager.getBookSettings(path);
+            // AppState.get().setNextScreen(bs.isNextScreen);
+            if (bs != null) {
+                // AppState.get().l = bs.l;
+                AppState.get().autoScrollSpeed = bs.s;
+                final boolean isTextFomat = ExtUtils.isTextFomat(bs.path);
+                AppTemp.get().isCut = isTextFomat ? false : bs.sp;
+                AppTemp.get().isCrop = bs.cp;
+                AppTemp.get().isDouble = false;
+                AppTemp.get().isDoubleCoverAlone = false;
+                AppTemp.get().isLocked = bs.getLock(isTextFomat);
+                TempHolder.get().pageDelta = bs.d;
+                if (AppState.get().isCropPDF && !isTextFomat) {
+                    AppTemp.get().isCrop = true;
                 }
-                LOG.d("getIntent-2", getIntent());
-            } catch (Exception e) {
-                LOG.e(e);
             }
+            BookCSS.get().detectLang(path);
         }
 
-        if (AppState.get().isRememberMode && AppState.get().readingMode == AppState.READING_MODE_BOOK) {
-            super.onCreate(savedInstanceState);
-            if (AppState.get().isDayNotInvert) {
-                setTheme(R.style.StyledIndicatorsWhite);
-            } else {
-                setTheme(R.style.StyledIndicatorsBlack);
+        getController().beforeCreate(this);
 
-            }
-            finish();
-            ExtUtils.showDocumentInner(this, getIntent().getData(), getIntent().getIntExtra(DocumentController.EXTRA_PAGE, 0), getIntent().getStringExtra(DocumentController.EXTRA_PLAYLIST));
-            return;
+        BrightnessHelper.applyBrigtness(this);
+
+        if (AppState.get().isDayNotInvert) {
+            setTheme(R.style.StyledIndicatorsWhite);
         } else {
-            if (getIntent().getData() != null) {
-                String path = getIntent().getData().getPath();
-                final BookSettings bs = SettingsManager.getBookSettings(path);
-                // AppState.get().setNextScreen(bs.isNextScreen);
-                if (bs != null) {
-                    // AppState.get().isLocked = bs.isLocked;
-                    AppState.get().autoScrollSpeed = bs.speed;
-                    AppState.get().isCut = bs.isTextFormat() ? false : bs.splitPages;
-                    AppState.get().isCrop = bs.cropPages;
-                    AppState.get().isDouble = false;
-                    AppState.get().isDoubleCoverAlone = false;
-                    AppState.get().isLocked = bs.isLocked;
-                    TempHolder.get().pageDelta = bs.pageDelta;
-                    if (AppState.get().isCropPDF && !bs.isTextFormat()) {
-                        AppState.get().isCrop = true;
-                    }
-                }
-                BookCSS.get().detectLang(path);
-            }
-
-            getController().beforeCreate(this);
-
-            BrightnessHelper.applyBrigtness(this);
-
-            if (AppState.get().isDayNotInvert) {
-                setTheme(R.style.StyledIndicatorsWhite);
-            } else {
-                setTheme(R.style.StyledIndicatorsBlack);
-            }
-            super.onCreate(savedInstanceState);
+            setTheme(R.style.StyledIndicatorsBlack);
         }
+        super.onCreate(savedInstanceState);
+
+        //FirebaseAnalytics.getInstance(this);
 
         if (PasswordDialog.isNeedPasswordDialog(this)) {
             return;
         }
         setContentView(R.layout.activity_vertical_view);
 
-        Android6.checkPermissions(this, false);
+        if (!Android6.canWrite(this)) {
+            Android6.checkPermissions(this, true);
+            return;
+        }
+
 
         getController().createWrapper(this);
         frameLayout = (FrameLayout) findViewById(R.id.documentView);
@@ -209,6 +174,7 @@ public class VerticalViewActivity extends AbstractActionActivity<VerticalViewAct
 
     @Override
     protected void attachBaseContext(Context context) {
+        AppProfile.init(context);
         super.attachBaseContext(MyContextWrapper.wrap(context));
     }
 
@@ -237,7 +203,8 @@ public class VerticalViewActivity extends AbstractActionActivity<VerticalViewAct
     protected void onActivityResult(final int requestCode, final int resultCode, final Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == RESULT_OK) {
-            getController().getDocumentController().goToPage(data.getIntExtra(DocumentController.EXTRA_PAGE, 0));
+            int page = Math.round(getController().getDocumentModel().getPageCount() * Intents.getFloatAndClear(data,DocumentController.EXTRA_PERCENT));
+            getController().getDocumentController().goToPage(page);
         }
     }
 
@@ -250,13 +217,15 @@ public class VerticalViewActivity extends AbstractActionActivity<VerticalViewAct
         getController().onPause();
         needToRestore = AppState.get().isAutoScroll;
         AppState.get().isAutoScroll = false;
-        AppState.get().save(this);
+        AppProfile.save(this);
         TempHolder.isSeaching = false;
         TempHolder.isActiveSpeedRead.set(false);
 
         if (handler != null) {
             handler.postDelayed(closeRunnable, AppState.APP_CLOSE_AUTOMATIC);
         }
+        GFile.runSyncService(this);
+
     }
 
     @Override
@@ -353,14 +322,14 @@ public class VerticalViewActivity extends AbstractActionActivity<VerticalViewAct
             return;
         }
 
-        AppState.get().save(this);
+        AppProfile.save(this);
 
         if (ExtUtils.isTextFomat(getIntent())) {
 
-            double value = getController().getDocumentModel().getPercentRead();
-            getIntent().putExtra(DocumentController.EXTRA_PERCENT, value);
+            //float value = getController().getDocumentModel().getPercentRead();
+            //Intents.putFloat(getIntent(),DocumentController.EXTRA_PERCENT, value);
 
-            LOG.d("READ PERCEnt", value);
+            //LOG.d("READ PERCEnt", value);
 
             getController().closeActivityFinal(new Runnable() {
 
@@ -421,7 +390,7 @@ public class VerticalViewActivity extends AbstractActionActivity<VerticalViewAct
 
     }
 
-    private boolean isMyKey = false;
+    private volatile boolean isMyKey = false;
 
     @Override
     public boolean onKeyUp(final int keyCode, final KeyEvent event) {
@@ -439,13 +408,14 @@ public class VerticalViewActivity extends AbstractActionActivity<VerticalViewAct
     @Override
     public boolean onKeyDown(final int keyCode, final KeyEvent event) {
         LOG.d("onKeyDown");
-
+        isMyKey = false;
         int repeatCount = event.getRepeatCount();
         if (repeatCount >= 1 && repeatCount < DocumentController.REPEAT_SKIP_AMOUNT) {
+            isMyKey = true;
             return true;
         }
 
-        isMyKey = false;
+
         if (getController().getWrapperControlls().dispatchKeyEventDown(event)) {
             isMyKey = true;
             return true;

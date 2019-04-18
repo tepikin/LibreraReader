@@ -1,30 +1,13 @@
 package com.foobnix.tts;
 
-import java.io.File;
-
-import org.greenrobot.eventbus.EventBus;
-import org.greenrobot.eventbus.Subscribe;
-import org.greenrobot.eventbus.ThreadMode;
-
-import com.foobnix.android.utils.LOG;
-import com.foobnix.android.utils.TxtUtils;
-import com.foobnix.pdf.info.R;
-import com.foobnix.pdf.info.TintUtil;
-import com.foobnix.pdf.info.model.BookCSS;
-import com.foobnix.pdf.info.view.MyPopupMenu;
-import com.foobnix.pdf.info.wrapper.AppState;
-import com.foobnix.pdf.info.wrapper.DocumentController;
-
 import android.annotation.TargetApi;
 import android.app.PendingIntent;
 import android.app.PendingIntent.CanceledException;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
-import android.graphics.PorterDuff.Mode;
 import android.os.Build;
 import android.os.Handler;
-import android.support.v4.graphics.ColorUtils;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -35,6 +18,22 @@ import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
+
+import com.foobnix.android.utils.LOG;
+import com.foobnix.android.utils.TxtUtils;
+import com.foobnix.model.AppState;
+import com.foobnix.pdf.info.R;
+import com.foobnix.pdf.info.TintUtil;
+import com.foobnix.pdf.info.Urls;
+import com.foobnix.pdf.info.model.BookCSS;
+import com.foobnix.pdf.info.view.MyPopupMenu;
+import com.foobnix.pdf.info.wrapper.DocumentController;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
+
+import java.io.File;
 
 public class TTSControlsView extends FrameLayout {
 
@@ -82,14 +81,14 @@ public class TTSControlsView extends FrameLayout {
         trackName.setVisibility(View.GONE);
 
         colorTint = Color.parseColor(AppState.get().isDayNotInvert ? BookCSS.get().linkColorDay : BookCSS.get().linkColorNight);
-
-        TintUtil.setTintImageWithAlpha(ttsStop, colorTint);
-        TintUtil.setTintImageWithAlpha(ttsPlayPause, colorTint);
-        TintUtil.setTintImageWithAlpha(ttsNext, colorTint);
-        TintUtil.setTintImageWithAlpha(ttsPrev, colorTint);
-        TintUtil.setTintImageWithAlpha(ttsDialog, colorTint);
-        TintUtil.setTintImageWithAlpha(ttsPrevTrack, colorTint);
-        TintUtil.setTintImageWithAlpha(ttsNextTrack, colorTint);
+        int alpha = 220;
+        TintUtil.setTintImageWithAlpha(ttsStop, colorTint, alpha);
+        TintUtil.setTintImageWithAlpha(ttsPlayPause, colorTint, alpha);
+        TintUtil.setTintImageWithAlpha(ttsNext, colorTint, alpha);
+        TintUtil.setTintImageWithAlpha(ttsPrev, colorTint, alpha);
+        TintUtil.setTintImageWithAlpha(ttsDialog, colorTint, alpha);
+        TintUtil.setTintImageWithAlpha(ttsPrevTrack, colorTint, alpha);
+        TintUtil.setTintImageWithAlpha(ttsNextTrack, colorTint, alpha);
         TintUtil.setTintText(trackName, colorTint);
 
         ttsNext.setOnClickListener(new OnClickListener() {
@@ -136,7 +135,11 @@ public class TTSControlsView extends FrameLayout {
 
             @Override
             public void onClick(View v) {
-                TTSService.playPause(context, controller);
+                if (TTSEngine.get().getEngineCount() == 0) {
+                    Urls.openTTS(getContext());
+                } else {
+                    TTSService.playPause(context, controller);
+                }
             }
         });
         ttsPlayPause.setOnLongClickListener(new OnLongClickListener() {
@@ -155,14 +158,14 @@ public class TTSControlsView extends FrameLayout {
         seekMax = (TextView) view.findViewById(R.id.seekMax);
         layoutMp3 = view.findViewById(R.id.layoutMp3);
 
-        int tinColor = ColorUtils.setAlphaComponent(colorTint, 230);
 
-        seekMp3.getProgressDrawable().setColorFilter(tinColor, Mode.SRC_ATOP);
+        TintUtil.setDrawableTint(seekMp3.getProgressDrawable(), colorTint, alpha);
+
         if (Build.VERSION.SDK_INT >= 16) {
-            seekMp3.getThumb().setColorFilter(tinColor, Mode.SRC_ATOP);
+            TintUtil.setDrawableTint(seekMp3.getThumb(), colorTint, alpha);
         }
-        TintUtil.setTintText(seekCurrent, tinColor);
-        TintUtil.setTintText(seekMax, tinColor);
+        TintUtil.setTintText(seekCurrent, colorTint);
+        TintUtil.setTintText(seekMax, colorTint);
 
         layoutMp3.setVisibility(View.GONE);
         initMp3();
@@ -173,7 +176,7 @@ public class TTSControlsView extends FrameLayout {
             public void onClick(View v) {
                 String track = TTSTracks.getPrevTrack();
                 if (track != null) {
-                    AppState.get().mp3BookPath = track;
+                    BookCSS.get().mp3BookPath = track;
                     TTSEngine.get().loadMP3(track, true);
                     udateButtons();
                 }
@@ -186,7 +189,7 @@ public class TTSControlsView extends FrameLayout {
             public void onClick(View v) {
                 String track = TTSTracks.getNextTrack();
                 if (track != null) {
-                    AppState.get().mp3BookPath = track;
+                    BookCSS.get().mp3BookPath = track;
                     TTSEngine.get().loadMP3(track, true);
                     udateButtons();
                 }
@@ -212,7 +215,7 @@ public class TTSControlsView extends FrameLayout {
                         @Override
                         public boolean onMenuItemClick(MenuItem item) {
                             TTSEngine.get().stop();
-                            AppState.get().mp3BookPath = file.getPath();
+                            BookCSS.get().mp3BookPath = file.getPath();
                             TTSEngine.get().loadMP3(file.getPath(), true);
                             udateButtons();
                             return false;
@@ -289,7 +292,7 @@ public class TTSControlsView extends FrameLayout {
         if (ttsPlayPause != null) {
             update.run();
             handler.removeCallbacksAndMessages(null);
-            handler.postDelayed(update, 250);
+            handler.postDelayed(update, 200);
         }
     }
 

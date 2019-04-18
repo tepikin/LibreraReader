@@ -7,10 +7,11 @@ import com.foobnix.android.utils.LOG;
 import com.foobnix.android.utils.StreamUtils;
 import com.foobnix.android.utils.TxtUtils;
 import com.foobnix.hypen.HypenUtils;
+import com.foobnix.model.AppState;
+import com.foobnix.model.AppTemp;
 import com.foobnix.pdf.info.ExtUtils;
 import com.foobnix.pdf.info.model.BookCSS;
 import com.foobnix.pdf.info.model.OutlineLinkWrapper;
-import com.foobnix.pdf.info.wrapper.AppState;
 import com.foobnix.sys.TempHolder;
 
 import org.ebookdroid.LibreraApp;
@@ -167,7 +168,10 @@ public class Fb2Extractor extends BaseExtractor {
                     }
 
                     if (imageID != null && xpp.getName().equals("binary") && imageID.equals(xpp.getAttributeValue(null, "id"))) {
-                        decode = Base64.decode(xpp.nextText(), Base64.DEFAULT);
+                        String text = xpp.nextText();
+                        if (text != null) {
+                            decode = Base64.decode(text, Base64.DEFAULT);
+                        }
                         break;
                     }
                 }
@@ -389,12 +393,12 @@ public class Fb2Extractor extends BaseExtractor {
                     if (xpp.getName().equals("a")) {
                         // String type = xpp.getAttributeValue(null, "type");
                         // if ("note".equals(type)) {
-                            isLink = true;
+                        isLink = true;
 
-                            link = xpp.getAttributeValue(null, "l:href");
-                            if (link == null) {
-                                link = xpp.getAttributeValue(null, "xlink:href");
-                            }
+                        link = xpp.getAttributeValue(null, "l:href");
+                        if (link == null) {
+                            link = xpp.getAttributeValue(null, "xlink:href");
+                        }
 
                         // }
                     } else if (xpp.getName().equals("section")) {
@@ -534,7 +538,7 @@ public class Fb2Extractor extends BaseExtractor {
         int count = 0;
 
         if (BookCSS.get().isAutoHypens) {
-            HypenUtils.applyLanguage(BookCSS.get().hypenLang);
+            HypenUtils.applyLanguage(AppTemp.get().hypenLang);
         }
 
         boolean isFindBodyEnd = false;
@@ -607,7 +611,7 @@ public class Fb2Extractor extends BaseExtractor {
                 }
 
                 if (!isFindBodyEnd) {
-                    if (BookCSS.get().isAutoHypens && TxtUtils.isNotEmpty(BookCSS.get().hypenLang)) {
+                    if (BookCSS.get().isAutoHypens && TxtUtils.isNotEmpty(AppTemp.get().hypenLang)) {
                         line = HypenUtils.applyHypnes(line);
                     }
                 }
@@ -681,7 +685,7 @@ public class Fb2Extractor extends BaseExtractor {
 
             // LOG.d("gen-in", line);
             line = accurateLine(line);
-            if (BookCSS.get().isAutoHypens && TxtUtils.isNotEmpty(BookCSS.get().hypenLang)) {
+            if (BookCSS.get().isAutoHypens && TxtUtils.isNotEmpty(AppTemp.get().hypenLang)) {
                 line = HypenUtils.applyHypnes(line);
             }
             writer.println(line);
@@ -747,7 +751,7 @@ public class Fb2Extractor extends BaseExtractor {
         PrintWriter writer = new PrintWriter(out);
         String line;
 
-        HypenUtils.applyLanguage(BookCSS.get().hypenLang);
+        HypenUtils.applyLanguage(AppTemp.get().hypenLang);
 
         while ((line = input.readLine()) != null) {
             LOG.d("gen0-in", line);

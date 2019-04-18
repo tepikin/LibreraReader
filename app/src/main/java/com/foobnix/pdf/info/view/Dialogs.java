@@ -1,38 +1,5 @@
 package com.foobnix.pdf.info.view;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
-
-import com.buzzingandroid.ui.HSVColorPickerDialog;
-import com.buzzingandroid.ui.HSVColorPickerDialog.OnColorSelectedListener;
-import com.foobnix.android.utils.BaseItemLayoutAdapter;
-import com.foobnix.android.utils.Dips;
-import com.foobnix.android.utils.IntegerResponse;
-import com.foobnix.android.utils.Keyboards;
-import com.foobnix.android.utils.LOG;
-import com.foobnix.android.utils.ResultResponse;
-import com.foobnix.android.utils.StringDB;
-import com.foobnix.android.utils.TxtUtils;
-import com.foobnix.android.utils.Vibro;
-import com.foobnix.dao2.FileMeta;
-import com.foobnix.pdf.info.ExtUtils;
-import com.foobnix.pdf.info.R;
-import com.foobnix.pdf.info.TintUtil;
-import com.foobnix.pdf.info.WebViewHepler;
-import com.foobnix.pdf.info.wrapper.AppState;
-import com.foobnix.pdf.info.wrapper.DocumentController;
-import com.foobnix.pdf.info.wrapper.MagicHelper;
-import com.foobnix.sys.TempHolder;
-import com.foobnix.ui2.AppDB;
-import com.foobnix.ui2.AppDB.SEARCH_IN;
-
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
@@ -60,7 +27,76 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.buzzingandroid.ui.HSVColorPickerDialog;
+import com.buzzingandroid.ui.HSVColorPickerDialog.OnColorSelectedListener;
+import com.foobnix.android.utils.BaseItemLayoutAdapter;
+import com.foobnix.android.utils.Dips;
+import com.foobnix.android.utils.IntegerResponse;
+import com.foobnix.android.utils.Keyboards;
+import com.foobnix.android.utils.LOG;
+import com.foobnix.android.utils.ResultResponse;
+import com.foobnix.android.utils.StringDB;
+import com.foobnix.android.utils.TxtUtils;
+import com.foobnix.android.utils.Vibro;
+import com.foobnix.dao2.FileMeta;
+import com.foobnix.drive.GFile;
+import com.foobnix.model.AppProfile;
+import com.foobnix.model.AppState;
+import com.foobnix.model.TagData;
+import com.foobnix.pdf.info.ExtUtils;
+import com.foobnix.pdf.info.R;
+import com.foobnix.pdf.info.TintUtil;
+import com.foobnix.pdf.info.WebViewHepler;
+import com.foobnix.pdf.info.wrapper.DocumentController;
+import com.foobnix.pdf.info.wrapper.MagicHelper;
+import com.foobnix.sys.TempHolder;
+import com.foobnix.ui2.AppDB;
+import com.foobnix.ui2.AppDB.SEARCH_IN;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 public class Dialogs {
+
+    public static void showSyncLOGDialog(Activity a) {
+        TextView result = new TextView(a);
+
+        final AtomicBoolean flag = new AtomicBoolean(true);
+
+        new Thread(() -> {
+            while (flag.get()) {
+                a.runOnUiThread(() -> result.setText(GFile.debugOut));
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+
+                }
+            }
+        }).start();
+
+
+        result.setText(GFile.debugOut);
+
+        result.setTextSize(12);
+        result.setText(GFile.debugOut);
+        result.setMinWidth(Dips.dpToPx(1000));
+        result.setMinHeight(Dips.dpToPx(1000));
+
+        AlertDialogs.showViewDialog(a, new Runnable() {
+            @Override
+            public void run() {
+                flag.set(false);
+            }
+        }, result);
+    }
 
     public static void testWebView(final Activity a, final String path) {
 
@@ -552,12 +588,12 @@ public class Dialogs {
                 Keyboards.close(edit);
                 Keyboards.hideNavigation((Activity) a);
 
-                AppState.get().bookTags = StringDB.add(AppState.get().bookTags, text);
+                StringDB.add(AppState.get().bookTags, text, (db) -> AppState.get().bookTags = db);
                 if (onRefresh != null) {
                     onRefresh.run();
                 }
                 create.dismiss();
-                AppState.get().save(a);
+                AppProfile.save(a);
 
             }
         });
@@ -618,7 +654,7 @@ public class Dialogs {
                                 checked.clear();
 
                                 LOG.d("AppState.get().bookTags before", AppState.get().bookTags);
-                                AppState.get().bookTags = StringDB.delete(AppState.get().bookTags, tagName);
+                                StringDB.delete(AppState.get().bookTags, tagName, (db) -> AppState.get().bookTags = db);
 
                                 tags.clear();
                                 tags.addAll(getAllTags(tag));
@@ -627,9 +663,12 @@ public class Dialogs {
 
                                 List<FileMeta> allWithTag = AppDB.get().getAllWithTag(tagName);
                                 for (FileMeta meta : allWithTag) {
-                                    meta.setTag(StringDB.delete(meta.getTag(), tagName));
+                                    StringDB.delete(meta.getTag(), tagName, (db) -> meta.setTag(db));
+                                    TagData.saveTags(meta);
                                 }
                                 AppDB.get().updateAll(allWithTag);
+
+
                                 if (refresh != null) {
                                     refresh.run();
                                 }
@@ -676,17 +715,19 @@ public class Dialogs {
         if (fileMeta != null) {
 
             builder.setPositiveButton(R.string.apply, new AlertDialog.OnClickListener() {
+                String res = "";
 
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
-                    String res = "";
+                    res = "";
                     for (int i : checked) {
-                        res = StringDB.add(res, tags.get(i));
+                        StringDB.add(res, tags.get(i), (db) -> res = db);
                     }
                     LOG.d("showTagsDialog", res);
                     if (fileMeta != null) {
                         fileMeta.setTag(res);
                         AppDB.get().update(fileMeta);
+                        TagData.saveTags(fileMeta);
                     }
                     if (refresh != null) {
                         refresh.run();
@@ -699,17 +740,19 @@ public class Dialogs {
 
         if (isReadBookOption) {
             builder.setNeutralButton(R.string.read_a_book, new AlertDialog.OnClickListener() {
+                String res = "";
 
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
-                    String res = "";
+                    res = "";
                     for (int i : checked) {
-                        res = StringDB.add(res, tags.get(i));
+                        StringDB.add(res, tags.get(i), (db) -> res = db);
                     }
                     LOG.d("showTagsDialog", res);
                     if (fileMeta != null) {
                         fileMeta.setTag(res);
                         AppDB.get().update(fileMeta);
+                        TagData.saveTags(fileMeta);
                     }
 
                     ExtUtils.openFile(a, new FileMeta(file.getPath()));

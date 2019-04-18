@@ -9,7 +9,11 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.pdf.PdfRenderer;
 import android.net.Uri;
+import android.os.Build;
+import android.os.ParcelFileDescriptor;
+import android.support.annotation.RequiresApi;
 import android.util.Base64;
 import android.util.Pair;
 
@@ -26,12 +30,14 @@ import com.foobnix.ext.Fb2Extractor;
 import com.foobnix.ext.MobiExtract;
 import com.foobnix.ext.OdtExtractor;
 import com.foobnix.ext.RtfExtract;
+import com.foobnix.model.AppState;
+import com.foobnix.model.AppTemp;
 import com.foobnix.opds.OPDS;
 import com.foobnix.pdf.info.Clouds;
 import com.foobnix.pdf.info.ExtUtils;
 import com.foobnix.pdf.info.IMG;
 import com.foobnix.pdf.info.PageUrl;
-import com.foobnix.pdf.info.wrapper.AppState;
+import com.foobnix.pdf.info.model.BookCSS;
 import com.foobnix.pdf.info.wrapper.MagicHelper;
 import com.foobnix.pdf.search.activity.PageImageState;
 import com.foobnix.ui2.AppDB;
@@ -84,6 +90,32 @@ public class ImageExtractor implements ImageDownloader {
         }
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    public synchronized Bitmap coverPDFNative(PageUrl pageUrl) {
+        try {
+            LOG.d("Cover-PDF-navite");
+            PdfRenderer renderer = new PdfRenderer(ParcelFileDescriptor.open(new File(pageUrl.getPath()), ParcelFileDescriptor.MODE_READ_ONLY));
+            PdfRenderer.Page page = renderer.openPage(0);
+
+            final float k = (float) page.getHeight() / page.getWidth();
+            int width = pageUrl.getWidth();
+            int height = (int) (width * k);
+
+
+            Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+            page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
+
+            page.close();
+            renderer.close();
+            return bitmap;
+        } catch (Exception e) {
+            LOG.e(e);
+            return null;
+        }
+
+    }
+
+
     private ImageExtractor(final Context c) {
         this.c = c;
         baseImage = new BaseImageDownloader(c);
@@ -121,7 +153,7 @@ public class ImageExtractor implements ImageDownloader {
             cover = BaseExtractor.arrayToBitmap(ebookMeta.coverImage, pageUrl.getWidth());
         } else if (BookType.EPUB.is(unZipPath)) {
             cover = BaseExtractor.arrayToBitmap(EpubExtractor.get().getBookCover(unZipPath), pageUrl.getWidth());
-        } else if (ExtUtils.isLibreFile(unZipPath) || BookType.ODT.is(unZipPath) || (unZipPath!=null && unZipPath.endsWith(".docx"))) {
+        } else if (ExtUtils.isLibreFile(unZipPath) || BookType.ODT.is(unZipPath) || (unZipPath != null && unZipPath.endsWith(".docx"))) {
             cover = BaseExtractor.arrayToBitmap(OdtExtractor.get().getBookCover(unZipPath), pageUrl.getWidth());
         } else if (BookType.FB2.is(unZipPath)) {
             cover = BaseExtractor.arrayToBitmap(Fb2Extractor.get().getBookCover(unZipPath), pageUrl.getWidth());
@@ -182,7 +214,7 @@ public class ImageExtractor implements ImageDownloader {
         }
     }
 
-    public Bitmap proccessOtherPage(PageUrl pageUrl) {
+    public synchronized Bitmap proccessOtherPage(PageUrl pageUrl) {
         int page = pageUrl.getPage();
         String path = pageUrl.getPath();
 
@@ -315,7 +347,8 @@ public class ImageExtractor implements ImageDownloader {
     }
 
     @Deprecated
-    public Pair<Bitmap, RectF> getCroppedPage(CodecDocument codecDocumentLocal, int page, Bitmap bitmap) {
+    public Pair<Bitmap, RectF> getCroppedPage(CodecDocument codecDocumentLocal, int page, Bitmap
+            bitmap) {
         RectF rectF = new RectF(0, 0, 1f, 1f);
         final Rect rootRect = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
 
@@ -332,7 +365,8 @@ public class ImageExtractor implements ImageDownloader {
     }
 
     @Override
-    public synchronized InputStream getStream(final String imageUri, final Object extra) throws IOException {
+    public synchronized InputStream getStream(final String imageUri, final Object extra) throws
+            IOException {
         try {
             return getStreamInner(imageUri);
         } finally {
@@ -415,12 +449,12 @@ public class ImageExtractor implements ImageDownloader {
                 return BaseExtractor.decodeImage(path, IMG.getImageSize());
             }
 
-            if (path.endsWith("json")) {
-                FileMeta fileMeta = AppDB.get().getOrCreate(path);
-                FileMetaCore.get().upadteBasicMeta(fileMeta, new File(path));
-                AppDB.get().update(fileMeta);
-                return messageFile("#json", "");
-            }
+//            if (path.endsWith("json")) {
+//                FileMeta fileMeta = AppDB.get().getOrCreate(path);
+//                FileMetaCore.get().upadteBasicMeta(fileMeta, new File(path));
+//                AppDB.get().update(fileMeta);
+//                return messageFile("#json", "");
+//            }
 
             // if (!file.isFile()) {
             // return messageFile("#no file", "");
@@ -448,7 +482,7 @@ public class ImageExtractor implements ImageDownloader {
             } else {
                 if (pageUrl.isDouble()) {
                     LOG.d("isDouble", pageUrl.getHeight(), pageUrl.getWidth());
-                    if (AppState.get().isDoubleCoverAlone) {
+                    if (AppTemp.get().isDoubleCoverAlone) {
                         pageUrl.setPage(pageUrl.getPage() - 1);
                     }
 
@@ -559,7 +593,8 @@ public class ImageExtractor implements ImageDownloader {
         pathCache = path;
     }
 
-    public static synchronized CodecDocument singleCodecContext(final String path, String passw, int w, int h) {
+    public static synchronized CodecDocument singleCodecContext(final String path, String
+            passw, int w, int h) {
         try {
             CodecContext codecContex = BookType.getCodecContextByPath(path);
 
@@ -577,7 +612,8 @@ public class ImageExtractor implements ImageDownloader {
         }
     }
 
-    public static synchronized CodecDocument getNewCodecContext(final String path, String passw, int w, int h) {
+    public static synchronized CodecDocument getNewCodecContext(final String path, String
+            passw, int w, int h) {
 
         if (path.equals(pathCache) /* && whCache == h + w */ && codeCache != null && !codeCache.isRecycled()) {
             LOG.d("getNewCodecContext cache", path, w, h);
@@ -622,7 +658,7 @@ public class ImageExtractor implements ImageDownloader {
             return null;
         }
 
-        pageCount = codeCache.getPageCount(w, h, AppState.get().fontSizeSp);
+        pageCount = codeCache.getPageCount(w, h, BookCSS.get().fontSizeSp);
         pathCache = path;
         whCache = h + w;
         return codeCache;

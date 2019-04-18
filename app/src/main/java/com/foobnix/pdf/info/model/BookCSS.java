@@ -1,24 +1,27 @@
 package com.foobnix.pdf.info.model;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.graphics.Typeface;
 import android.os.Environment;
 
+import com.foobnix.android.utils.Dips;
+import com.foobnix.android.utils.IO;
 import com.foobnix.android.utils.LOG;
 import com.foobnix.android.utils.Objects;
 import com.foobnix.android.utils.Objects.IgnoreHashCode;
 import com.foobnix.android.utils.Strings;
 import com.foobnix.android.utils.TxtUtils;
 import com.foobnix.dao2.FileMeta;
-import com.foobnix.pdf.info.ExportSettingsManager;
+import com.foobnix.model.AppBook;
+import com.foobnix.model.AppProfile;
+import com.foobnix.model.AppState;
+import com.foobnix.model.AppTemp;
 import com.foobnix.pdf.info.ExtUtils;
-import com.foobnix.pdf.info.FontExtractor;
-import com.foobnix.pdf.info.wrapper.AppState;
 import com.foobnix.pdf.info.wrapper.MagicHelper;
 import com.foobnix.ui2.AppDB;
 import com.foobnix.ui2.FileMetaCore;
 
+import org.ebookdroid.common.settings.books.SharedBooks;
 import org.ebookdroid.droids.DocContext;
 
 import java.io.File;
@@ -32,10 +35,54 @@ import java.util.List;
 import java.util.Locale;
 
 public class BookCSS {
+    /// PATHS
+
+    public static final String LIBRERA_CLOUD_DROPBOX = "Librera.Cloud-Dropbox";
+    public static final String LIBRERA_CLOUD_GOOGLEDRIVE = "Librera.Cloud-GoogleDrive";
+    public static final String LIBRERA_CLOUD_ONEDRIVE = "Librera.Cloud-OneDrive";
+
+    public String searchPaths;
+    public String cachePath = new File(AppProfile.DOWNLOADS_DIR, "Librera/Cache").getPath();
+    public String downlodsPath = new File(AppProfile.DOWNLOADS_DIR, "Librera/Download").getPath();
+    public String ttsSpeakPath = new File(AppProfile.DOWNLOADS_DIR, "Librera/TTS").getPath();
+    public String backupPath = new File(AppProfile.DOWNLOADS_DIR, "Librera/Backup").getPath();
+    public String syncDropboxPath = new File(AppProfile.DOWNLOADS_DIR, "Librera/" + LIBRERA_CLOUD_DROPBOX).getPath();
+    public String syncGdrivePath = new File(AppProfile.DOWNLOADS_DIR, "Librera/" + LIBRERA_CLOUD_GOOGLEDRIVE).getPath();
+    public String syncOneDrivePath = new File(AppProfile.DOWNLOADS_DIR, "Librera/" + LIBRERA_CLOUD_ONEDRIVE).getPath();
+
+
+    public static String DEFAULT_FOLDER = new File(AppProfile.SYNC_FOLDER_ROOT, "Fonts").getPath();
+    public String fontFolder = DEFAULT_FOLDER;
+
+    public volatile int fontSizeSp = Dips.isXLargeScreen() ? 32 : 24;
+    public float appFontScale = 1.0f;
+
+
+    public String mp3BookPath;
+    public String dirLastPath;
+    public String pathSAF = "";
+
+
+    public boolean isEnableSync;
+    public boolean isSyncManualOnly;
+    public boolean isSyncWifiOnly;
+    public boolean isShowSyncWheel = true;
+
+    public String syncRootID;
+
+
+    public boolean isTextFormat() {
+        try {
+            return ExtUtils.isTextFomat(AppTemp.get().lastBookPath);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    ///
+
 
     public static final String LINK_COLOR_UNIVERSAL = "#0066cc";
-
-    public static final String FONTS_DIR = "Fonts";
 
     public static final int TEXT_ALIGN_JUSTIFY = 0;
     public static final int TEXT_ALIGN_LEFT = 1;
@@ -54,7 +101,6 @@ public class BookCSS {
 
     public static List<String> fontExts = Arrays.asList(".ttf", ".otf");
 
-    public static String DEFAULT_FOLDER = "";
 
     public int documentStyle = STYLES_DOC_AND_USER;
     public int marginTop;
@@ -72,7 +118,6 @@ public class BookCSS {
 
     public int textAlign;
 
-    public String fontFolder;
 
     public String displayFontName;
     public String normalFont;
@@ -83,7 +128,8 @@ public class BookCSS {
     public String capitalFont;
 
     public boolean isAutoHypens;
-    public String hypenLang;
+
+
     public String linkColorDay;
     public String linkColorNight;
 
@@ -93,6 +139,9 @@ public class BookCSS {
 
     public static final String LINKCOLOR_DAYS = "#001BA5, #9F0600" + "," + LINK_COLOR_UNIVERSAL;
     public static final String LINKCOLOR_NIGTHS = "#7494B2, #B99D83" + "," + LINK_COLOR_UNIVERSAL;
+
+    @IgnoreHashCode
+    public int hashCode = 0;
 
     @IgnoreHashCode
     public String linkColorDays = LINKCOLOR_DAYS;
@@ -126,7 +175,7 @@ public class BookCSS {
 
         documentStyle = STYLES_DOC_AND_USER;
         isAutoHypens = true;
-        hypenLang = null;
+        AppTemp.get().hypenLang = null;
 
         linkColorDay = LINK_COLOR_UNIVERSAL;
         linkColorNight = LINK_COLOR_UNIVERSAL;
@@ -142,25 +191,53 @@ public class BookCSS {
 
         LOG.d("BookCSS", "resetToDefault");
 
+
     }
 
-    public void load(Context c) {
+
+    public void load1(Context c) {
         if (c == null) {
             return;
         }
-        DEFAULT_FOLDER = FontExtractor.getFontsDir(c, FONTS_DIR).getPath();
         resetToDefault(c);
 
-        SharedPreferences sp = c.getSharedPreferences(ExportSettingsManager.PREFIX_BOOK_CSS, Context.MODE_PRIVATE);
-        Objects.loadFromSp(this, sp);
+        IO.readObj(AppProfile.syncCSS, instance);
+
+        try {
+            if (TxtUtils.isEmpty(instance.searchPaths)) {
+                List<String> extFolders = ExtUtils.getExternalStorageDirectories(c);
+
+                if (!extFolders.contains(Environment.getExternalStorageDirectory().getPath())) {
+                    extFolders.add(Environment.getExternalStorageDirectory().getPath());
+                }
+                if (!extFolders.contains(ExtUtils.getSDPath())) {
+                    String sdPath = ExtUtils.getSDPath();
+                    if (sdPath != null) {
+                        extFolders.add(sdPath);
+                    }
+                }
+                instance.searchPaths = TxtUtils.joinList(",", extFolders);
+                //searchPaths = Environment.getExternalStorageDirectory().getPath();
+                LOG.d("searchPaths-all", searchPaths, instance.searchPaths);
+            }
+        } catch (Exception e) {
+            LOG.e(e);
+        }
+
+
     }
 
     public void save(Context c) {
         if (c == null) {
             return;
         }
-        SharedPreferences sp = c.getSharedPreferences(ExportSettingsManager.PREFIX_BOOK_CSS, Context.MODE_PRIVATE);
-        Objects.saveToSP(BookCSS.get(), sp);
+
+        int currentHash = Objects.hashCode(instance, false);
+        if (currentHash != instance.hashCode) {
+            LOG.d("Objects-save", "SAVE BookCSS");
+            hashCode = currentHash;
+            IO.writeObjAsync(AppProfile.syncCSS, instance);
+        }
     }
 
     public int position(String fontName) {
@@ -176,8 +253,8 @@ public class BookCSS {
     public void checkBeforeExport(Context c) {
         if (fontFolder != null && fontFolder.equals(DEFAULT_FOLDER)) {
             fontFolder = null;
-            save(c);
             fontFolder = DEFAULT_FOLDER;
+            AppProfile.save(c);
         }
 
     }
@@ -285,8 +362,8 @@ public class BookCSS {
 
     public List<String> getAllFonts() {
         List<String> all = new ArrayList<String>();
-        if (AppState.get().lastBookPath != null) {
-            all.addAll(getAllFontsFromFolder(new File(AppState.get().lastBookPath).getParent()));
+        if (AppTemp.get().lastBookPath != null) {
+            all.addAll(getAllFontsFromFolder(new File(AppTemp.get().lastBookPath).getParent()));
         }
         all.add(ARIAL);
         all.add(COURIER);
@@ -305,8 +382,8 @@ public class BookCSS {
 
     public List<FontPack> getAllFontsPacks() {
         List<FontPack> all = new ArrayList<FontPack>();
-        if (AppState.get().lastBookPath != null) {
-            all.addAll(getAllFontsFiltered(new File(AppState.get().lastBookPath).getParent()));
+        if (AppTemp.get().lastBookPath != null) {
+            all.addAll(getAllFontsFiltered(new File(AppTemp.get().lastBookPath).getParent()));
         }
         all.add(new FontPack(ARIAL));
         all.add(new FontPack(COURIER));
@@ -469,11 +546,11 @@ public class BookCSS {
         return "" + em + "em";
     }
 
-    private static BookCSS inst = new BookCSS();
+    private static BookCSS instance = new BookCSS();
 
     public static BookCSS get() {
 
-        return inst;
+        return instance;
     }
 
     public String getTextAlignConst(int id) {
@@ -503,14 +580,14 @@ public class BookCSS {
         String textColor = MagicHelper.colorToString(MagicHelper.getTextColor());
 
         builder.append("documentStyle" + documentStyle + "{}");
-        builder.append("isAutoHypens1" + isAutoHypens + hypenLang + "{}");
+        builder.append("isAutoHypens1" + isAutoHypens + AppTemp.get().hypenLang + "{}");
 
         builder.append("b>span,strong>span{font-weight:normal}");// fix chess
 
         if (path.endsWith(DocContext.EXT_DOC_HTML)) {
             builder.append("book>title, bookinfo {display:none}");
-            builder.append("emphasis,para {display:inline}");
-            builder.append("chapter,sect1, title {display:block}");
+            //builder.append("emphasis {display:inline}");
+            //builder.append("chapter,sect1, title {display:block}");
         }
 
 
@@ -559,9 +636,9 @@ public class BookCSS {
         builder.append("}");
 
         if (AppState.get().isDayNotInvert) {
-            builder.append("t{color:" + linkColorDay + " !important;}");
+            builder.append("t{color:" + linkColorDay + " !important; font-style: italic;}");
         } else {
-            builder.append("t{color:" + linkColorNight + " !important;}");
+            builder.append("t{color:" + linkColorNight + " !important; font-style: italic;}");
         }
 
         if (documentStyle == STYLES_DOC_AND_USER || documentStyle == STYLES_ONLY_USER) {
@@ -714,8 +791,15 @@ public class BookCSS {
         if (meta == null) {
             meta = FileMetaCore.createMetaIfNeed(bookPath, false);
         }
-        BookCSS.get().hypenLang = meta != null ? meta.getLang() : null;
-        LOG.d("detectLang",bookPath,  BookCSS.get().hypenLang);
+        AppTemp.get().hypenLang = meta != null ? meta.getLang() : null;
+        LOG.d("detectLang", bookPath, AppTemp.get().hypenLang);
+
+        if (TxtUtils.isEmpty(AppTemp.get().hypenLang)) {
+            final AppBook load = SharedBooks.load(bookPath);
+            if (load != null) {
+                AppTemp.get().hypenLang = load.ln;
+            }
+        }
     }
 
 }

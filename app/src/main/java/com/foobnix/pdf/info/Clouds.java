@@ -18,14 +18,17 @@ import com.cloudrail.si.types.SpaceAllocation;
 import com.foobnix.android.utils.Apps;
 import com.foobnix.android.utils.LOG;
 import com.foobnix.android.utils.Objects;
+import com.foobnix.android.utils.TxtUtils;
 import com.foobnix.ext.CacheZipUtils;
-import com.foobnix.pdf.info.wrapper.AppState;
+import com.foobnix.model.AppBook;
+import com.foobnix.model.AppProfile;
+import com.foobnix.pdf.info.model.BookCSS;
 import com.foobnix.pdf.search.activity.msg.MessageSyncUpdateList;
 import com.foobnix.pdf.search.view.AsyncProgressTask;
 import com.foobnix.ui2.BooksService;
 import com.foobnix.ui2.FileMetaCore;
+import com.foobnix.ui2.MainTabs2;
 
-import org.ebookdroid.common.settings.books.BookSettings;
 import org.greenrobot.eventbus.EventBus;
 
 import java.io.ByteArrayInputStream;
@@ -64,18 +67,18 @@ public class Clouds {
     public volatile String oneDriveSpace;
     private Context context;
 
-    public static void saveProgress(BookSettings bs) {
+    public static void saveProgress(AppBook bs) {
         LOG.d("Save progress", bs);
-        if (!isCloudImage(bs.fileName)) {
+        if (!isCloudImage(bs.path)) {
             return;
         }
-        File bookFile = new File(bs.fileName);
+        File bookFile = new File(bs.path);
         File folder = new File(bookFile.getParentFile(), ".data");
         folder.mkdirs();
 
         File settings = new File(folder, bookFile.getName());
         try {
-            CacheZipUtils.copyFile(new ByteArrayInputStream(bs.toJSON().toString().getBytes()), settings);
+            CacheZipUtils.copyFile(new ByteArrayInputStream(Objects.toJSONString(bs).getBytes()), settings);
         } catch (Exception e) {
             LOG.e(e);
         }
@@ -100,7 +103,7 @@ public class Clouds {
             return null;
         }
 
-        File cacheDir = new File(AppState.get().cachePath);
+        File cacheDir = new File(BookCSS.get().cachePath);
         if (!cacheDir.exists()) {
             cacheDir.mkdirs();
         }
@@ -108,7 +111,7 @@ public class Clouds {
         String displayName = path.hashCode() + "_" + ExtUtils.getFileName(path);
 
         if (!path.contains(".Cloud/")) {
-            File cacheFile = new File(AppState.get().cachePath, displayName);
+            File cacheFile = new File(BookCSS.get().cachePath, displayName);
             LOG.d("cacheFile-1", cacheFile);
             return cacheFile;
         }
@@ -117,13 +120,13 @@ public class Clouds {
 
         File cacheFile2 = null;
         if (path.startsWith(PREFIX_CLOUD_DROPBOX)) {
-            cacheFile2 = new File(AppState.get().syncDropboxPath, displayName);
+            cacheFile2 = new File(BookCSS.get().syncDropboxPath, displayName);
         } else if (path.startsWith(PREFIX_CLOUD_GDRIVE)) {
-            cacheFile2 = new File(AppState.get().syncGdrivePath, displayName);
+            cacheFile2 = new File(BookCSS.get().syncGdrivePath, displayName);
         } else if (path.startsWith(PREFIX_CLOUD_ONEDRIVE)) {
-            cacheFile2 = new File(AppState.get().syncOneDrivePath, displayName);
+            cacheFile2 = new File(BookCSS.get().syncOneDrivePath, displayName);
         } else {
-            cacheFile2 = new File(AppState.get().cachePath, displayName);
+            cacheFile2 = new File(BookCSS.get().cachePath, displayName);
         }
         LOG.d("cacheFile-2", cacheFile2);
 
@@ -234,7 +237,7 @@ public class Clouds {
             dropbox = new Dropbox(c, "wp5uvfelqbdnwkg", "e7hfer9dh5r18tz", "https://auth.cloudrail.com/Librera", "");
             ((Dropbox) dropbox).useAdvancedAuthentication();
 
-            googleDrive = new GoogleDrive(c, Apps.getMetaData(c,"librera.GOOGLE_DRIVE_KEY"), "", Apps.getPackageName(c) + ":/auth", "");
+            googleDrive = new GoogleDrive(c, Apps.getMetaData(c, "librera.GOOGLE_DRIVE_KEY"), "", Apps.getPackageName(c) + ":/auth", "");
             ((GoogleDrive) googleDrive).useAdvancedAuthentication();
 
             // https://apps.dev.microsoft.com/#/application
@@ -275,9 +278,9 @@ public class Clouds {
         // IMG.clearMemoryCache();
         // IMG.clearDiscCache();
 
-        syncronizeGet(dropbox, AppState.get().syncDropboxPath);
-        syncronizeGet(googleDrive, AppState.get().syncGdrivePath);
-        syncronizeGet(oneDrive, AppState.get().syncOneDrivePath);
+        syncronizeGet(dropbox, BookCSS.get().syncDropboxPath);
+        syncronizeGet(googleDrive, BookCSS.get().syncGdrivePath);
+        syncronizeGet(oneDrive, BookCSS.get().syncOneDrivePath);
 
     }
 
@@ -398,11 +401,11 @@ public class Clouds {
                 try {
                     String syncPath = "";
                     if (cloud instanceof Dropbox) {
-                        syncPath = AppState.get().syncDropboxPath;
+                        syncPath = BookCSS.get().syncDropboxPath;
                     } else if (cloud instanceof GoogleDrive) {
-                        syncPath = AppState.get().syncGdrivePath;
+                        syncPath = BookCSS.get().syncGdrivePath;
                     } else if (cloud instanceof OneDrive) {
-                        syncPath = AppState.get().syncOneDrivePath;
+                        syncPath = BookCSS.get().syncOneDrivePath;
                     } else {
                         new IllegalArgumentException("Invalid provider");
 
@@ -460,7 +463,7 @@ public class Clouds {
     }
 
     public static boolean isSyncFileExist(File file) {
-        File sync = new File(AppState.get().syncDropboxPath, file.getName());
+        File sync = new File(BookCSS.get().syncDropboxPath, file.getName());
         return sync.exists() && sync.length() > 0;
     }
 
@@ -523,7 +526,9 @@ public class Clouds {
                         }
                     });
                 }
-            };
+            }
+
+            ;
         }.start();
     }
 
@@ -562,7 +567,9 @@ public class Clouds {
                         }
                     });
                 }
-            };
+            }
+
+            ;
         }.start();
     }
 
@@ -601,11 +608,48 @@ public class Clouds {
                         }
                     });
                 }
-            };
+            }
+
+            ;
         }.start();
     }
 
+    public static boolean isLibreraSyncFile(File path) {
+        return isLibreraSyncFile(path.getPath());
+    }
+
+    public static boolean isLibreraSyncFile(String path) {
+        if (TxtUtils.isEmpty(path)) {
+            return false;
+        }
+        return path.startsWith(AppProfile.SYNC_FOLDER_BOOKS.getPath()) || new File(AppProfile.SYNC_FOLDER_BOOKS, ExtUtils.getFileName(path)).exists();
+    }
+
+    public static boolean isLibreraSyncRootFolder(String path) {
+        if (TxtUtils.isEmpty(path)) {
+            return false;
+        }
+        return path.startsWith(AppProfile.SYNC_FOLDER_ROOT.getPath());
+    }
+
     public static boolean showHideCloudImage(ImageView img, String path) {
+
+        String fileName = ExtUtils.getFileName(path);
+
+        if (isLibreraSyncFile(path)) {
+            img.setVisibility(View.VISIBLE);
+            img.setImageResource(R.drawable.glyphicons_748_synchronization);
+            //TintUtil.setTintImageNoAlpha(img, TintUtil.cloudSyncColor);
+
+            TintUtil.setTintImageWithAlpha(img, img.getContext() instanceof MainTabs2 ? TintUtil.getColorInDayNighth() : TintUtil.getColorInDayNighthBook());
+
+            return true;
+        } else {
+            img.setVisibility(View.GONE);
+            img.setImageDrawable(null);
+        }
+
+
         if (!AppsConfig.isCloudsEnable) {
             img.setVisibility(View.GONE);
             return false;
@@ -613,11 +657,11 @@ public class Clouds {
 
         if (path.contains(Clouds.LIBRERA_SYNC_ONLINE_FOLDER)) {
             img.setVisibility(View.VISIBLE);
-            if (path.contains(AppState.LIBRERA_CLOUD_DROPBOX) || path.startsWith(Clouds.PREFIX_CLOUD_DROPBOX)) {
+            if (path.contains(BookCSS.LIBRERA_CLOUD_DROPBOX) || path.startsWith(Clouds.PREFIX_CLOUD_DROPBOX)) {
                 img.setImageResource(R.drawable.dropbox);
-            } else if (path.contains(AppState.LIBRERA_CLOUD_GOOGLEDRIVE) || path.startsWith(Clouds.PREFIX_CLOUD_GDRIVE)) {
+            } else if (path.contains(BookCSS.LIBRERA_CLOUD_GOOGLEDRIVE) || path.startsWith(Clouds.PREFIX_CLOUD_GDRIVE)) {
                 img.setImageResource(R.drawable.gdrive);
-            } else if (path.contains(AppState.LIBRERA_CLOUD_ONEDRIVE) || path.startsWith(Clouds.PREFIX_CLOUD_ONEDRIVE)) {
+            } else if (path.contains(BookCSS.LIBRERA_CLOUD_ONEDRIVE) || path.startsWith(Clouds.PREFIX_CLOUD_ONEDRIVE)) {
                 img.setImageResource(R.drawable.onedrive);
             } else {
                 // img.setImageResource(R.drawable.star_1);

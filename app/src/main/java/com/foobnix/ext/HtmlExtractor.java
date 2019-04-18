@@ -3,9 +3,10 @@ package com.foobnix.ext;
 import com.foobnix.android.utils.LOG;
 import com.foobnix.android.utils.TxtUtils;
 import com.foobnix.hypen.HypenUtils;
+import com.foobnix.model.AppState;
+import com.foobnix.model.AppTemp;
 import com.foobnix.pdf.info.ExtUtils;
 import com.foobnix.pdf.info.model.BookCSS;
-import com.foobnix.pdf.info.wrapper.AppState;
 
 import org.jsoup.Jsoup;
 import org.jsoup.safety.Whitelist;
@@ -70,8 +71,8 @@ public class HtmlExtractor {
                 string = html.toString();
             }
 
-            if (BookCSS.get().isAutoHypens && TxtUtils.isNotEmpty(BookCSS.get().hypenLang)) {
-                HypenUtils.applyLanguage(BookCSS.get().hypenLang);
+            if (BookCSS.get().isAutoHypens && TxtUtils.isNotEmpty(AppTemp.get().hypenLang)) {
+                HypenUtils.applyLanguage(AppTemp.get().hypenLang);
                 string = HypenUtils.applyHypnes(string);
                 // string = Jsoup.clean(string, Whitelist.none());
             }
@@ -137,7 +138,7 @@ public class HtmlExtractor {
             String string = Jsoup.clean(html.toString(), Whitelist.basic());
 
             if (BookCSS.get().isAutoHypens) {
-                HypenUtils.applyLanguage(BookCSS.get().hypenLang);
+                HypenUtils.applyLanguage(AppTemp.get().hypenLang);
                 string = HypenUtils.applyHypnes(string);
             }
 

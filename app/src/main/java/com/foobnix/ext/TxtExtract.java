@@ -5,9 +5,10 @@ import android.text.TextUtils;
 import com.foobnix.android.utils.LOG;
 import com.foobnix.android.utils.TxtUtils;
 import com.foobnix.hypen.HypenUtils;
+import com.foobnix.model.AppState;
+import com.foobnix.model.AppTemp;
 import com.foobnix.pdf.info.ExtUtils;
 import com.foobnix.pdf.info.model.BookCSS;
-import com.foobnix.pdf.info.wrapper.AppState;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -31,6 +32,9 @@ public class TxtExtract {
 
     public static FooterNote extract(String inputPath, String outputDir) throws IOException {
         File file = new File(outputDir, AppState.get().isPreText + OUT_FB2_XML);
+
+
+        boolean isJSON = inputPath.endsWith(".json");
 
         String encoding = ExtUtils.determineTxtEncoding(new FileInputStream(inputPath));
 
@@ -56,11 +60,14 @@ public class TxtExtract {
         }
 
         if (BookCSS.get().isAutoHypens) {
-            HypenUtils.applyLanguage(BookCSS.get().hypenLang);
+            HypenUtils.applyLanguage(AppTemp.get().hypenLang);
         }
 
         while ((line = input.readLine()) != null) {
             String outLn = null;
+
+
+
             if (AppState.get().isPreText) {
 
                 outLn = retab(line, 8);
@@ -92,6 +99,10 @@ public class TxtExtract {
                 }
 
             }
+            if(isJSON){
+                outLn = outLn.replace(",",",<br/>");
+            }
+
             // LOG.d("LINE", outLn);
             writer.println(outLn);
         }
@@ -146,7 +157,7 @@ public class TxtExtract {
             line = line.replace("\n", "");
             line = line.replace("\r", "");
             line = TextUtils.htmlEncode(line);
-            if (BookCSS.get().isAutoHypens && TxtUtils.isNotEmpty(BookCSS.get().hypenLang)) {
+            if (BookCSS.get().isAutoHypens && TxtUtils.isNotEmpty(AppTemp.get().hypenLang)) {
                 line = HypenUtils.applyHypnes(line);
             }
             line = line.trim();

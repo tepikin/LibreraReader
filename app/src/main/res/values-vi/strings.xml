@@ -536,4 +536,26 @@
    <string name="please_wait_books_are_being_processed_">Vui lòng đợi, sách đang được xử lý</string>
    <string name="system_brightness">Độ sáng hệ thống</string>
    <string name="opening_books_in_the_specified_mode">Mở sách ở chế độ chỉ định</string>
+   <string name="dark_oled">Bóng tối</string>
+   <string name="profile">Hồ sơ</string>
+   <string name="new_profile">Hồ sơ mới</string>
+   <string name="main">Chủ yếu</string>
+   <string name="do_you_want_to_switch_profile_">Chuyển sang hồ sơ khác?</string>
+   <string name="sync_error">Lỗi đồng bộ hóa</string>
+   <string name="sign_in">Đăng nhập</string>
+   <string name="sign_out">Đăng xuất</string>
+   <string name="manual_sync_only">Chỉ đồng bộ hóa thủ công</string>
+   <string name="wifi_sync_only">Chỉ đồng bộ wifi</string>
+   <string name="sync_google_drive">Đồng bộ hóa (ổ đĩa google)</string>
+   <string name="single_tap_to_select_text">Nhấn một lần để chọn văn bản</string>
+   <string name="sync_book">Đồng bộ một cuốn sách</string>
+   <string name="sync">Đồng bộ hóa</string>
+   <string name="synchronized_folder">Thư mục đồng bộ</string>
+   <string name="today">Hôm nay</string>
+   <string name="downloads">Các bản tải xuống</string>
+   <string name="delete_the_directory_all_the_files_in_the_directory_">Thư mục không trống. xóa bằng cách nào?</string>
+   <string name="synchronized_books">Sách đồng bộ</string>
+   <string name="show_sync_wheel">Hiển thị bánh xe đồng bộ</string>
+   <string name="publication_date">Ngày xuất bản</string>
+   <string name="empy">Trống</string>
 </resources>

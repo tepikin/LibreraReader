@@ -14,7 +14,8 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 
 import com.foobnix.android.utils.LOG;
-import com.foobnix.pdf.info.wrapper.AppState;
+import com.foobnix.model.AppProfile;
+import com.foobnix.ui2.AppDB;
 
 public class Android6 {
 
@@ -63,6 +64,9 @@ public class Android6 {
             if(checkWhatIsNew) {
                 AndroidWhatsNew.checkWhatsNew(a);
             }
+            if(!AppDB.get().isOpen){
+                AppDB.get().open(a, AppProfile.getCurrent(a));
+            }
             FontExtractor.extractFonts(a);
         }
     }
@@ -71,7 +75,7 @@ public class Android6 {
         switch (requestCode) {
         case MY_PERMISSIONS_REQUEST_WES: {
             // If request is cancelled, the result arrays are empty.
-            AppState.get().save(a);
+            AppProfile.save(a);
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 if (Build.VERSION.SDK_INT <= 22) {// kill to restart 22 ????fa
                     android.os.Process.killProcess(android.os.Process.myPid());

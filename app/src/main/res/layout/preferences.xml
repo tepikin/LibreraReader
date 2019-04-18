@@ -1,55 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:ads="http://schemas.android.com/apk/res-auto"
     xmlns:myseek="http://schemas.android.com/apk/res-auto"
     android:id="@+id/scroll"
+
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?android:attr/colorBackground" >
+    android:background="?android:attr/colorBackground">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:padding="3dip" >
+        android:padding="3dip">
+
 
         <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:gravity="center"
-            android:orientation="horizontal"
-            android:padding="4dip"
-            android:visibility="visible" >
-
-            <ImageView
-                android:id="@+id/imageView1"
-                android:layout_width="@dimen/wh_button"
-                android:layout_height="@dimen/wh_button"
-                android:layout_margin="4dip"
-                android:src="@mipmap/icon_pdf_pro" />
-
-            <TextView
-                android:id="@+id/downloadPRO"
-                style="@style/textLink"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:singleLine="false"
-                android:text="@string/librera_pro_program_for_reading_books_without_advertising_installing_it_removes_advertising_in_this_application" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/section1"
+            android:id="@+id/section9"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@drawable/bg_search_second" >
+            android:background="@drawable/bg_search_second"
+            android:gravity="center_vertical">
+
 
             <TextView
                 style="@style/textLinkWhite"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="@string/library_settings" />
+                android:text="@string/profile" />
 
             <TextView
                 android:id="@+id/onCloseApp"
@@ -64,6 +42,71 @@
                 android:text="@string/exit_application"
                 android:textSize="@dimen/text_subtitle"
                 android:visibility="visible" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:padding="10dip">
+
+            <ImageView
+                android:layout_width="@dimen/wh_button"
+                android:layout_height="@dimen/wh_button"
+                android:padding="8dip"
+                android:visibility="invisible" />
+
+            <View
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
+
+            <TextView
+                android:id="@+id/profileLetter"
+                style="@style/textCircle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+            <TextView
+                android:id="@+id/onProfile"
+                style="@style/textLink"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="BETA"
+                android:textSize="16sp" />
+
+            <View
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
+
+            <ImageView
+                android:id="@+id/onProfileEdit"
+                android:layout_width="@dimen/wh_button"
+                android:layout_height="@dimen/wh_button"
+                android:padding="8dip"
+                android:src="@drawable/glyphicons_137_cogwheel"
+                android:tint="@color/tint_gray" />
+
+
+        </LinearLayout>
+
+
+        <LinearLayout
+            android:id="@+id/section1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_search_second">
+
+            <TextView
+                style="@style/textLinkWhite"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/library_settings" />
+
+
         </LinearLayout>
 
         <TextView
@@ -97,7 +140,7 @@
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal" >
+            android:orientation="horizontal">
 
             <CheckBox
                 android:id="@+id/supportPDF"
@@ -129,7 +172,7 @@
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal" >
+            android:orientation="horizontal">
 
             <CheckBox
                 android:id="@+id/supportMOBI"
@@ -159,7 +202,7 @@
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal" >
+            android:orientation="horizontal">
 
             <CheckBox
                 android:id="@+id/supportDOCX"
@@ -189,7 +232,7 @@
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal" >
+            android:orientation="horizontal">
 
             <CheckBox
                 android:id="@+id/supportCBZ"
@@ -213,7 +256,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical" >
+            android:orientation="vertical">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -226,7 +269,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:gravity="center_vertical"
-                android:orientation="horizontal" >
+                android:orientation="horizontal">
 
                 <CheckBox
                     android:id="@+id/supportZIP"
@@ -247,7 +290,8 @@
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content" >
+                android:layout_height="wrap_content">
+
 
                 <CheckBox
                     android:id="@+id/isFirstSurname"
@@ -262,10 +306,81 @@
                     android:layout_height="@dimen/wh_button"
                     android:layout_weight="0"
                     android:padding="8dip"
-                    android:src="@drawable/glyphicons_685_article"
+                    android:src="@drawable/glyphicons_137_cogwheel"
                     android:tint="@color/tint_gray" />
             </LinearLayout>
 
+        </LinearLayout>
+
+
+        <LinearLayout
+            android:id="@+id/section8"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_search_second"
+            android:gravity="center_vertical">
+
+
+            <ImageView
+                android:layout_width="@dimen/wh_button_small"
+                android:layout_height="@dimen/wh_button_small"
+                android:layout_weight="0"
+                android:padding="2dip"
+                android:src="@drawable/gdrive"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/syncHeader"
+                style="@style/textLinkWhite"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/sync_google_drive" />
+
+
+            <TextView
+                android:id="@+id/signIn"
+                style="@style/textLinkWhite"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="0"
+                android:singleLine="true"
+                android:text="@string/sign_in" />
+
+
+        </LinearLayout>
+
+
+        <TextView
+            android:id="@+id/syncInfo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="4dip"
+            android:text="ivan@gmail.com" />
+
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical">
+
+
+            <CheckBox
+                android:id="@+id/isEnableSync"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/enable" />
+
+
+            <ImageView
+                android:id="@+id/isEnableSyncSettings"
+                android:layout_width="@dimen/wh_button"
+                android:layout_height="@dimen/wh_button"
+                android:layout_weight="0"
+                android:padding="8dip"
+                android:src="@drawable/glyphicons_137_cogwheel"
+                android:tint="@color/tint_gray" />
         </LinearLayout>
 
         <TextView
@@ -277,10 +392,11 @@
             android:background="@drawable/bg_search_second"
             android:text="@string/general_settings" />
 
+
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="5dip" >
+            android:layout_marginLeft="5dip">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -300,7 +416,7 @@
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="5dip" >
+            android:layout_marginLeft="5dip">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -321,7 +437,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginLeft="5dip"
-            android:gravity="center_vertical" >
+            android:gravity="center_vertical">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -342,7 +458,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="5dip" >
+            android:layout_marginLeft="5dip">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -363,7 +479,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="5dip" >
+            android:layout_marginLeft="5dip">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -384,7 +500,7 @@
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="5dip" >
+            android:layout_marginLeft="5dip">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -405,7 +521,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginLeft="5dip"
-            android:gravity="center_vertical" >
+            android:gravity="center_vertical">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -419,21 +535,21 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="bottom"
-                android:orientation="horizontal" >
+                android:orientation="horizontal">
 
                 <include
                     android:id="@+id/color1"
+                    layout="@layout/item_color"
                     android:layout_width="25dip"
                     android:layout_height="25dip"
-                    android:layout_margin="1dip"
-                    layout="@layout/item_color" />
+                    android:layout_margin="1dip" />
 
                 <include
                     android:id="@+id/color2"
+                    layout="@layout/item_color"
                     android:layout_width="25dip"
                     android:layout_height="25dip"
-                    android:layout_margin="1dip"
-                    layout="@layout/item_color" />
+                    android:layout_margin="1dip" />
             </LinearLayout>
         </LinearLayout>
 
@@ -450,7 +566,7 @@
             android:layout_height="wrap_content"
             android:clickable="true"
             android:gravity="center_vertical"
-            android:visibility="gone" >
+            android:visibility="gone">
 
             <ImageView
                 style="@style/wpButton"
@@ -461,7 +577,7 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical" >
+                android:orientation="vertical">
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -481,15 +597,15 @@
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:layout_marginBottom="1dip"
             android:layout_marginTop="1dip"
+            android:layout_marginBottom="1dip"
             android:background="@color/lt_grey_alpha" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
-            android:orientation="horizontal" >
+            android:orientation="horizontal">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -513,14 +629,13 @@
             android:id="@+id/customBrightness"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1" >
-        </com.foobnix.pdf.info.view.CustomSeek>
+            android:layout_weight="1"></com.foobnix.pdf.info.view.CustomSeek>
 
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
-            android:orientation="horizontal" >
+            android:orientation="horizontal">
 
             <CheckBox
                 android:id="@+id/isEnableBlueFilter"
@@ -546,7 +661,7 @@
             android:layout_marginTop="5dip"
             android:clickable="true"
             android:gravity="center_vertical"
-            android:visibility="gone" >
+            android:visibility="gone">
 
             <ImageView
                 android:layout_width="wrap_content"
@@ -560,12 +675,12 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:orientation="vertical" >
+                android:orientation="vertical">
 
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical" >
+                    android:orientation="vertical">
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -577,7 +692,7 @@
                     <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal" >
+                        android:orientation="horizontal">
 
                         <TextView
                             android:id="@+id/textNextKeys"
@@ -610,16 +725,16 @@
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:layout_marginBottom="1dip"
             android:layout_marginTop="3dip"
+            android:layout_marginBottom="1dip"
             android:background="@color/lt_grey_alpha" />
 
-        
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
-            android:orientation="horizontal" >
+            android:orientation="horizontal">
 
             <CheckBox
                 android:id="@+id/isRememberMode"
@@ -645,7 +760,7 @@
                 android:layout_height="@dimen/wh_button"
                 android:layout_weight="0"
                 android:padding="8dip"
-                android:src="@drawable/glyphicons_685_article"
+                android:src="@drawable/glyphicons_137_cogwheel"
                 android:tint="@color/tint_gray" />
 
 
@@ -655,7 +770,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
-            android:orientation="horizontal" >
+            android:orientation="horizontal">
 
             <CheckBox
                 android:id="@+id/isAppPassword"
@@ -692,7 +807,7 @@
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:visibility="gone" >
+            android:visibility="gone">
 
             <CheckBox
                 android:id="@+id/isRememberDictionary"
@@ -747,7 +862,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dip"
             android:orientation="vertical"
-            android:visibility="gone" >
+            android:visibility="gone">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -761,7 +876,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="3dip"
                 android:gravity="center_vertical"
-                android:orientation="horizontal" >
+                android:orientation="horizontal">
 
                 <TextView
                     android:id="@+id/onDayColor"
@@ -808,7 +923,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:clickable="true"
-            android:gravity="center_vertical" >
+            android:gravity="center_vertical">
 
             <ImageView
                 android:layout_width="wrap_content"
@@ -828,7 +943,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical" >
+            android:gravity="center_vertical">
 
             <ImageView
                 android:layout_width="wrap_content"
@@ -849,7 +964,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
-            android:visibility="gone" >
+            android:visibility="gone">
 
             <Button
                 android:id="@+id/cleanRecent"
@@ -890,8 +1005,8 @@
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:layout_marginBottom="1dip"
             android:layout_marginTop="1dip"
+            android:layout_marginBottom="1dip"
             android:background="@color/lt_grey_alpha"
             android:visibility="gone" />
 
@@ -906,27 +1021,25 @@
             android:id="@+id/coverSmallSize"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            myseek:text="@string/list" >
-        </com.foobnix.pdf.info.view.CustomSeek>
+            myseek:text="@string/list"></com.foobnix.pdf.info.view.CustomSeek>
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
-            android:orientation="horizontal" >
+            android:orientation="horizontal">
 
             <com.foobnix.pdf.info.view.CustomSeek
                 android:id="@+id/coverBigSize"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                myseek:text="@string/grid" >
-            </com.foobnix.pdf.info.view.CustomSeek>
+                myseek:text="@string/grid"></com.foobnix.pdf.info.view.CustomSeek>
         </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" >
+            android:layout_height="wrap_content">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -957,8 +1070,8 @@
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:layout_marginBottom="1dip"
             android:layout_marginTop="1dip"
+            android:layout_marginBottom="1dip"
             android:background="@color/lt_grey_alpha" />
 
         <CheckBox
@@ -1001,9 +1114,9 @@
 
         <com.jmedeisis.draglinearlayout.DragLinearLayout
             android:id="@+id/dragLinearLayout"
-            android:orientation="vertical"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" >
+            android:layout_height="match_parent"
+            android:orientation="vertical">
 
             <include layout="@layout/item_tab_line" />
 
@@ -1013,7 +1126,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal" >
+            android:orientation="horizontal">
 
             <TextView
                 android:id="@+id/tabsDefaul"
@@ -1041,21 +1154,21 @@
             android:layout_marginTop="10dip"
             android:background="@drawable/bg_search_second"
             android:text="@string/widget" />
-        
+
         <!-- Prefs. > Preferences > Widget -->
 
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
-            android:orientation="vertical" >
+            android:orientation="vertical">
 
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="5dip"
                 android:gravity="center_vertical"
-                android:orientation="horizontal" >
+                android:orientation="horizontal">
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -1077,7 +1190,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="5dip"
                 android:gravity="center_vertical"
-                android:orientation="horizontal" >
+                android:orientation="horizontal">
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -1099,7 +1212,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="5dip"
                 android:gravity="center_vertical"
-                android:orientation="horizontal" >
+                android:orientation="horizontal">
 
                 <TextView
                     android:id="@+id/textView1"
@@ -1133,7 +1246,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
-            android:visibility="visible" >
+            android:visibility="visible">
 
             <TextView
                 android:id="@+id/importButton"
@@ -1157,7 +1270,8 @@
 
         <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" >
+            android:layout_height="wrap_content"
+            android:visibility="gone">
 
             <CheckBox
                 android:id="@+id/isAutomaticExport"
@@ -1170,13 +1284,13 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
-            android:orientation="horizontal" >
+            android:orientation="horizontal">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/folder_with_fonts"
-                android:width="135dip" />
+                android:width="135dip"
+                android:text="@string/folder_with_fonts" />
 
             <TextView
                 android:id="@+id/fontFolder"
@@ -1191,13 +1305,13 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
-            android:orientation="horizontal" >
+            android:orientation="horizontal">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/folder_for_downloaded_books"
-                android:width="135dip" />
+                android:width="135dip"
+                android:text="@string/folder_for_downloaded_books" />
 
             <TextView
                 android:id="@+id/downloadFolder"
@@ -1208,19 +1322,19 @@
                 android:text="[]" />
         </LinearLayout>
 
-        
+
         <LinearLayout
-             android:visibility="gone"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
-            android:orientation="horizontal" >
+            android:orientation="horizontal"
+            android:visibility="gone">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/cloud_sync_folder"
-                android:width="135dip" />
+                android:width="135dip"
+                android:text="@string/cloud_sync_folder" />
 
             <TextView
                 android:id="@+id/syncPath"
@@ -1230,19 +1344,20 @@
                 android:ellipsize="start"
                 android:text="[]" />
         </LinearLayout>
-        
-        
+
+
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
-            android:orientation="horizontal" >
+            android:orientation="horizontal"
+            android:visibility="gone">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/backup_folder"
-                android:width="135dip" />
+                android:width="135dip"
+                android:text="@string/backup_folder" />
 
             <TextView
                 android:id="@+id/backupFolder"
@@ -1257,13 +1372,13 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
-            android:orientation="horizontal" >
+            android:orientation="horizontal">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/audio_books_folder"
-                android:width="135dip" />
+                android:width="135dip"
+                android:text="@string/audio_books_folder" />
 
             <TextView
                 android:id="@+id/ttsFolder"
@@ -1293,7 +1408,7 @@
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal" >
+            android:orientation="horizontal">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -1314,7 +1429,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="7dip" >
+            android:layout_marginTop="7dip">
 
             <TextView
                 android:layout_width="match_parent"
@@ -1326,7 +1441,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="7dip"
-            android:gravity="center_vertical" >
+            android:gravity="center_vertical">
 
             <TextView
                 android:layout_width="100dip"
@@ -1345,7 +1460,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical" >
+            android:gravity="center_vertical">
 
             <TextView
                 android:layout_width="100dip"
@@ -1364,7 +1479,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical" >
+            android:gravity="center_vertical">
 
             <TextView
                 android:layout_width="100dip"
@@ -1383,7 +1498,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical" >
+            android:gravity="center_vertical">
 
             <TextView
                 android:layout_width="100dip"
@@ -1414,6 +1529,33 @@
             android:gravity="center"
             android:singleLine="false"
             android:text="@string/rate_pdf_reader1" />
+
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:padding="4dip"
+            android:visibility="visible">
+
+            <ImageView
+                android:id="@+id/imageView1"
+                android:layout_width="@dimen/wh_button"
+                android:layout_height="@dimen/wh_button"
+                android:layout_margin="4dip"
+                android:src="@mipmap/icon_pdf_pro" />
+
+            <TextView
+                android:id="@+id/downloadPRO"
+                style="@style/textLink"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:singleLine="false"
+                android:text="@string/librera_pro_program_for_reading_books_without_advertising_installing_it_removes_advertising_in_this_application" />
+        </LinearLayout>
+
     </LinearLayout>
 
 </ScrollView>

@@ -536,4 +536,26 @@
    <string name="please_wait_books_are_being_processed_">Por favor espere, livros estão sendo processados</string>
    <string name="system_brightness">Brilho do sistema</string>
    <string name="opening_books_in_the_specified_mode">Abrindo livros no modo especificado</string>
+   <string name="dark_oled">Oled escuro</string>
+   <string name="profile">Perfil</string>
+   <string name="new_profile">Novo perfil</string>
+   <string name="main">A Principal</string>
+   <string name="do_you_want_to_switch_profile_">Mudar para outro perfil?</string>
+   <string name="sync_error">Erro de sincronização</string>
+   <string name="sign_in">Assinar em</string>
+   <string name="sign_out">Sair</string>
+   <string name="manual_sync_only">Apenas sincronização manual</string>
+   <string name="wifi_sync_only">Somente sincronização via wifi</string>
+   <string name="sync_google_drive">Sync (google drive)</string>
+   <string name="single_tap_to_select_text">Toque único para selecionar texto</string>
+   <string name="sync_book">Sincronizar um livro</string>
+   <string name="sync">Sincronizar</string>
+   <string name="synchronized_folder">Pasta sincronizada</string>
+   <string name="today">Hoje</string>
+   <string name="downloads">Os downloads</string>
+   <string name="delete_the_directory_all_the_files_in_the_directory_">Pasta não está vazia. apagar mesmo assim?</string>
+   <string name="synchronized_books">Livros sincronizados</string>
+   <string name="show_sync_wheel">Mostre a roda de sincronização</string>
+   <string name="publication_date">Data de publicação</string>
+   <string name="empy">Esvaziar</string>
 </resources>

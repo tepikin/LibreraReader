@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:ads="http://schemas.android.com/apk/res-auto"
+<android.support.v4.widget.SwipeRefreshLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
+    android:id="@+id/swipeRefreshLayout"
     android:layout_height="match_parent"
     android:orientation="vertical">
 
@@ -51,6 +51,7 @@
 
                 </LinearLayout>
 
+
                 <android.support.v4.view.ViewPager
                     android:id="@+id/pager"
                     android:layout_width="match_parent"
@@ -97,15 +98,29 @@
             android:textSize="16sp"
             android:textStyle="bold"
             android:visibility="visible" />
+
+
+        <ProgressBar
+            android:id="@+id/fab"
+            android:layout_alignParentRight="true"
+            android:layout_margin="4dip"
+            android:background="@drawable/bg_circular"
+            android:layout_width="@dimen/wh_button_small"
+            android:layout_height="@dimen/wh_button_small"
+            android:layout_gravity="center_horizontal"
+            android:indeterminateDrawable="@drawable/my_progress" />
+
+
+
+
     </RelativeLayout>
 
     <FrameLayout
         android:id="@+id/adFrame"
-        android:visibility="gone"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="0" >
-    </FrameLayout>
+        android:layout_weight="0"
+        android:visibility="gone"></FrameLayout>
 
 
-</LinearLayout>
+</android.support.v4.widget.SwipeRefreshLayout>

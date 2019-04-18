@@ -536,4 +536,26 @@
    <string name="please_wait_books_are_being_processed_">يرجى الانتظار ، يتم معالجة الكتب</string>
    <string name="system_brightness">سطوع النظام</string>
    <string name="opening_books_in_the_specified_mode">فتح الكتب في الوضع المحدد</string>
+   <string name="dark_oled">الظلام الظلام</string>
+   <string name="profile">الملف الشخصي</string>
+   <string name="new_profile">الملف الشخصي الجديد</string>
+   <string name="main">الأساسية</string>
+   <string name="do_you_want_to_switch_profile_">التبديل إلى ملف تعريف آخر؟</string>
+   <string name="sync_error">خطأ في المزامنة</string>
+   <string name="sign_in">تسجيل الدخول</string>
+   <string name="sign_out">خروج</string>
+   <string name="manual_sync_only">المزامنة اليدوية فقط</string>
+   <string name="wifi_sync_only">Wifi مزامنة فقط</string>
+   <string name="sync_google_drive">مزامنة (محرك جوجل)</string>
+   <string name="single_tap_to_select_text">بنقرة واحدة لتحديد النص</string>
+   <string name="sync_book">مزامنة كتاب</string>
+   <string name="sync">مزامنة</string>
+   <string name="synchronized_folder">مجلد متزامن</string>
+   <string name="today">اليوم</string>
+   <string name="downloads">التنزيلات</string>
+   <string name="delete_the_directory_all_the_files_in_the_directory_">المجلد ليس فارغا. حذف على أي حال؟</string>
+   <string name="synchronized_books">الكتب المتزامنة</string>
+   <string name="show_sync_wheel">عرض عجلة المزامنة</string>
+   <string name="publication_date">تاريخ النشر</string>
+   <string name="empy">فارغة</string>
 </resources>

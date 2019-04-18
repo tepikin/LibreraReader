@@ -5,6 +5,7 @@ import android.text.TextUtils;
 import com.foobnix.android.utils.LOG;
 import com.foobnix.android.utils.TxtUtils;
 import com.foobnix.hypen.HypenUtils;
+import com.foobnix.model.AppTemp;
 import com.foobnix.pdf.info.model.BookCSS;
 import com.rtfparserkit.converter.text.AbstractTextConverter;
 import com.rtfparserkit.parser.IRtfParser;
@@ -47,11 +48,20 @@ public class RtfExtract {
 
             InputStream is = new FileInputStream(inputPath);
             IRtfSource source = new RtfStreamSource(is);
-            IRtfParser parser = new StandardRtfParser();
+            IRtfParser parser = new StandardRtfParser() {
+                @Override
+                public void processCommand(Command command, int parameter, boolean hasParameter, boolean optional) {
+                    try {
+                        super.processCommand(command, parameter, hasParameter, optional);
+                    } catch (Exception e) {
+                        LOG.e(e);
+                    }
+                }
+            };
 
-            boolean isEnableHypens = BookCSS.get().isAutoHypens && TxtUtils.isNotEmpty(BookCSS.get().hypenLang);
+            boolean isEnableHypens = BookCSS.get().isAutoHypens && TxtUtils.isNotEmpty(AppTemp.get().hypenLang);
             if (isEnableHypens) {
-                HypenUtils.applyLanguage(BookCSS.get().hypenLang);
+                HypenUtils.applyLanguage(AppTemp.get().hypenLang);
             }
 
             HypenUtils.resetTokenizer();
@@ -60,6 +70,7 @@ public class RtfExtract {
                 boolean isImage;
                 String format = "jpg";
                 int counter = 0;
+
 
                 @Override
                 public void processExtractedText(String text) {
@@ -170,14 +181,24 @@ public class RtfExtract {
                 @Override
                 // http://latex2rtf.sourceforge.net/rtfspec_62.html
                 public void processCommand(Command command, int parameter, boolean hasParameter, boolean optional) {
-                    super.processCommand(command, parameter, hasParameter, optional);
+                    try {
+                        super.processCommand(command, parameter, hasParameter, optional);
+                    } catch (Exception e) {
+                        LOG.e(e);
+                    }
+
+
                     if (command == Command.cbpat || command == Command.line) {
                         writer.write("<br/>");
                     }
 
                     //writer.write("[" + command + "]");
 
-                    stack.add(command);
+                    if (parameter == 0 && (command == Command.i || command == Command.b)) {
+                        //skip
+                    } else {
+                        stack.add(command);
+                    }
 
                     if (command == Command.pngblip) {
                         isImage = true;

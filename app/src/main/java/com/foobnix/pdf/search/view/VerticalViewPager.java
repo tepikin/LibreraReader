@@ -1,11 +1,5 @@
 package com.foobnix.pdf.search.view;
 
-import java.lang.reflect.Field;
-
-import com.foobnix.android.utils.Dips;
-import com.foobnix.android.utils.LOG;
-import com.foobnix.pdf.info.wrapper.AppState;
-
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.os.Build;
@@ -16,6 +10,12 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.LinearInterpolator;
 import android.widget.Scroller;
+
+import com.foobnix.android.utils.Dips;
+import com.foobnix.android.utils.LOG;
+import com.foobnix.model.AppState;
+
+import java.lang.reflect.Field;
 
 public class VerticalViewPager extends CustomViewPager {
 
@@ -106,6 +106,10 @@ public class VerticalViewPager extends CustomViewPager {
         if (!AppState.get().isEnableHorizontalSwipe) {
             return false;
         }
+        if(AppState.get().isSelectTexByTouch){
+            return false;
+        }
+
         if (value != null && !value.isFinished()) {
             return false;
         }
@@ -118,6 +122,9 @@ public class VerticalViewPager extends CustomViewPager {
     @Override
     public boolean onTouchEvent(MotionEvent ev) {
         if (!AppState.get().isEnableHorizontalSwipe) {
+            return false;
+        }
+        if(AppState.get().isSelectTexByTouch){
             return false;
         }
 

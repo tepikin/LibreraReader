@@ -536,4 +536,26 @@
    <string name="please_wait_books_are_being_processed_">Placet exspectare, quae libri processionaliter</string>
    <string name="system_brightness">Ratio claritas</string>
    <string name="opening_books_in_the_specified_mode">Foramen in libris certa modus</string>
+   <string name="dark_oled">Tenebris OLED</string>
+   <string name="profile">Profile</string>
+   <string name="new_profile">Nova profile</string>
+   <string name="main">Pelagus</string>
+   <string name="do_you_want_to_switch_profile_">Switch ad alia profile?</string>
+   <string name="sync_error">Error sync</string>
+   <string name="sign_in">Inscribe</string>
+   <string name="sign_out">Exscribe</string>
+   <string name="manual_sync_only">Manual non sync</string>
+   <string name="wifi_sync_only">WiFi non sync</string>
+   <string name="sync_google_drive">Sync (coegi Google)</string>
+   <string name="single_tap_to_select_text">Unum eligere text-ICTUS</string>
+   <string name="sync_book">Sync liber</string>
+   <string name="sync">Sync</string>
+   <string name="synchronized_folder">Synchronized folder</string>
+   <string name="today">Hodie</string>
+   <string name="downloads">Et downloads</string>
+   <string name="delete_the_directory_all_the_files_in_the_directory_">Folder est inanis. delete removes?</string>
+   <string name="synchronized_books">Librorum synchronized</string>
+   <string name="show_sync_wheel">Ostende sync rotam</string>
+   <string name="publication_date">Publication diem</string>
+   <string name="empy">Inanis</string>
 </resources>

@@ -1,23 +1,10 @@
 package com.foobnix.pdf.info;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
-import com.foobnix.android.utils.IntegerResponse;
-import com.foobnix.android.utils.LOG;
-import com.foobnix.android.utils.TxtUtils;
-import com.foobnix.pdf.info.model.BookCSS;
-import com.foobnix.pdf.info.view.CustomSeek;
-import com.foobnix.pdf.info.view.MyPopupMenu;
-import com.foobnix.pdf.info.wrapper.AppState;
-import com.foobnix.pdf.info.wrapper.DocumentController;
-import com.foobnix.sys.TempHolder;
-
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnDismissListener;
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.MenuItem.OnMenuItemClickListener;
@@ -26,11 +13,25 @@ import android.view.View.OnClickListener;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.foobnix.android.utils.IntegerResponse;
+import com.foobnix.android.utils.LOG;
+import com.foobnix.android.utils.TxtUtils;
+import com.foobnix.model.AppState;
+import com.foobnix.pdf.info.model.BookCSS;
+import com.foobnix.pdf.info.view.CustomSeek;
+import com.foobnix.pdf.info.view.MyPopupMenu;
+import com.foobnix.pdf.info.wrapper.DocumentController;
+import com.foobnix.sys.TempHolder;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 public class DialogSpeedRead {
 
-    volatile static int currentWord = 0;
-    volatile static String[] words = new String[] { "" };
-    static String[] punctuations = { ".", ",", ";", ":", "?", "!" };
+    private volatile static int currentWord = 0;
+    volatile static String[] words = new String[]{""};
+    static String[] punctuations = {".", ";", ":", "?", "!"};
 
     public static void show(final Context a, final DocumentController dc) {
         final AlertDialog.Builder builder = new AlertDialog.Builder(a);
@@ -87,6 +88,35 @@ public class DialogSpeedRead {
         textWord.setTypeface(BookCSS.getTypeFaceForFont(BookCSS.get().normalFont));
         TxtUtils.underlineTextView(textWord);
 
+        textWord.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                MyPopupMenu menu = new MyPopupMenu(textWord);
+                menu.getMenu().add(R.string.share).setIcon(R.drawable.glyphicons_basic_578_share).setOnMenuItemClickListener((it) -> {
+                    final Intent intent = new Intent(Intent.ACTION_SEND);
+                    intent.setType("text/plain");
+                    intent.putExtra(Intent.EXTRA_TEXT, textWord.getText().toString().trim());
+                    a.startActivity(Intent.createChooser(intent, a.getString(R.string.share)));
+                    return true;
+                });
+                menu.getMenu().add(R.string.copy).setIcon(R.drawable.glyphicons_basic_614_copy).setOnMenuItemClickListener((it) -> {
+
+                    if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.HONEYCOMB) {
+                        android.text.ClipboardManager clipboard = (android.text.ClipboardManager) a.getSystemService(Context.CLIPBOARD_SERVICE);
+                        clipboard.setText(textWord.getText().toString().trim());
+                    } else {
+                        android.content.ClipboardManager clipboard = (android.content.ClipboardManager) a.getSystemService(Context.CLIPBOARD_SERVICE);
+                        android.content.ClipData clip = android.content.ClipData.newPlainText("Copied Text", textWord.getText().toString().trim());
+                        clipboard.setPrimaryClip(clip);
+                    }
+                    return true;
+                });
+                menu.show();
+
+                return true;
+            }
+        });
+
         final MyPopupMenu menu = new MyPopupMenu(seekBarSpeed.getContext(), seekBarSpeed);
         List<Integer> values = Arrays.asList(100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600, 700);
         for (final int i : values) {
@@ -103,6 +133,8 @@ public class DialogSpeedRead {
 
         seekBarSpeed.addMyPopupMenu(menu);
         TxtUtils.setLinkTextColor(seekBarSpeed.getTitleText());
+
+        currentWord = 0;
 
         final Runnable task = new Runnable() {
 
@@ -142,6 +174,7 @@ public class DialogSpeedRead {
                     List<String> tempList = Arrays.asList(textForPage.split(" "));
                     List<String> res = new ArrayList<String>();
                     for (String item : tempList) {
+                        //currentWord = 0;
                         if (item.contains("-") && item.length() >= 10) {
                             String[] it = item.split("-");
                             res.add(it[0] + "-");
@@ -152,8 +185,9 @@ public class DialogSpeedRead {
 
                     }
                     words = res.toArray(new String[res.size()]);
-                    currentWord = 0;
+                    //currentWord = 0;
 
+                    LOG.d("currentWord", currentWord);
                     for (int i = currentWord; i < words.length; i++) {
                         if (!TempHolder.isActiveSpeedRead.get()) {
                             return;
@@ -206,11 +240,16 @@ public class DialogSpeedRead {
 
                         float wps = (float) AppState.get().fastReadSpeed / 60;
                         try {
-                            Thread.sleep((int) (1000 / wps) + k);
+                            int delta = (int) (1000 / wps) + k;
+                            final int wLen = wordFinal.length();
+                            delta = delta + wLen * wLen / 2;
+                            LOG.d("RSPV-Sleep", wordFinal, delta);
+                            Thread.sleep(delta);
                         } catch (Exception e) {
                             LOG.e(e);
                         }
                     }
+                    currentWord = 0;
                 }
             }
         };
@@ -298,7 +337,8 @@ public class DialogSpeedRead {
 
     private static void reset() {
         currentWord = 0;
-        words = new String[] { "" };
+        words = new String[]{""};
+        LOG.d("currentWord reset", 0);
     }
 
 }

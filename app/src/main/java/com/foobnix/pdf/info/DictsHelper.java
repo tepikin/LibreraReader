@@ -1,15 +1,5 @@
 package com.foobnix.pdf.info;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import com.foobnix.android.utils.Dips;
-import com.foobnix.android.utils.LOG;
-import com.foobnix.pdf.info.wrapper.AppState;
-import com.foobnix.sys.TempHolder;
-
 import android.app.Activity;
 import android.app.SearchManager;
 import android.content.ComponentName;
@@ -22,6 +12,17 @@ import android.content.pm.ResolveInfo;
 import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 import android.widget.Toast;
+
+import com.foobnix.android.utils.Dips;
+import com.foobnix.android.utils.LOG;
+import com.foobnix.model.AppState;
+import com.foobnix.model.AppTemp;
+import com.foobnix.sys.TempHolder;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class DictsHelper {
 
@@ -111,7 +112,7 @@ public class DictsHelper {
         intentCustom.putExtra("EXTRA_GRAVITY", Gravity.BOTTOM);
         intentCustom.putExtra("EXTRA_FULLSCREEN", false);
 
-        if (AppState.get().isDouble || Dips.screenWidth() > Dips.screenHeight()) {
+        if (AppTemp.get().isDouble || Dips.screenWidth() > Dips.screenHeight()) {
 
             if (TempHolder.get().textFromPage == 1) {
                 intentCustom.putExtra("EXTRA_GRAVITY", Gravity.BOTTOM | Gravity.RIGHT);
@@ -168,6 +169,7 @@ public class DictsHelper {
     public static void runIntent(Activity c, String selectedText) {
         try {
             String dict = AppState.get().rememberDict1;
+            LOG.d("runIntent-dict", selectedText, dict);
             final int dictHash = AppState.get().rememberDict1Hash;
             String dictName = DictItem.fetchDictName(AppState.get().rememberDict1);
             if (dict.startsWith("web")) {
@@ -200,6 +202,7 @@ public class DictsHelper {
                         intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
                         intent.setComponent(cName);
                         c.startActivity(intent);
+                        LOG.d("dict-intent",intent);
                         // c.overridePendingTransition(0, 0);
                         return;
                     }

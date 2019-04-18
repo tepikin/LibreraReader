@@ -536,4 +536,26 @@
    <string name="please_wait_books_are_being_processed_">Зачекайте, книги обробляються</string>
    <string name="system_brightness">Яскравість системи</string>
    <string name="opening_books_in_the_specified_mode">Відкриття книг у вказаному режимі</string>
+   <string name="dark_oled">Темна олія</string>
+   <string name="profile">Профілю</string>
+   <string name="new_profile">Новий профіль</string>
+   <string name="main">Main</string>
+   <string name="do_you_want_to_switch_profile_">Перейти до іншого профілю?</string>
+   <string name="sync_error">Помилка синхронізації</string>
+   <string name="sign_in">Увійти</string>
+   <string name="sign_out">Вийти з аккаунта</string>
+   <string name="manual_sync_only">Лише ручна синхронізація</string>
+   <string name="wifi_sync_only">Лише синхронізація Wi-Fi</string>
+   <string name="sync_google_drive">Синхронізація (диск google)</string>
+   <string name="single_tap_to_select_text">Натисніть один раз, щоб вибрати текст</string>
+   <string name="sync_book">Синхронізувати книгу</string>
+   <string name="sync">Синхронізація</string>
+   <string name="synchronized_folder">Папку</string>
+   <string name="today">Сьогодні</string>
+   <string name="downloads">Завантаження</string>
+   <string name="delete_the_directory_all_the_files_in_the_directory_">Папка не порожня. все одно видалити?</string>
+   <string name="synchronized_books">Синхронізовані книги</string>
+   <string name="show_sync_wheel">Показати колесо синхронізації</string>
+   <string name="publication_date">Дата публікації</string>
+   <string name="empy">Порожній</string>
 </resources>

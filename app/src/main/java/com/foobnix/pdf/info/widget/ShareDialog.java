@@ -1,44 +1,5 @@
 package com.foobnix.pdf.info.widget;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
-import org.ebookdroid.BookType;
-import org.ebookdroid.ui.viewer.VerticalViewActivity;
-import org.greenrobot.eventbus.EventBus;
-
-import com.foobnix.android.utils.BaseItemLayoutAdapter;
-import com.foobnix.android.utils.Keyboards;
-import com.foobnix.android.utils.LOG;
-import com.foobnix.dao2.FileMeta;
-import com.foobnix.mobi.parser.IOUtils;
-import com.foobnix.pdf.info.AppsConfig;
-import com.foobnix.pdf.info.Clouds;
-import com.foobnix.pdf.info.DialogSpeedRead;
-import com.foobnix.pdf.info.ExtUtils;
-import com.foobnix.pdf.info.Playlists;
-import com.foobnix.pdf.info.R;
-import com.foobnix.pdf.info.TintUtil;
-import com.foobnix.pdf.info.Urls;
-import com.foobnix.pdf.info.view.Dialogs;
-import com.foobnix.pdf.info.view.DialogsPlaylist;
-import com.foobnix.pdf.info.wrapper.AppState;
-import com.foobnix.pdf.info.wrapper.DocumentController;
-import com.foobnix.pdf.info.wrapper.UITab;
-import com.foobnix.pdf.search.activity.HorizontalViewActivity;
-import com.foobnix.pdf.search.activity.msg.UpdateAllFragments;
-import com.foobnix.sys.TempHolder;
-import com.foobnix.ui2.AppDB;
-import com.foobnix.ui2.MainTabs2;
-
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
@@ -49,6 +10,54 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.foobnix.android.utils.BaseItemLayoutAdapter;
+import com.foobnix.android.utils.IO;
+import com.foobnix.android.utils.Keyboards;
+import com.foobnix.android.utils.LOG;
+import com.foobnix.dao2.FileMeta;
+import com.foobnix.drive.GFile;
+import com.foobnix.mobi.parser.IOUtils;
+import com.foobnix.model.AppData;
+import com.foobnix.model.AppProfile;
+import com.foobnix.model.AppState;
+import com.foobnix.model.AppTemp;
+import com.foobnix.model.SimpleMeta;
+import com.foobnix.model.TagData;
+import com.foobnix.pdf.info.AppsConfig;
+import com.foobnix.pdf.info.Clouds;
+import com.foobnix.pdf.info.DialogSpeedRead;
+import com.foobnix.pdf.info.ExtUtils;
+import com.foobnix.pdf.info.Playlists;
+import com.foobnix.pdf.info.R;
+import com.foobnix.pdf.info.TintUtil;
+import com.foobnix.pdf.info.Urls;
+import com.foobnix.pdf.info.model.BookCSS;
+import com.foobnix.pdf.info.view.Dialogs;
+import com.foobnix.pdf.info.view.DialogsPlaylist;
+import com.foobnix.pdf.info.wrapper.DocumentController;
+import com.foobnix.pdf.info.wrapper.UITab;
+import com.foobnix.pdf.search.activity.HorizontalViewActivity;
+import com.foobnix.pdf.search.activity.msg.UpdateAllFragments;
+import com.foobnix.sys.TempHolder;
+import com.foobnix.ui2.AppDB;
+import com.foobnix.ui2.FileMetaCore;
+import com.foobnix.ui2.MainTabs2;
+
+import org.ebookdroid.BookType;
+import org.ebookdroid.ui.viewer.VerticalViewActivity;
+import org.greenrobot.eventbus.EventBus;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class ShareDialog {
 
@@ -107,7 +116,9 @@ public class ShareDialog {
                     }
                 });
         builder.show();
-    };
+    }
+
+    ;
 
     public static void showsItemsDialog(final Activity a, String title, final String[] items) {
         final AlertDialog.Builder builder = new AlertDialog.Builder(a);
@@ -151,11 +162,8 @@ public class ShareDialog {
                         InputStream input = new BufferedInputStream(new FileInputStream(from));
                         OutputStream output = new BufferedOutputStream(new FileOutputStream(toFile));
 
-                        IOUtils.copy(input, output);
+                        IOUtils.copyClose(input, output);
 
-                        output.flush();
-                        output.close();
-                        input.close();
 
                         TempHolder.get().listHash++;
 
@@ -182,11 +190,8 @@ public class ShareDialog {
                         InputStream input = new BufferedInputStream(new FileInputStream(from));
                         OutputStream output = new BufferedOutputStream(new FileOutputStream(toFile));
 
-                        IOUtils.copy(input, output);
+                        IOUtils.copyClose(input, output);
 
-                        output.flush();
-                        output.close();
-                        input.close();
 
                         fromFile.delete();
                         AppDB.get().delete(new FileMeta(fromFile.getPath()));
@@ -225,7 +230,7 @@ public class ShareDialog {
         }
         final boolean isPDF = BookType.PDF.is(file.getPath());
         final boolean isLibrary = false;// a instanceof MainTabs2 ? false :
-                                        // true;
+        // true;
         final boolean isMainTabs = a instanceof MainTabs2;
 
         List<String> items = new ArrayList<String>();
@@ -258,9 +263,16 @@ public class ShareDialog {
         items.add(a.getString(R.string.open_with));
         items.add(a.getString(R.string.send_file));
         final boolean isExternalOrCloud = ExtUtils.isExteralSD(file.getPath()) || Clouds.isCloud(file.getPath());
-        final boolean canDelete = ExtUtils.isExteralSD(file.getPath()) || Clouds.isCloud(file.getPath()) ? true : file.canWrite();
+        boolean canDelete1 = ExtUtils.isExteralSD(file.getPath()) || Clouds.isCloud(file.getPath()) ? true : file.canWrite();
         final boolean canCopy = !ExtUtils.isExteralSD(file.getPath()) && !Clouds.isCloud(file.getPath());
         final boolean isShowInfo = !ExtUtils.isExteralSD(file.getPath());
+
+        final boolean isRemovedFromLibrary = AppData.get().getAllExcluded().contains(file.getPath());
+
+        if (file.getPath().contains(AppProfile.PROFILE_PREFIX)) {
+            canDelete1 = false;
+        }
+        final boolean canDelete = canDelete1;
 
         if (isMainTabs) {
             if (canDelete) {
@@ -269,14 +281,16 @@ public class ShareDialog {
             if (canCopy) {
                 items.add(a.getString(R.string.copy));
             }
-            items.add(a.getString(R.string.remove_from_library));
+            if (!isRemovedFromLibrary) {
+                items.add(a.getString(R.string.remove_from_library));
+            }
         }
         if (!isMainTabs) {
             items.add(a.getString(R.string.send_snapshot_of_the_page) + " " + (Math.max(page, 0) + 1) + "");
         }
 
         if (!isExternalOrCloud) {
-        items.add(a.getString(R.string.add_tags));
+            items.add(a.getString(R.string.add_tags));
         }
 
         if (AppsConfig.isCloudsEnable) {
@@ -285,6 +299,11 @@ public class ShareDialog {
         final boolean isPlaylist = file.getName().endsWith(Playlists.L_PLAYLIST);
         if (!isPlaylist) {
             items.add(a.getString(R.string.add_to_playlist));
+        }
+
+        final boolean isSyncronized = Clouds.isLibreraSyncFile(file);
+        if (!isSyncronized) {
+            items.add(a.getString(R.string.sync_book));
         }
 
         if (isShowInfo) {
@@ -308,11 +327,11 @@ public class ShareDialog {
                         @Override
                         public void run() {
                             if (dc.isMusicianMode()) {
-                                AppState.get().readingMode = AppState.READING_MODE_BOOK;
+                                AppTemp.get().readingMode = AppState.READING_MODE_BOOK;
                             } else {
-                                AppState.get().readingMode = AppState.READING_MODE_SCROLL;
+                                AppTemp.get().readingMode = AppState.READING_MODE_SCROLL;
                             }
-                            ExtUtils.showDocumentWithoutDialog(a, file, page + 1, a.getIntent().getStringExtra(DocumentController.EXTRA_PLAYLIST));
+                            ExtUtils.showDocumentWithoutDialog(a, file, a.getIntent().getStringExtra(DocumentController.EXTRA_PLAYLIST));
 
                         }
                     });
@@ -325,11 +344,11 @@ public class ShareDialog {
                             @Override
                             public void run() {
                                 if (dc.isMusicianMode()) {
-                                    AppState.get().readingMode = AppState.READING_MODE_SCROLL;
+                                    AppTemp.get().readingMode = AppState.READING_MODE_SCROLL;
                                 } else {
-                                    AppState.get().readingMode = AppState.READING_MODE_BOOK;
+                                    AppTemp.get().readingMode = AppState.READING_MODE_BOOK;
                                 }
-                                ExtUtils.showDocumentWithoutDialog(a, file, page + 1, a.getIntent().getStringExtra(DocumentController.EXTRA_PLAYLIST));
+                                ExtUtils.showDocumentWithoutDialog(a, file, a.getIntent().getStringExtra(DocumentController.EXTRA_PLAYLIST));
                             }
                         });
                     }
@@ -339,8 +358,8 @@ public class ShareDialog {
 
                         @Override
                         public void run() {
-                            AppState.get().readingMode = AppState.READING_MODE_MUSICIAN;
-                            ExtUtils.showDocumentWithoutDialog(a, file, page + 1, a.getIntent().getStringExtra(DocumentController.EXTRA_PLAYLIST));
+                            AppTemp.get().readingMode = AppState.READING_MODE_MUSICIAN;
+                            ExtUtils.showDocumentWithoutDialog(a, file, a.getIntent().getStringExtra(DocumentController.EXTRA_PLAYLIST));
                         }
                     });
                 }
@@ -362,14 +381,18 @@ public class ShareDialog {
                 } else if (isMainTabs && canCopy && which == i++) {
                     TempHolder.get().copyFromPath = file.getPath();
                     Toast.makeText(a, R.string.copy, Toast.LENGTH_SHORT).show();
-                } else if (isMainTabs && which == i++) {
+                } else if (isMainTabs && !isRemovedFromLibrary && which == i++) {
                     FileMeta load = AppDB.get().load(file.getPath());
                     if (load != null) {
-                        //load.setIsSearchBook(false);
-                        //load.setIsStar(false);
-                        //load.setTag(null);
-                        AppDB.get().delete(load);
+                        load.setIsSearchBook(false);
+                        load.setIsStar(false);
+                        load.setTag(null);
+                        AppDB.get().update(load);
+
                     }
+                    AppData.get().removeFavorite(new SimpleMeta(load.getPath()));
+                    AppData.get().addExclue(load.getPath());
+
                     EventBus.getDefault().post(new UpdateAllFragments());
                 } else if (!isMainTabs && which == i++) {
                     if (dc != null) {
@@ -383,6 +406,23 @@ public class ShareDialog {
                     showAddToCloudDialog(a, file);
                 } else if (!isPlaylist && which == i++) {
                     DialogsPlaylist.showPlaylistsDialog(a, null, file);
+                } else if (!isSyncronized && which == i++) {
+                    final File to = new File(AppProfile.SYNC_FOLDER_BOOKS, file.getName());
+                    boolean result = IO.copyFile(file, to);
+                    if (result && BookCSS.get().isEnableSync) {
+
+                        AppDB.get().setIsSearchBook(file.getPath(), false);
+                        FileMetaCore.createMetaIfNeed(to.getPath(), true);
+
+                        String tags = TagData.getTags(file.getPath());
+                        TagData.saveTags(to.getPath(), tags);
+
+                        GFile.runSyncService(a);
+                    }
+
+
+                    TempHolder.listHash++;
+                    EventBus.getDefault().post(new UpdateAllFragments());
                 } else if (isShowInfo && which == i++) {
                     FileInformationDialog.showFileInfoDialog(a, file, onDeleteAction);
                 }
@@ -400,7 +440,14 @@ public class ShareDialog {
 
         });
         create.show();
-    };
+//        MyPopupMenu menu = new MyPopupMenu(a, null);
+//
+//        menu.getMenu(R.drawable.glyphicons_basic_578_share, R.string.share, () -> ExtUtils.openPDFInTextReflow(a, file, page + 1, dc));
+//        menu.getMenu(R.drawable.glyphicons_2_book_open, R.string.open_with, () -> ExtUtils.openPDFInTextReflow(a, file, page + 1, dc));
+//
+//        menu.show();
+    }
+
 
     public static void showAddToCloudDialog(final Activity a, final File file) {
         final AlertDialog.Builder inner = new AlertDialog.Builder(a);

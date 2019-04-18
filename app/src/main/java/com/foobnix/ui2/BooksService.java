@@ -3,25 +3,34 @@ package com.foobnix.ui2;
 import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Handler;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.media.session.MediaSessionCompat;
 
 import com.foobnix.android.utils.LOG;
+import com.foobnix.android.utils.TxtUtils;
 import com.foobnix.dao2.FileMeta;
+import com.foobnix.drive.GFile;
 import com.foobnix.ext.CacheZipUtils.CacheDir;
 import com.foobnix.ext.EbookMeta;
-import com.foobnix.pdf.info.AppSharedPreferences;
+import com.foobnix.model.AppData;
+import com.foobnix.model.AppProfile;
+import com.foobnix.model.AppTemp;
+import com.foobnix.model.TagData;
 import com.foobnix.pdf.info.Clouds;
+import com.foobnix.pdf.info.ExportConverter;
+import com.foobnix.pdf.info.ExportSettingsManager;
 import com.foobnix.pdf.info.ExtUtils;
 import com.foobnix.pdf.info.IMG;
 import com.foobnix.pdf.info.io.SearchCore;
-import com.foobnix.pdf.info.wrapper.AppState;
+import com.foobnix.pdf.info.model.BookCSS;
+import com.foobnix.pdf.search.activity.msg.MessageSync;
 import com.foobnix.pdf.search.activity.msg.MessageSyncFinish;
+import com.foobnix.pdf.search.activity.msg.UpdateAllFragments;
 import com.foobnix.sys.ImageExtractor;
-import com.foobnix.ui2.adapter.FileMetaAdapter;
+import com.foobnix.sys.TempHolder;
 
+import org.ebookdroid.common.settings.books.SharedBooks;
 import org.greenrobot.eventbus.EventBus;
 
 import java.io.File;
@@ -33,7 +42,6 @@ public class BooksService extends IntentService {
 
     public BooksService() {
         super("BooksService");
-        AppState.get().load(this);
         handler = new Handler();
         LOG.d("BooksService", "Create");
     }
@@ -43,6 +51,7 @@ public class BooksService extends IntentService {
         super.onDestroy();
         LOG.d("BooksService", "onDestroy");
     }
+
 
     @Override
     public void onCreate() {
@@ -57,6 +66,7 @@ public class BooksService extends IntentService {
     public static String ACTION_SEARCH_ALL = "ACTION_SEARCH_ALL";
     public static String ACTION_REMOVE_DELETED = "ACTION_REMOVE_DELETED";
     public static String ACTION_SYNC_DROPBOX = "ACTION_SYNC_DROPBOX";
+    public static String ACTION_RUN_SYNCRONICATION = "ACTION_RUN_SYNCRONICATION";
 
     public static String RESULT_SYNC_FINISH = "RESULT_SYNC_FINISH";
     public static String RESULT_SEARCH_FINISH = "RESULT_SEARCH_FINISH";
@@ -73,8 +83,66 @@ public class BooksService extends IntentService {
             return;
         }
         try {
+            if (isRunning) {
+                LOG.d(TAG, "BooksService", "Is-running");
+                return;
+            }
+
             isRunning = true;
             LOG.d(TAG, "BooksService", "Action", intent.getAction());
+
+            //TESET
+
+
+            File oldConfig = new File(AppProfile.DOWNLOADS_DIR, "Librera/backup-8.0.json");
+            if (!oldConfig.exists()) {
+                oldConfig.getParentFile().mkdirs();
+                AppDB.get().open(this, AppDB.DB_NAME);
+                AppProfile.SYNC_FOLDER_ROOT.mkdirs();
+                ExportSettingsManager.exportAll(this, oldConfig);
+                try {
+                    ExportConverter.covertJSONtoNew(this, oldConfig);
+                    ExportConverter.copyPlaylists();
+                } catch (Exception e) {
+                    LOG.e(e);
+                }
+                AppDB.get().open(this, AppProfile.getCurrent(this));
+            }
+
+
+            if (ACTION_RUN_SYNCRONICATION.equals(intent.getAction())) {
+                if (BookCSS.get().isEnableSync) {
+
+
+                    AppProfile.save(this);
+
+
+                    try {
+                        EventBus.getDefault().post(new MessageSync(MessageSync.STATE_VISIBLE));
+                        AppTemp.get().syncTimeStatus = MessageSync.STATE_VISIBLE;
+                        GFile.sycnronizeAll(this);
+
+                        AppTemp.get().syncTime = System.currentTimeMillis();
+                        AppTemp.get().syncTimeStatus = MessageSync.STATE_SUCCESS;
+                        EventBus.getDefault().post(new MessageSync(MessageSync.STATE_SUCCESS));
+
+                    } catch (Exception e) {
+                        AppTemp.get().syncTimeStatus = MessageSync.STATE_FAILE;
+                        EventBus.getDefault().post(new MessageSync(MessageSync.STATE_FAILE));
+                        LOG.e(e);
+                    }
+
+                    if (GFile.isNeedUpdate) {
+                        LOG.d("GFILE-isNeedUpdate", GFile.isNeedUpdate);
+                        TempHolder.get().listHash++;
+                        EventBus.getDefault().post(new UpdateAllFragments());
+                    }
+
+                    //onHandleIntent(new Intent(this, BooksService.class).setAction(BooksService.ACTION_SEARCH_ALL));
+                }
+
+            }
+
 
             if (ACTION_REMOVE_DELETED.equals(intent.getAction())) {
                 List<FileMeta> list = AppDB.get().getAll();
@@ -88,8 +156,8 @@ public class BooksService extends IntentService {
                     }
 
                     File bookFile = new File(meta.getPath());
-                    if(ExtUtils.isMounted(bookFile)){
-                        LOG.d("isMounted",bookFile);
+                    if (ExtUtils.isMounted(bookFile)) {
+                        LOG.d("isMounted", bookFile);
                         if (!bookFile.exists()) {
                             AppDB.get().delete(meta);
                             LOG.d(TAG, "Delete-setIsSearchBook", meta.getPath());
@@ -99,12 +167,12 @@ public class BooksService extends IntentService {
                 }
                 sendFinishMessage();
 
-                LOG.d("BooksService , searchDate", AppState.get().searchDate, AppState.get().searchPaths);
-                if (AppState.get().searchDate != 0) {
+                LOG.d("BooksService , searchDate", AppTemp.get().searchDate, BookCSS.get().searchPaths);
+                if (AppTemp.get().searchDate != 0) {
 
                     List<FileMeta> localMeta = new LinkedList<FileMeta>();
 
-                    for (final String path : AppState.get().searchPaths.split(",")) {
+                    for (final String path : BookCSS.get().searchPaths.split(",")) {
                         if (path != null && path.trim().length() > 0) {
                             final File root = new File(path);
                             if (root.isDirectory()) {
@@ -118,7 +186,7 @@ public class BooksService extends IntentService {
 
                         File file = new File(meta.getPath());
 
-                        if (file.lastModified() >= AppState.get().searchDate) {
+                        if (file.lastModified() >= AppTemp.get().searchDate) {
                             if (AppDB.get().getDao().hasKey(meta)) {
                                 LOG.d(TAG, "Skip book", file.getPath());
                                 continue;
@@ -126,12 +194,16 @@ public class BooksService extends IntentService {
 
                             FileMetaCore.createMetaIfNeed(meta.getPath(), true);
                             LOG.d(TAG, "BooksService", "insert", meta.getPath());
-                        }else{
-                            //LOG.d("BooksService file old", file.getPath(), file.lastModified(), AppState.get().searchDate);
+                        } else {
+                            //LOG.d("BooksService file old", file.getPath(), file.lastModified(), AppTemp.get().searchDate);
                         }
 
                     }
-                    AppState.get().searchDate = System.currentTimeMillis();
+
+                    SharedBooks.updateProgress(list);
+                    AppDB.get().updateAll(list);
+
+                    AppTemp.get().searchDate = System.currentTimeMillis();
                     sendFinishMessage();
                 }
 
@@ -141,36 +213,19 @@ public class BooksService extends IntentService {
             } else if (ACTION_SEARCH_ALL.equals(intent.getAction())) {
                 LOG.d(ACTION_SEARCH_ALL);
 
+                AppProfile.init(this);
+
                 IMG.clearDiscCache();
                 IMG.clearMemoryCache();
                 ImageExtractor.clearErrors();
 
 
-                List<Uri> recent = AppSharedPreferences.get().getRecent();
-                List<FileMeta> starsAndRecent = AppDB.get().deleteAllSafe();
-
-                long time = Integer.MAX_VALUE;
-                for (Uri uri : recent) {
-                    FileMeta item = new FileMeta(uri.getPath());
-                    item.setIsRecent(true);
-                    item.setIsStarTime(time--);
-                    starsAndRecent.add(item);
-                }
-                for (FileMeta m : starsAndRecent) {
-                    if (m.getCusType() != null && FileMetaAdapter.DISPLAY_TYPE_DIRECTORY == m.getCusType()) {
-                        m.setIsSearchBook(false);
-                    } else {
-                        m.setIsSearchBook(true);
-                    }
-                }
-
-                AppSharedPreferences.get().cleanRecent();
-
+                AppDB.get().deleteAllData();
                 itemsMeta.clear();
 
                 handler.post(timer);
 
-                for (final String path : AppState.get().searchPaths.split(",")) {
+                for (final String path : BookCSS.get().searchPaths.split(",")) {
                     if (path != null && path.trim().length() > 0) {
                         final File root = new File(path);
                         if (root.isDirectory()) {
@@ -179,13 +234,41 @@ public class BooksService extends IntentService {
                         }
                     }
                 }
-                AppState.get().searchDate = System.currentTimeMillis();
+                AppTemp.get().searchDate = System.currentTimeMillis();
+
 
                 for (FileMeta meta : itemsMeta) {
                     meta.setIsSearchBook(true);
                 }
 
-                itemsMeta.addAll(starsAndRecent);
+                final List<String> allExcluded = AppData.get().getAllExcluded();
+
+                if (TxtUtils.isListNotEmpty(allExcluded)) {
+                    for (FileMeta meta : itemsMeta) {
+                        if (allExcluded.contains(meta.getPath())) {
+                            meta.setIsSearchBook(false);
+                        }
+                    }
+                }
+
+                final List<FileMeta> allSyncBooks = AppData.get().getAllSyncBooks();
+                if (TxtUtils.isListNotEmpty(allSyncBooks)) {
+                    for (FileMeta meta : itemsMeta) {
+                        for (FileMeta sync : allSyncBooks) {
+                            if (meta.getTitle().equals(sync.getTitle()) && !meta.getPath().equals(sync.getPath())) {
+                                meta.setIsSearchBook(false);
+                                LOG.d(TAG, "remove-dublicate", meta.getPath());
+                            }
+                        }
+
+                    }
+                }
+
+
+                itemsMeta.addAll(AppData.get().getAllFavoriteFiles());
+                itemsMeta.addAll(AppData.get().getAllFavoriteFolders());
+
+
                 AppDB.get().saveAll(itemsMeta);
 
                 handler.removeCallbacks(timer);
@@ -208,6 +291,7 @@ public class BooksService extends IntentService {
                     FileMetaCore.get().udpateFullMeta(meta, ebookMeta);
                 }
 
+                SharedBooks.updateProgress(itemsMeta);
                 AppDB.get().updateAll(itemsMeta);
 
 
@@ -218,12 +302,16 @@ public class BooksService extends IntentService {
                 CacheDir.ZipService.removeCacheContent();
 
                 Clouds.get().syncronizeGet();
+
+                TagData.restoreTags();
+
                 sendFinishMessage();
 
             } else if (ACTION_SYNC_DROPBOX.equals(intent.getAction())) {
                 Clouds.get().syncronizeGet();
                 sendFinishMessage();
             }
+
 
         } finally {
             isRunning = false;

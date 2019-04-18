@@ -2,8 +2,10 @@ package org.ebookdroid.core.models;
 
 import com.foobnix.android.utils.LOG;
 import com.foobnix.dao2.FileMeta;
+import com.foobnix.model.AppBook;
+import com.foobnix.model.AppState;
+import com.foobnix.model.AppTemp;
 import com.foobnix.pdf.info.ExtUtils;
-import com.foobnix.pdf.info.wrapper.AppState;
 import com.foobnix.sys.TempHolder;
 import com.foobnix.ui2.AppDB;
 
@@ -12,7 +14,6 @@ import org.ebookdroid.common.bitmaps.BitmapManager;
 import org.ebookdroid.common.bitmaps.Bitmaps;
 import org.ebookdroid.common.cache.PageCacheFile;
 import org.ebookdroid.common.settings.SettingsManager;
-import org.ebookdroid.common.settings.books.BookSettings;
 import org.ebookdroid.common.settings.types.PageType;
 import org.ebookdroid.core.DecodeService;
 import org.ebookdroid.core.DecodeServiceBase;
@@ -118,7 +119,7 @@ public class DocumentModel extends ListenerProxy {
 
     /**
      * Gets the current page object.
-     * 
+     *
      * @return the current page object
      */
     public Page getCurrentPageObject() {
@@ -127,7 +128,7 @@ public class DocumentModel extends ListenerProxy {
 
     /**
      * Gets the last page object.
-     * 
+     *
      * @return the last page object
      */
     public Page getLastPageObject() {
@@ -139,7 +140,7 @@ public class DocumentModel extends ListenerProxy {
 
             this.currentIndex = newIndex;
 
-            this.<CurrentPageListener>getListener().currentPageChanged(newIndex, pages);
+            this.<CurrentPageListener>getListener().currentPageChanged(newIndex.docIndex, pages);
         }
     }
 
@@ -170,7 +171,7 @@ public class DocumentModel extends ListenerProxy {
     public void initPages(final IActivityController base, final IProgressIndicator task) {
         recyclePages();
 
-        final BookSettings bs = SettingsManager.getBookSettings();
+        final AppBook bs = SettingsManager.getBookSettings();
 
         if (base == null || bs == null || context == null || decodeService == null) {
             return;
@@ -194,7 +195,7 @@ public class DocumentModel extends ListenerProxy {
                 if (TempHolder.get().loadingCancelled) {
                     return;
                 }
-                if (!AppState.get().isCut) {
+                if (!AppTemp.get().isCut) {
                     CodecPageInfo cpi = infos[docIndex] != null ? infos[docIndex] : defCpi;
 
                     final Page page = new Page(base, new PageIndex(docIndex, viewIndex++), PageType.FULL_PAGE, cpi);
@@ -218,13 +219,13 @@ public class DocumentModel extends ListenerProxy {
         }
     }
 
-    private CodecPageInfo[] retrievePagesInfo(final IActivityController base, final BookSettings bs, final IProgressIndicator task) {
+    private CodecPageInfo[] retrievePagesInfo(final IActivityController base, final AppBook bs, final IProgressIndicator task) {
         int pagesCount = base.getDecodeService().getPageCount();
-        final PageCacheFile pagesFile = PageCacheFile.getPageFile(bs.fileName, pagesCount);
+        final PageCacheFile pagesFile = PageCacheFile.getPageFile(bs.path, pagesCount);
 
         try {
             if (pagesCount > 0) {
-                FileMeta meta = AppDB.get().load(bs.fileName);
+                FileMeta meta = AppDB.get().load(bs.path);
                 if (meta != null) {
                     meta.setPages(pagesCount);
                     AppDB.get().update(meta);
@@ -234,7 +235,7 @@ public class DocumentModel extends ListenerProxy {
             LOG.e(e);
         }
 
-        if (decodeService.isPageSizeCacheable() && pagesFile.exists()) {
+        if (pagesFile.exists()) {
             final CodecPageInfo[] infos = pagesFile.load();
             if (infos != null && infos.length == decodeService.getPageCount()) {
                 return infos;
@@ -251,9 +252,9 @@ public class DocumentModel extends ListenerProxy {
             infos[i] = unified != null ? unified : decodeService.getPageInfo(i);
         }
 
-        if (decodeService.isPageSizeCacheable()) {
-            pagesFile.save(infos);
-        }
+        // if (decodeService.isPageSizeCacheable()) {
+        pagesFile.save(infos);
+        //}
         return infos;
     }
 

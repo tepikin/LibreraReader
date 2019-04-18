@@ -536,4 +536,26 @@
    <string name="please_wait_books_are_being_processed_">お待ちください、書籍は処理中です</string>
    <string name="system_brightness">システムの明るさ</string>
    <string name="opening_books_in_the_specified_mode">指定されたモードで本を開く</string>
+   <string name="dark_oled">ダークオイル</string>
+   <string name="profile">プロフィール</string>
+   <string name="new_profile">新しいプロフィール</string>
+   <string name="main">メイン</string>
+   <string name="do_you_want_to_switch_profile_">別のプロフィールに切り替えますか？</string>
+   <string name="sync_error">同期エラー</string>
+   <string name="sign_in">サインイン</string>
+   <string name="sign_out">サインアウト</string>
+   <string name="manual_sync_only">手動同期のみ</string>
+   <string name="wifi_sync_only">WiFi同期のみ</string>
+   <string name="sync_google_drive">同期（Googleドライブ）</string>
+   <string name="single_tap_to_select_text">シングルタップでテキストを選択</string>
+   <string name="sync_book">本を同期する</string>
+   <string name="sync">同期する</string>
+   <string name="synchronized_folder">同期フォルダ</string>
+   <string name="today">今日</string>
+   <string name="downloads">ダウンロード</string>
+   <string name="delete_the_directory_all_the_files_in_the_directory_">フォルダは空ではありません。とにかく削除しますか？</string>
+   <string name="synchronized_books">同期書籍</string>
+   <string name="show_sync_wheel">同期ホイールを表示</string>
+   <string name="publication_date">発行日</string>
+   <string name="empy">空の</string>
 </resources>

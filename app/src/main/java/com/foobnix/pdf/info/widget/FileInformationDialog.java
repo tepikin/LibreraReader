@@ -1,48 +1,5 @@
 package com.foobnix.pdf.info.widget;
 
-import java.io.File;
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
-import org.ebookdroid.BookType;
-import org.ebookdroid.core.codec.CodecDocument;
-import org.greenrobot.eventbus.EventBus;
-
-import com.foobnix.android.utils.Dips;
-import com.foobnix.android.utils.Keyboards;
-import com.foobnix.android.utils.LOG;
-import com.foobnix.android.utils.Objects;
-import com.foobnix.android.utils.ResultResponse;
-import com.foobnix.android.utils.TxtUtils;
-import com.foobnix.dao2.FileMeta;
-import com.foobnix.ext.CacheZipUtils.CacheDir;
-import com.foobnix.ext.EbookMeta;
-import com.foobnix.pdf.info.ADS;
-import com.foobnix.pdf.info.AppSharedPreferences;
-import com.foobnix.pdf.info.BuildConfig;
-import com.foobnix.pdf.info.Clouds;
-import com.foobnix.pdf.info.ExtUtils;
-import com.foobnix.pdf.info.IMG;
-import com.foobnix.pdf.info.R;
-import com.foobnix.pdf.info.TintUtil;
-import com.foobnix.pdf.info.view.Dialogs;
-import com.foobnix.pdf.info.view.ScaledImageView;
-import com.foobnix.pdf.info.wrapper.AppBookmark;
-import com.foobnix.pdf.info.wrapper.AppState;
-import com.foobnix.pdf.search.activity.msg.NotifyAllFragments;
-import com.foobnix.sys.ImageExtractor;
-import com.foobnix.ui2.AppDB;
-import com.foobnix.ui2.AppDB.SEARCH_IN;
-import com.foobnix.ui2.AppDB.SORT_BY;
-import com.foobnix.ui2.FileMetaCore;
-import com.foobnix.ui2.adapter.DefaultListeners;
-import com.foobnix.ui2.adapter.FileMetaAdapter;
-import com.nostra13.universalimageloader.core.ImageLoader;
-
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -60,6 +17,49 @@ import android.view.Window;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+
+import com.foobnix.android.utils.Dips;
+import com.foobnix.android.utils.Keyboards;
+import com.foobnix.android.utils.LOG;
+import com.foobnix.android.utils.ResultResponse;
+import com.foobnix.android.utils.TxtUtils;
+import com.foobnix.dao2.FileMeta;
+import com.foobnix.drive.GFile;
+import com.foobnix.ext.CacheZipUtils.CacheDir;
+import com.foobnix.ext.EbookMeta;
+import com.foobnix.model.AppBookmark;
+import com.foobnix.model.AppState;
+import com.foobnix.pdf.info.ADS;
+import com.foobnix.pdf.info.BookmarksData;
+import com.foobnix.pdf.info.Clouds;
+import com.foobnix.pdf.info.ExtUtils;
+import com.foobnix.pdf.info.IMG;
+import com.foobnix.pdf.info.R;
+import com.foobnix.pdf.info.TintUtil;
+import com.foobnix.pdf.info.view.Dialogs;
+import com.foobnix.pdf.info.view.ScaledImageView;
+import com.foobnix.pdf.search.activity.msg.NotifyAllFragments;
+import com.foobnix.pdf.search.view.AsyncProgressResultToastTask;
+import com.foobnix.sys.ImageExtractor;
+import com.foobnix.ui2.AppDB;
+import com.foobnix.ui2.AppDB.SEARCH_IN;
+import com.foobnix.ui2.AppDB.SORT_BY;
+import com.foobnix.ui2.FileMetaCore;
+import com.foobnix.ui2.adapter.DefaultListeners;
+import com.foobnix.ui2.adapter.FileMetaAdapter;
+import com.nostra13.universalimageloader.core.ImageLoader;
+
+import org.ebookdroid.BookType;
+import org.ebookdroid.core.codec.CodecDocument;
+import org.greenrobot.eventbus.EventBus;
+
+import java.io.File;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 public class FileInformationDialog {
 
@@ -131,9 +131,9 @@ public class FileInformationDialog {
 
         TextView pathView = (TextView) dialog.findViewById(R.id.path);
         pathView.setText(file.getPath());
-        if(BuildConfig.LOG){
-            pathView.setText(file.getPath() + "\n" + LOG.ojectAsString(fileMeta));
-        }
+//        if (BuildConfig.IS_BETA) {
+//            pathView.setText(file.getPath() + "\n" + LOG.ojectAsString(fileMeta));
+//        }
 
 
         ((TextView) dialog.findViewById(R.id.date)).setText(fileMeta.getDateTxt());
@@ -156,13 +156,13 @@ public class FileInformationDialog {
             ((View) hypenLang.getParent()).setVisibility(View.GONE);
         }
 
-        List<AppBookmark> objects = AppSharedPreferences.get().getBookmarksByBook(file);
+        List<AppBookmark> objects = BookmarksData.get().getBookmarksByBook(file);
         StringBuilder lines = new StringBuilder();
         String fast = a.getString(R.string.fast_bookmark);
         if (TxtUtils.isListNotEmpty(objects)) {
             for (AppBookmark b : objects) {
                 if (!fast.equals(b.getText())) {
-                    lines.append(b.getPage() + ": " + b.getText());
+                    lines.append(b.getPercent() * 100 + "%" + ": " + b.getText());
                     lines.append("\n");
                 }
             }
@@ -552,7 +552,32 @@ public class FileInformationDialog {
         builder.setMessage(a.getString(R.string.do_you_want_to_delete_this_file_) + "\n\"" + name + "\"").setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(final DialogInterface dialog, final int id) {
-                onDeleteAction.run();
+
+
+                if (Clouds.isLibreraSyncRootFolder(file.getPath())) {
+
+
+                    new AsyncProgressResultToastTask(a) {
+
+                        @Override
+                        protected Boolean doInBackground(Object... objects) {
+                            try {
+                                GFile.deleteRemoteFile(file);
+                                a.runOnUiThread(onDeleteAction);
+                                //GFile.runSyncService(a);
+                            } catch (Exception e) {
+                                LOG.e(e);
+                                return false;
+                            }
+                            return true;
+                        }
+
+                    }.execute();
+
+                } else {
+                    onDeleteAction.run();
+                }
+
             }
         }).setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
             @Override

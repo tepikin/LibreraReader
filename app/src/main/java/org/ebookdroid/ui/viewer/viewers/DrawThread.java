@@ -1,16 +1,18 @@
 package org.ebookdroid.ui.viewer.viewers;
 
-import java.util.ArrayList;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
+import android.graphics.Canvas;
+import android.view.SurfaceHolder;
+
+import com.foobnix.android.utils.LOG;
 
 import org.ebookdroid.core.EventPool;
 import org.ebookdroid.core.ViewState;
 import org.emdev.utils.concurrent.Flag;
 
-import android.graphics.Canvas;
-import android.view.SurfaceHolder;
+import java.util.ArrayList;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 public class DrawThread extends Thread {
 
@@ -32,18 +34,19 @@ public class DrawThread extends Thread {
         try {
             this.join();
         } catch (final InterruptedException e) {
+            LOG.e(e);
         }
     }
 
     @Override
     public void run() {
         while (!stop.get()) {
-            draw(false);
+            draw();
         }
     }
 
-    protected void draw(final boolean useLastState) {
-        final ViewState viewState = takeLastTask(); // takeTask(250, TimeUnit.MILLISECONDS, useLastState);
+    protected void draw() {
+        final ViewState viewState = takeTask(1000, TimeUnit.MILLISECONDS, false);
         if (viewState == null) {
             return;
         }
@@ -52,13 +55,15 @@ public class DrawThread extends Thread {
             canvas = surfaceHolder.lockCanvas(null);
             EventPool.newEventDraw(viewState, canvas, null).process();
         } catch (final Throwable th) {
-            th.printStackTrace();
+            LOG.e(th);
         } finally {
             if (canvas != null) {
                 try {
                     surfaceHolder.unlockCanvasAndPost(canvas);
                 } catch (Exception e) {
+                    LOG.e(e);
                 }
+
             }
         }
     }
@@ -80,6 +85,7 @@ public class DrawThread extends Thread {
                     } catch (Throwable ex) {
                         // Go to next attempt
                         ex.printStackTrace();
+                        LOG.e(ex);
                     }
                 }
             }
@@ -88,51 +94,14 @@ public class DrawThread extends Thread {
         } catch (Throwable ex) {
             // Go to next attempt
             ex.printStackTrace();
+            LOG.e(ex);
         }
         return task;
     }
 
-    public ViewState takeFirstTask() {
-        ViewState task = null;
-        try {
-            task = queue.poll(0, TimeUnit.MILLISECONDS);
-        } catch (final Throwable ex) {
-            // Go to next attempt
-        }
-        return task;
-    }
 
-    public ViewState takeFirstTask1() {
-        ViewState task = null;
-        try {
-            task = queue.poll();
-        } catch (final Throwable ex) {
-            // Go to next attempt
-        }
-        return task;
-    }
 
-    public ViewState takeLastTask() {
-        ViewState task = null;
-        try {
-            // Workaround for possible ConcurrentModificationException
-            while (true) {
-                list.clear();
-                try {
-                    if (queue.drainTo(list) > 0) {
-                        final int last = list.size() - 1;
-                        task = list.get(last);
-                    }
-                    break;
-                } catch (final Throwable ex) {
-                    // Go to next attempt
-                }
-            }
-        } catch (final Throwable ex) {
-            // Go to next attempt
-        }
-        return task;
-    }
+
 
     public void draw(final ViewState viewState) {
         if (viewState != null) {
@@ -144,6 +113,7 @@ public class DrawThread extends Thread {
                 } catch (Throwable ex) {
                     // Go to next attempt
                     ex.printStackTrace();
+                    LOG.e(ex);
                 }
             }
         }
