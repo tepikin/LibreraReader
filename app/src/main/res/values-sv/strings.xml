@@ -14,6 +14,7 @@
    <string name="landscape_180">Landskap (180)</string>
    <string name="portrait_180">Porträtt (180)</string>
    <string name="system_language">Systemets språk</string>
+   <string name="system">Systemet</string>
    <string name="small">Små</string>
    <string name="normal">Vanligt</string>
    <string name="large">Stor</string>
@@ -558,4 +559,16 @@
    <string name="show_sync_wheel">Visa synkroniseringshjulet</string>
    <string name="publication_date">Publiceringsdatum</string>
    <string name="empy">Tömma</string>
+   <string name="show_quick_bookmarks">Visa snabba bokmärken</string>
+   <string name="show_only_available_books">Visa bara tillgängliga böcker</string>
+   <string name="share_as_text">Dela som text</string>
+   <string name="share_as_image">Dela som bild</string>
+   <string name="copy_text">Kopiera text</string>
+   <string name="show_fast_scroll">Visa snabb bläddring</string>
+   <string name="replacements">Ersättare</string>
+   <string name="add_dictionary">Lägg till ordlista</string>
+   <string name="add_rule">Lägg till regel</string>
+   <string name="emphasis">Betoning</string>
+   <string name="with_cutout">Med utklipp</string>
+   <string name="screen">Skärm</string>
 </resources>

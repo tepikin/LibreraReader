@@ -14,6 +14,7 @@
    <string name="landscape_180">Horizontalis inversa</string>
    <string name="portrait_180">Verticalis inversa</string>
    <string name="system_language">Lingua systematis</string>
+   <string name="system">Ratio</string>
    <string name="small">Paullulus</string>
    <string name="normal">Cotidianus</string>
    <string name="large">Grandis</string>
@@ -558,4 +559,16 @@
    <string name="show_sync_wheel">Ostende sync rotam</string>
    <string name="publication_date">Publication diem</string>
    <string name="empy">Inanis</string>
+   <string name="show_quick_bookmarks">Ostende velox bookmarks</string>
+   <string name="show_only_available_books">Tantum ostendere praesto librorum</string>
+   <string name="share_as_text">Ut participes illud</string>
+   <string name="share_as_image">Participes ad imaginem</string>
+   <string name="copy_text">Exemplum illud</string>
+   <string name="show_fast_scroll">Celeriter ostendere volumen</string>
+   <string name="replacements">Supplementaque distribuere</string>
+   <string name="add_dictionary">Adde dictionary</string>
+   <string name="add_rule">Adde regula</string>
+   <string name="emphasis">Emphasis</string>
+   <string name="with_cutout">Cum cutout</string>
+   <string name="screen">Screen</string>
 </resources>

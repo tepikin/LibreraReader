@@ -1,5 +1,7 @@
 package com.foobnix.model;
 
+import java.io.File;
+
 public class SimpleMeta implements MyPath.RelativePath {
 
     public static int STATE_NORMAL = 0;
@@ -8,6 +10,9 @@ public class SimpleMeta implements MyPath.RelativePath {
 
     public String path;
     public long time;
+
+
+    transient public File file;
 
 
     public SimpleMeta() {
@@ -26,6 +31,11 @@ public class SimpleMeta implements MyPath.RelativePath {
     public static SimpleMeta SyncSimpleMeta(SimpleMeta s) {
         return new SimpleMeta(MyPath.getSyncPath(s.getPath()), s.time);
     }
+    public static SimpleMeta SyncSimpleMeta(String path) {
+        return new SimpleMeta(MyPath.getSyncPath(path), 0);
+    }
+
+
 
     public String getPath() {
         return MyPath.toAbsolute(path);
@@ -37,7 +47,10 @@ public class SimpleMeta implements MyPath.RelativePath {
 
     @Override
     public boolean equals(Object obj) {
-        return obj != null && ((SimpleMeta) obj).path.equals(path);
+        if (obj == null) return false;
+        final String path1 =((SimpleMeta) obj).path;
+        final String path2 = this.path;
+        return path1.equals(path2);
     }
 
     @Override
@@ -50,4 +63,7 @@ public class SimpleMeta implements MyPath.RelativePath {
         return "SimpleMeta:" + path + ":" + time;
 
     }
+
+
+
 }

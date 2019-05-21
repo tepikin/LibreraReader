@@ -173,6 +173,8 @@ public class SearchFragment2 extends UIFragment<FileMeta> {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_search2, container, false);
 
+        LOG.d("SearchFragment2 onCreateView");
+
         NO_SERIES = " (" + getString(R.string.without_series) + ")";
 
         handler = new Handler();
@@ -590,7 +592,9 @@ public class SearchFragment2 extends UIFragment<FileMeta> {
                         parentName = "" + it.getYear();
                     } else if (AppState.get().sortBy == SORT_BY.PATH.getIndex()) {
                         parentName = it.getParentPath();
-                        parentName = parentName.replace(extDir, "");
+                        if(parentName!=null) {
+                            parentName = parentName.replace(extDir, "");
+                        }
                     } else if (AppState.get().sortBy == SORT_BY.LANGUAGE.getIndex()) {
                         String lang = it.getLang();
                         if (TxtUtils.isEmpty(lang)) {
@@ -599,7 +603,7 @@ public class SearchFragment2 extends UIFragment<FileMeta> {
                             parentName = DialogTranslateFromTo.getLanuageByCode(lang);
                         }
                     }
-                    if (!parentName.equals(last)) {
+                    if (parentName!=null && !parentName.equals(last)) {
                         FileMeta fm = new FileMeta();
                         fm.setCusType(FileMetaAdapter.DISPALY_TYPE_LAYOUT_TITLE_DIVIDER);
                         fm.setTitle(parentName);
@@ -935,9 +939,7 @@ public class SearchFragment2 extends UIFragment<FileMeta> {
             if (searchText.startsWith("@")) {
                 try {
                     prevText.pop();
-                    if(prevText.empty()){
-                        return false;
-                    }
+
                     String pop = prevText.pop();
                     LOG.d("pop", pop);
                     if (TxtUtils.isNotEmpty(pop)) {
@@ -945,6 +947,7 @@ public class SearchFragment2 extends UIFragment<FileMeta> {
                         searchAndOrderAsync();
                         return true;
                     }
+
                 } catch (EmptyStackException e) {
                     LOG.e(e);
                 }
@@ -985,4 +988,10 @@ public class SearchFragment2 extends UIFragment<FileMeta> {
         searchAndOrderAsync();
     }
 
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        LOG.d("SearchFragment2 onDestroy");
+
+    }
 }

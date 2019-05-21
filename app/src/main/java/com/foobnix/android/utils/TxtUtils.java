@@ -22,15 +22,26 @@ import com.foobnix.dao2.FileMeta;
 import com.foobnix.model.AppState;
 import com.foobnix.model.AppTemp;
 import com.foobnix.pdf.info.R;
+import com.foobnix.pdf.info.model.BookCSS;
 import com.foobnix.sys.TempHolder;
+import com.foobnix.ui2.AppDB;
 
 import org.ebookdroid.LibreraApp;
+import org.json.JSONObject;
 
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.lang.Character.UnicodeBlock;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -39,7 +50,7 @@ import java.util.regex.Pattern;
 
 public class TxtUtils {
 
-    public static final String TTS_PAUSE = "<pause>";
+    public static final String TTS_PAUSE = "‡";
     public static String LONG_DASH1 = "\u2013";
     public static String LONG_DASH2 = "\u2014";
     public static String SMALL_DASH = "-";
@@ -246,9 +257,19 @@ public class TxtUtils {
     }
 
     public static String replaceEndLine(String pageHTML) {
+        pageHTML = pageHTML.replace("-<end-line>" + TTS_PAUSE + TTS_PAUSE, "");
+        pageHTML = pageHTML.replace("-<end-line>" + TTS_PAUSE, "");
         pageHTML = pageHTML.replace("-<end-line>", "");
         pageHTML = pageHTML.replace("- <end-line>", "");
+        pageHTML = pageHTML.replace("<end-line>" + TTS_PAUSE + TTS_PAUSE, " ");
+        pageHTML = pageHTML.replace("<end-line>" + TTS_PAUSE, " ");
         pageHTML = pageHTML.replace("<end-line>", " ");
+        pageHTML = pageHTML.replace("<end-block>", TTS_PAUSE);
+
+        //Dips.spToPx(size)
+        //(Dips.dpToPx(BookCSS.get().fontSizeSp)
+        pageHTML = pageHTML.replaceAll("<pause-font-size-[0-9,.]*>$", "");
+        pageHTML = pageHTML.replaceAll("<pause-font-size-[0-9,.]*>", TTS_PAUSE);
         return pageHTML;
     }
 
@@ -258,6 +279,7 @@ public class TxtUtils {
         }
         LOG.d("pageHTML [before]", pageHTML);
 
+        pageHTML = pageHTML.replace("<pause>", TTS_PAUSE);
         pageHTML = pageHTML.replace("<b><end-line><i>", TTS_PAUSE).replace("<i><end-line><b>", TTS_PAUSE);
         pageHTML = pageHTML.replace("<b><p><i>", TTS_PAUSE).replace("<i><p><b>", TTS_PAUSE);
         pageHTML = pageHTML.replace("<b>", "").replace("</b>", "").replace("<i>", "").replace("</i>", "").replace("<tt>", "").replace("</tt>", "");
@@ -268,40 +290,287 @@ public class TxtUtils {
         pageHTML = pageHTML.replace(">" + TxtUtils.LONG_DASH2, ">" + TTS_PAUSE);
         pageHTML = pageHTML.replace("   ", TTS_PAUSE);
 
-        if (AppState.get().ttsReadBySentences) {
-            for (int i = 0; i < AppState.get().ttsSentecesDivs.length(); i++) {
-                String s = String.valueOf(AppState.get().ttsSentecesDivs.charAt(i));
-                pageHTML = pageHTML.replace(s, s + TTS_PAUSE);
-            }
+        LOG.d("pageHTML [1]", pageHTML);
 
-        }
 
         pageHTML = pageHTML.replace("<p>", "").replace("</p>", "");
         pageHTML = pageHTML.replace("&nbsp;", " ").replace("&lt;", " ").replace("&gt;", "").replace("&amp;", " ").replace("&quot;", " ");
         pageHTML = pageHTML.replace("[image]", "");
-        if (AppState.get().isShowFooterNotesInText) {
+
+        LOG.d("pageHTML [2", pageHTML);
+
+        if (AppState.get().isShowFooterNotesInText && AppTemp.get().hypenLang != null) {
             try {
                 String string = getLocaleStringResource(new Locale(AppTemp.get().hypenLang), R.string.foot_notes, LibreraApp.context);
-                pageHTML = pageHTML.replaceAll("[\\[{][0-9]+[\\]}]", ". " + string + ".");
+                pageHTML = pageHTML.replaceAll("[\\[{][0-9]+[\\]}]", TTS_PAUSE + string + TTS_PAUSE);
             } catch (Exception e) {
                 LOG.e(e);
             }
         }
+
+        LOG.d("pageHTML [3]", pageHTML);
+
 
         pageHTML = replaceEndLine(pageHTML);
         pageHTML = pageHTML.replace("  ", " ");
         pageHTML = pageHTML.replaceAll("(?u)(\\w+)(-\\s)", "$1");
         LOG.d("pageHTML [after] ", pageHTML);
 
-        if (AppState.get().ttsDoNotReadCharsEnable) {
-            for (int i = 0; i < AppState.get().ttsSkipChars.length(); i++) {
-                String s = String.valueOf(AppState.get().ttsSkipChars.charAt(i));
-                pageHTML = pageHTML.replace(s, " ");
+        LOG.d("pageHTML [4]", pageHTML);
+
+        if (AppState.get().isEnalbeTTSReplacements) {
+
+            final List<String> line = StringDB.asList(AppState.get().lineTTSAccents);
+            for (String it : line) {
+                it = it.trim();
+                if (TxtUtils.isEmpty(it)) {
+                    continue;
+                }
+                String key = it.replace("*", "");
+                key = replaceAccentReverse(key);
+                final String value = replaceAccent(it);
+                pageHTML = pageHTML.replace(key, value);
+                LOG.d("pageHTML-replace-accent", key, value);
             }
+
+            LOG.d("pageHTML [5]", pageHTML);
+
+
+            if (TxtUtils.isNotEmpty(BookCSS.get().dictPath)) {
+                loadReplayceDict();
+                //String split[] = pageHTML.split(" ");
+                //if (hasDB) {
+//                StringBuilder res = new StringBuilder();
+//                HypenUtils.tokenize(pageHTML, new HypenUtils.TokensListener() {
+//
+//                    @Override
+//                    public void findOther(char ch) {
+//                        res.append(ch);
+//                    }
+//
+//                    @Override
+//                    public void findText(String w) {
+//                        if (w.length() <= 3) {
+//                            res.append(w);
+//                        } else {
+//                            //String dict = AppDB.get().findDict(w);
+//                            //res.append(replaceAccent(dict));
+//                            w = w.toLowerCase();
+//                            String s = dict2.get(w);
+//                            if (s == null) s = w;
+//                            res.append(s);
+//
+//                        }
+//                    }
+//
+//                });
+//                pageHTML = res.toString();
+                LOG.d("pageHTML [6]", pageHTML);
+
+                // }
+
+
+                for (String key : dict1.keySet()) {
+                    pageHTML = pageHTML.replaceAll(key, dict1.get(key));
+                }
+                LOG.d("pageHTML [7]", pageHTML);
+
+                for (String key : dict2.keySet()) {
+                    pageHTML = pageHTML.replace(key, dict2.get(key));
+                }
+            }
+
+            try {
+                JSONObject obj = new JSONObject(AppState.get().lineTTSReplacements);
+
+                final Iterator<String> keys = obj.keys();
+                while (keys.hasNext()) {
+                    String key = keys.next();
+                    String value = obj.getString(key);
+                    if (key.startsWith("[") && key.endsWith("]")) {
+                        for (int i = 1; i < key.length() - 1; i++) {
+                            String s = String.valueOf(key.charAt(i));
+                            pageHTML = pageHTML.replace(s, value);
+                        }
+
+                    } else {
+                        if (value.contains("*")) {
+                            value = replaceAccent(value);
+                        }
+
+                        pageHTML = pageHTML.replace(key, value);
+                    }
+                }
+
+
+                LOG.d("pageHTML [8]", pageHTML);
+
+
+            } catch (Exception e) {
+                LOG.e(e);
+            }
+
+
+            LOG.d("pageHTML [after replacments] ", pageHTML);
 
         }
 
+        pageHTML = pageHTML.replace(" ,", ",");
+        pageHTML = pageHTML.replace(",,", ",");
+
+        pageHTML = pageHTML.replace(".,", ".");
+        pageHTML = pageHTML.replace(",.", ".");
+        pageHTML = pageHTML.replace("..", ".");
+
+        if (AppState.get().ttsReadBySentences) {
+            loadShotList();
+
+            for (String r : shortList) {
+                String r1 = " " + r;
+                String r2 = " " + r.replace(".", "{dot}");
+                pageHTML = pageHTML.replace(r1, r2);
+            }
+
+
+            pageHTML = pageHTML.replaceAll(" (\\S{1,3})\\.(\\S{1,3})\\.(\\S{1,3})\\. ", "  $1{dot}$2{dot}$3{dot} ");
+            pageHTML = pageHTML.replaceAll(" (\\S{1,3})\\.(\\S{1,4})\\. ", "  $1{dot}$2{dot} ");
+            pageHTML = pageHTML.replaceAll(" (\\S{1,2})\\. (\\S{1,2})\\. ", "  $1{dot} $2{dot} ");
+            pageHTML = pageHTML.replaceAll(" (\\S{1,2})\\. ", " $1{dot} ");
+
+
+            for (int i = 0; i < AppState.get().ttsSentecesDivs.length(); i++) {
+                String s = String.valueOf(AppState.get().ttsSentecesDivs.charAt(i));
+                pageHTML = pageHTML.replace(s, s + TTS_PAUSE);
+            }
+
+
+            pageHTML = pageHTML.replace("{dot}", ".");
+        }
+
+
         return pageHTML;
+    }
+
+    static List<String> shortList = new ArrayList<>();
+
+    public static void loadShotList() {
+        try {
+            if (!shortList.isEmpty()) {
+                return;
+            }
+
+            final InputStream open = LibreraApp.context.getAssets().open("dict/Librera_Сокращения.txt");
+            BufferedReader input = new BufferedReader(new InputStreamReader(open));
+            String line;
+            while ((line = input.readLine()) != null) {
+                if (line.trim().length() > 3) {
+                    line = line.trim();
+                    shortList.add(line);
+                    shortList.add(TxtUtils.firstUppercase(line));
+                    LOG.d("loadShotList-line", line);
+
+                }
+            }
+            input.close();
+        } catch (IOException e) {
+            LOG.e(e);
+        }
+    }
+
+    public static String replaceAccent(String dict) {
+        dict = dict.replace("A*", "а́").replace("а*", "а́");
+        dict = dict.replace("О*", "о́").replace("о*", "о́");
+        dict = dict.replace("И*", "и́").replace("и*", "и́");
+        dict = dict.replace("У*", "у́").replace("у*", "у́");
+        dict = dict.replace("У*", "е́").replace("е*", "е́");
+        dict = dict.replace("Ы*", "ы́").replace("ы*", "ы́");
+        dict = dict.replace("Э*", "э́́").replace("э*", "э́́");
+        dict = dict.replace("Я*", "я́́́").replace("я*", "я́́́");
+        dict = dict.replace("Ю*", "ю́́́́́").replace("ю*", "ю́́́́́");
+        dict = dict.replace("Ё*", "ё́́́́").replace("ё*", "ё́́́́");
+        return dict;
+    }
+
+    public static String replaceAccentReverse(String dict) {
+        dict = dict.replace("а́", "а");
+        dict = dict.replace("о́", "о");
+        dict = dict.replace("и́", "и");
+        dict = dict.replace("у́", "у");
+        dict = dict.replace("е́", "е");
+        dict = dict.replace("ы́", "ы");
+        dict = dict.replace("э́́", "э");
+        dict = dict.replace("я́́́", "я");
+        dict = dict.replace("ю́́́́́", "ю");
+        dict = dict.replace("ё́́́́", "ё");
+        return dict;
+    }
+
+    public static Map<String, String> dict1 = new HashMap<>();
+    public static Map<String, String> dict2 = new HashMap<>();
+    public static String dictHash = "";
+    public static boolean hasDB = false;
+
+    public static void loadReplayceDict() {
+        if (dictHash.equals(BookCSS.get().dictPath)) {
+            return;
+        }
+        dictHash = BookCSS.get().dictPath;
+        hasDB = false;
+        dict1.clear();
+        dict2.clear();
+
+        final List<String> dicts = StringDB.asList(BookCSS.get().dictPath);
+
+        for (String dict : dicts) {
+
+            if (TxtUtils.isEmpty(dict)) {
+                continue;
+            }
+
+            if (dict.endsWith(".db")) {
+                AppDB.get().openDictDB(LibreraApp.context, dict);
+                hasDB = true;
+                continue;
+
+            }
+
+            try {
+                LOG.d("pageHTML-dict", dict);
+                LOG.d("pageHTML-dict", dict);
+                BufferedReader input = new BufferedReader(new InputStreamReader(new FileInputStream(dict)));
+                String line;
+                while ((line = input.readLine()) != null) {
+                    if (TxtUtils.isEmpty(line)) {
+                        continue;
+                    } else if (line.startsWith("#")) {
+                        continue;
+                    } else if (line.endsWith("256")) {
+                        continue;
+                    } else if (line.startsWith("*\"")) {
+                        String parts[] = line.split("\" \"");
+                        String r1 = parts[0].substring(2);
+                        String r2 = parts[1].substring(0, parts[1].lastIndexOf("\""));
+                        r2 = replaceAccent(r2);
+                        LOG.d("pageHTML-replaceAll", r1, r2);
+
+                        dict1.put(r1, r2);
+
+                    } else if (line.startsWith("\"")) {
+                        String parts[] = line.split("\" \"");
+                        String r1 = parts[0].substring(1);
+                        String r2 = parts[1].substring(0, parts[1].lastIndexOf("\""));
+                        r2 = replaceAccent(r2);
+                        LOG.d("pageHTML-replace", r1, r2);
+                        dict2.put(r1, r2);
+                    }
+                }
+                input.close();
+            } catch (Exception e) {
+                LOG.e(e);
+            }
+        }
+
+
     }
 
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
@@ -530,6 +799,8 @@ public class TxtUtils {
             int index = str.indexOf(" ", len);
             if (index > 0) {
                 return str.substring(0, index);
+            } else {
+                return str.substring(0, len);
             }
         }
         return str;

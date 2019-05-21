@@ -14,6 +14,7 @@
    <string name="landscape_180">Maisema (180)</string>
    <string name="portrait_180">Muotokuva (180)</string>
    <string name="system_language">Järjestelmäkieli</string>
+   <string name="system">Järjestelmä</string>
    <string name="small">Pieni</string>
    <string name="normal">Normaali</string>
    <string name="large">Suuri</string>
@@ -558,4 +559,16 @@
    <string name="show_sync_wheel">Näytä synkronointipyörä</string>
    <string name="publication_date">Julkaisupäivämäärä</string>
    <string name="empy">Tyhjä</string>
+   <string name="show_quick_bookmarks">Näyttää nopeat kirjanmerkit</string>
+   <string name="show_only_available_books">Näyttää vain käytettävissä olevat kirjat</string>
+   <string name="share_as_text">Jaa tekstinä</string>
+   <string name="share_as_image">Jakaa kuvan</string>
+   <string name="copy_text">Kopioi tekstiä</string>
+   <string name="show_fast_scroll">Näyttää nopeasti selaus</string>
+   <string name="replacements">Vaihdot</string>
+   <string name="add_dictionary">Lisää sanakirja</string>
+   <string name="add_rule">Lisää sääntö</string>
+   <string name="emphasis">Painotus</string>
+   <string name="with_cutout">Leikkauksella</string>
+   <string name="screen">Kuvaruutu</string>
 </resources>

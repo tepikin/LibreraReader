@@ -65,21 +65,109 @@ public abstract class HorizontalModeController extends DocumentController {
 
     public HorizontalModeController(Activity activity, int w, int h) {
         super(activity);
-        matrixSP = activity.getSharedPreferences("matrix", Context.MODE_PRIVATE);
-
-        LOG.d("DocumentControllerHorizontalView", "begin");
-        LOG.d("DocumentControllerHorizontalView", "end");
 
         isTextFormat = ExtUtils.isTextFomat(activity.getIntent());
+        udpateImageSize(isTextFormat, w, h);
 
-        udpateImageSize(w, h);
+        matrixSP = activity.getSharedPreferences("matrix", Context.MODE_PRIVATE);
+
+        PageImageState.get().cleanSelectedWords();
+        PageImageState.get().pagesText.clear();
+
 
         if (isTextFormat) {
             AppTemp.get().isCrop = false;
             AppTemp.get().isCut = false;
             AppTemp.get().isLocked = true;
         }
+
+        bookPath = getBookPathFromActivity(activity);
+        AppTemp.get().lastBookPath = bookPath;
+
+        AppBook bs = SettingsManager.getBookSettings(bookPath);
+
+        if (bs != null) {
+            AppTemp.get().isCut = bs.sp;
+            AppTemp.get().isCrop = bs.cp;
+            AppTemp.get().isDouble = bs.dp;
+            AppTemp.get().isDoubleCoverAlone = bs.dc;
+            AppTemp.get().isLocked = bs.getLock(isTextFormat);
+            TempHolder.get().pageDelta = bs.d;
+
+            if (AppState.get().isCropPDF && !isTextFormat) {
+                AppTemp.get().isCrop = true;
+            }
+        }
+
+        FileMetaCore.checkOrCreateMetaInfo(activity);
+        BookCSS.get().detectLang(bookPath);
+
+
+        String pasw = activity.getIntent().getStringExtra(EXTRA_PASSWORD);
+        pasw = TxtUtils.nullToEmpty(pasw);
+
+        if (AppTemp.get().isDouble && isTextFormat) {
+            imageWidth = Dips.screenWidth() / 2;
+        }
+
+        codeDocument = ImageExtractor.getNewCodecContext(bookPath, pasw, imageWidth, imageHeight);
+        if (codeDocument != null) {
+            pagesCount = codeDocument.getPageCount(imageWidth, imageHeight, BookCSS.get().fontSizeSp);
+        } else {
+            pagesCount = 0;
+        }
+
+        if (pagesCount == -1) {
+            throw new IllegalArgumentException("Pages count = -1");
+        }
+
+        try {
+            if (pagesCount > 0) {
+                FileMeta meta = AppDB.get().load(bs.path);
+                if (meta != null) {
+                    meta.setPages(pagesCount);
+                    AppDB.get().update(meta);
+                }
+            }
+        } catch (Exception e) {
+            LOG.e(e);
+        }
+
+
+        AppDB.get().addRecent(bookPath);
+
+        float percent = Intents.getFloatAndClear(activity.getIntent(), DocumentController.EXTRA_PERCENT);
+
+
+        if (percent > 0.0f) {
+            currentPage = Math.round(pagesCount * percent) - 1;
+        } else if (pagesCount > 0) {
+            currentPage = bs.getCurrentPage(getPageCount()).viewIndex;
+        }
+
+        if (false) {
+            PageImageState.get().needAutoFit = true;
+        } else {
+            if (TxtUtils.isNotEmpty(bookPath) && !ExtUtils.isTextFomat(bookPath)) {
+                String string = matrixSP.getString(bookPath.hashCode() + "", "");
+                LOG.d("MATRIX", "READ STR", string);
+                if (TxtUtils.isEmpty(string) || AppTemp.get().isCut || AppTemp.get().isCrop) {
+                    PageImageState.get().needAutoFit = true;
+                } else {
+                    PageImageState.get().needAutoFit = false;
+                }
+                Matrix matrix = PageImageState.fromString(string);
+                PageImageState.get().getMatrix().set(matrix);
+
+                LOG.d("MATRIX", "READ", bookPath.hashCode() + "", PageImageState.get().getMatrixAsString());
+
+            }
+        }
+
+
+
     }
+
 
     @Override
     public void onScrollYPercent(float value) {
@@ -87,7 +175,7 @@ public abstract class HorizontalModeController extends DocumentController {
         onGoToPage(page2);
     }
 
-    public void udpateImageSize(int w, int h) {
+    public void udpateImageSize(boolean isTextFormat, int w, int h) {
         LOG.d("udpateImageSize", w, h, isTextFormat);
         imageWidth = isTextFormat ? w : (int) (Math.min(Dips.screenWidth(), Dips.screenHeight()) * AppState.get().pageQuality);
         imageHeight = isTextFormat ? h : (int) (Math.max(Dips.screenWidth(), Dips.screenHeight()) * AppState.get().pageQuality);
@@ -143,98 +231,6 @@ public abstract class HorizontalModeController extends DocumentController {
         }
     }
 
-    public void init(final Activity activity) {
-        PageImageState.get().cleanSelectedWords();
-        PageImageState.get().pagesText.clear();
-
-        LOG.d("DocumentControllerHorizontalView", "init begin");
-
-        bookPath = getBookPathFromActivity(activity);
-
-        AppTemp.get().lastBookPath = bookPath;
-
-        AppBook bs = SettingsManager.getBookSettings(bookPath);
-        if (bs != null) {
-            LOG.d("DocumentControllerHorizontalView-AppBook", "isDouble:",bs.dp);
-
-            AppTemp.get().isCut = bs.sp;
-            AppTemp.get().isCrop = bs.cp;
-            AppTemp.get().isDouble = bs.dp;
-            AppTemp.get().isDoubleCoverAlone = bs.dc;
-            AppTemp.get().isLocked = bs.getLock(isTextFormat);
-            TempHolder.get().pageDelta = bs.d;
-
-            if (AppState.get().isCropPDF && !isTextFormat) {
-                AppTemp.get().isCrop = true;
-            }
-        }
-
-        BookCSS.get().detectLang(bookPath);
-
-        if (false) {
-            PageImageState.get().needAutoFit = true;
-        } else {
-            if (TxtUtils.isNotEmpty(bookPath) && !ExtUtils.isTextFomat(bookPath)) {
-                String string = matrixSP.getString(bookPath.hashCode() + "", "");
-                LOG.d("MATRIX", "READ STR", string);
-                if (TxtUtils.isEmpty(string) || AppTemp.get().isCut || AppTemp.get().isCrop) {
-                    PageImageState.get().needAutoFit = true;
-                } else {
-                    PageImageState.get().needAutoFit = false;
-                }
-                Matrix matrix = PageImageState.fromString(string);
-                PageImageState.get().getMatrix().set(matrix);
-
-                LOG.d("MATRIX", "READ", bookPath.hashCode() + "", PageImageState.get().getMatrixAsString());
-
-            }
-        }
-
-        if (AppTemp.get().isDouble && isTextFormat) {
-            imageWidth = Dips.screenWidth() / 2;
-        }
-
-        FileMetaCore.checkOrCreateMetaInfo(activity);
-        LOG.d("pagesCount", "init", imageWidth, imageHeight);
-        String pasw = activity.getIntent().getStringExtra(EXTRA_PASSWORD);
-        pasw = TxtUtils.nullToEmpty(pasw);
-
-        codeDocument = ImageExtractor.getNewCodecContext(getBookPath(), pasw, imageWidth, imageHeight);
-        if (codeDocument != null) {
-            pagesCount = codeDocument.getPageCount();
-        } else {
-            pagesCount = 0;
-        }
-
-        if (pagesCount == -1) {
-            throw new IllegalArgumentException("Pages count = -1");
-        }
-
-        try {
-            if (pagesCount > 0) {
-                FileMeta meta = AppDB.get().load(bs.path);
-                if (meta != null) {
-                    meta.setPages(pagesCount);
-                    AppDB.get().update(meta);
-                }
-            }
-        } catch (Exception e) {
-            LOG.e(e);
-        }
-
-        // int charsCount = 0;
-        // for (int i = 0; i <= pagesCount; i++) {
-        // CodecPage page2 = codeDocument.getPage(i);
-        // charsCount += page2.getCharCount();
-        // page2.recycle();
-        // }
-        // LOG.d("total-chars", charsCount);
-
-        AppDB.get().addRecent(bookPath);
-        // getPageFromUri();
-
-        // loadOutline(null);
-    }
 
     public int getCurrentPage() {
         return currentPage;
@@ -247,27 +243,6 @@ public abstract class HorizontalModeController extends DocumentController {
     @Override
     public int getCurentPageFirst1() {
         return currentPage + 1;
-    }
-
-    public int getPageFromUriSingleRun() {
-
-        float percent = Intents.getFloatAndClear(activity.getIntent(), DocumentController.EXTRA_PERCENT);
-
-
-
-
-        LOG.d("_PAGE", "getPageFromUriSingleRun1", percent, getPageCount());
-        if (percent > 0.0f) {
-            currentPage = (int) Math.round(getPageCount() * percent) - 1;
-            LOG.d("_PAGE", "getPageFromUriSingleRun2", percent, pagesCount);
-
-        } else if (pagesCount > 0) {
-            currentPage = SettingsManager.getBookSettings(getBookPath()).getCurrentPage(getPageCount()).viewIndex;
-            LOG.d("_PAGE", "getPageFromUriSingleRun3", getBookPath(), pagesCount);
-        }
-
-        LOG.d("_PAGE", "getPageFromUriSingleRun4", currentPage);
-        return currentPage;
     }
 
 
@@ -330,7 +305,24 @@ public abstract class HorizontalModeController extends DocumentController {
             LOG.e(e);
         }
         return "";
+    }
 
+    @Override
+    public String getPageHtml() {
+        try {
+            CodecPage codecPage = codeDocument.getPage(getCurentPageFirst1() - 1);
+            if (!codecPage.isRecycled()) {
+                String pageHTML = codecPage.getPageHTML();
+                pageHTML = TxtUtils.replaceHTMLforTTS(pageHTML);
+                pageHTML = pageHTML.replace(TxtUtils.TTS_PAUSE, "<|\n");
+
+                return pageHTML;
+
+            }
+        } catch (Exception e) {
+            LOG.e(e);
+        }
+        return "";
     }
 
     @Override

@@ -14,6 +14,7 @@
    <string name="landscape_180">Krajina (180)</string>
    <string name="portrait_180">Portrét (180)</string>
    <string name="system_language">Jazyk systému</string>
+   <string name="system">Systém</string>
    <string name="small">Malý</string>
    <string name="normal">Normálne</string>
    <string name="large">Veľký</string>
@@ -558,4 +559,16 @@
    <string name="show_sync_wheel">Zobraziť synchronizačné koleso</string>
    <string name="publication_date">Dátum publikácie</string>
    <string name="empy">Prázdny</string>
+   <string name="show_quick_bookmarks">Zobraziť rýchle záložky</string>
+   <string name="show_only_available_books">Zobraziť iba dostupné knihy</string>
+   <string name="share_as_text">Zdieľať ako text</string>
+   <string name="share_as_image">Zdieľať ako obrázok</string>
+   <string name="copy_text">Kopírovať text</string>
+   <string name="show_fast_scroll">Zobraziť rýchle rolovanie</string>
+   <string name="replacements">Náhrady</string>
+   <string name="add_dictionary">Pridať slovník</string>
+   <string name="add_rule">Pridať pravidlo</string>
+   <string name="emphasis">Dôraz</string>
+   <string name="with_cutout">S výrezom</string>
+   <string name="screen">Plátno</string>
 </resources>

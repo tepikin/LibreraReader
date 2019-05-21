@@ -10,12 +10,13 @@ import com.foobnix.android.utils.TxtUtils;
 import com.foobnix.dao2.DaoMaster;
 import com.foobnix.dao2.DaoSession;
 import com.foobnix.dao2.DatabaseUpgradeHelper;
+import com.foobnix.dao2.DictMeta;
+import com.foobnix.dao2.DictMetaDao;
 import com.foobnix.dao2.FileMeta;
 import com.foobnix.dao2.FileMetaDao;
 import com.foobnix.model.AppData;
 import com.foobnix.model.AppState;
 import com.foobnix.model.SimpleMeta;
-import com.foobnix.pdf.info.Android6;
 import com.foobnix.pdf.info.Clouds;
 import com.foobnix.pdf.info.ExtUtils;
 import com.foobnix.pdf.info.R;
@@ -24,6 +25,7 @@ import com.foobnix.ui2.adapter.FileMetaAdapter;
 import com.foobnix.ui2.fragment.SearchFragment2;
 
 import org.greenrobot.greendao.Property;
+import org.greenrobot.greendao.database.Database;
 import org.greenrobot.greendao.query.QueryBuilder;
 
 import java.io.File;
@@ -106,7 +108,8 @@ public class AppDB {
         EXT(9, R.string.by_extension, FileMetaDao.Properties.Ext), //
         LANGUAGE(10, R.string.language, FileMetaDao.Properties.Lang),//
         PUBLICATION_YEAR(11, R.string.publication_date, FileMetaDao.Properties.Year),//
-        PUBLISHER(12, R.string.publisher, FileMetaDao.Properties.Publisher);//
+        PUBLISHER(12, R.string.publisher, FileMetaDao.Properties.Publisher),//
+        RECENT_TIME(13, R.string.recent, FileMetaDao.Properties.IsRecentTime);//
 
 
         private final int index;
@@ -149,6 +152,8 @@ public class AppDB {
 
     private FileMetaDao fileMetaDao;
     private DaoSession daoSession;
+    private DictMetaDao dictMetaDao;
+
 
     public FileMetaDao getDao() {
         return fileMetaDao;
@@ -159,13 +164,8 @@ public class AppDB {
 
     }
 
-    public boolean isOpen;
 
     public void open(Context c, String appDB) {
-        isOpen = false;
-        if (!Android6.canWrite(c)) {
-            return;
-        }
         LOG.d("Open-DB", appDB);
         DatabaseUpgradeHelper helper = new DatabaseUpgradeHelper(c, appDB);
 
@@ -175,15 +175,42 @@ public class AppDB {
         daoSession = daoMaster.newSession();
 
         fileMetaDao = daoSession.getFileMetaDao();
-        isOpen = true;
 
-        // if (c.getResources().getBoolean(R.bool.is_log_enable)) {
-        // QueryBuilder.LOG_SQL = true;
-        // QueryBuilder.LOG_VALUES = true;
-        // }
-
-
+        if (true) {
+            QueryBuilder.LOG_SQL = true;
+            QueryBuilder.LOG_VALUES = true;
+        }
     }
+
+    public void openDictDB(Context c, String path) {
+        DaoMaster.OpenHelper helper = new DaoMaster.OpenHelper(c, path) {
+            @Override
+            public void onCreate(Database db) {
+                //super.onCreate(db);
+            }
+        };
+
+        SQLiteDatabase readableDatabase = helper.getReadableDatabase();
+        DaoMaster daoMaster = new DaoMaster(readableDatabase);
+        DaoSession daoSession = daoMaster.newSession();
+
+        dictMetaDao = daoSession.getDictMetaDao();
+        LOG.d("openDictDB open", path);
+    }
+
+    public String findDict(String key) {
+        key = key.toLowerCase();
+        LOG.d("openDictDB findDict key", key);
+
+        final List<DictMeta> list = dictMetaDao.queryBuilder().where(DictMetaDao.Properties.Key.eq(key)).list();
+        if (TxtUtils.isListNotEmpty(list)) {
+            final String value = list.get(0).getValue();
+            LOG.d("openDictDB findDict value", value);
+            return value;
+        }
+        return key;
+    }
+
 
     //public void dropCreateTables(Context c) {
     //    DatabaseUpgradeHelper helper = new DatabaseUpgradeHelper(c, DB_NAME);
@@ -283,7 +310,7 @@ public class AppDB {
             return;
         }
         LOG.d("Add Recent", path);
-        if (!path.endsWith("json")) {
+        if (!path.endsWith("json") && !path.endsWith("temp.txt")) {
             FileMeta load = getOrCreate(path);
             load.setIsRecent(true);
             load.setIsRecentTime(System.currentTimeMillis());
@@ -357,6 +384,9 @@ public class AppDB {
     }
 
     public FileMeta getOrCreate(String path) {
+        if (fileMetaDao == null) {
+            return new FileMeta(path);
+        }
 
         FileMeta load = fileMetaDao.load(path);
         try {
@@ -496,7 +526,7 @@ public class AppDB {
         LOG.d("getAllWithTag", tagName);
         try {
             QueryBuilder<FileMeta> where = fileMetaDao.queryBuilder();
-            where =  where.where(SEARCH_IN.TAGS.getProperty().like("%" + tagName + StringDB.DIVIDER + "%"),FileMetaDao.Properties.IsSearchBook.eq(1));
+            where = where.where(SEARCH_IN.TAGS.getProperty().like("%" + tagName + StringDB.DIVIDER + "%"), FileMetaDao.Properties.IsSearchBook.eq(1));
             //where = where.where(SEARCH_IN.TAGS.getProperty().like("%" + tagName + StringDB.DIVIDER + "%"));
             return where.list();
         } catch (Exception e) {
@@ -563,6 +593,10 @@ public class AppDB {
                 }
             }
             where = where.where(FileMetaDao.Properties.IsSearchBook.eq(1));
+
+            if (sortby == SORT_BY.RECENT_TIME) {
+                where = where.where(FileMetaDao.Properties.IsRecentTime.ge(1));
+            }
 
             if (isAsc) {
                 return where.orderAsc(sortby.getProperty()).list();

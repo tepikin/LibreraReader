@@ -265,6 +265,7 @@ public class ExtUtils {
         File file = new File(meta.getPath());
 
         if (ExtUtils.isExteralSD(meta.getPath())) {
+            LOG.d("openFile isExteralSD");
             CacheZipUtils.removeFiles(CacheZipUtils.ATTACHMENTS_CACHE_DIR.listFiles());
             Uri uri = Uri.parse(meta.getPath());
             file = new File(CacheZipUtils.ATTACHMENTS_CACHE_DIR, meta.getTitle());
@@ -286,15 +287,17 @@ public class ExtUtils {
         if (ExtUtils.doifFileExists(a, file)) {
 
             if (ExtUtils.isZip(file)) {
-
+                LOG.d("openFile isExteralSD zip");
                 if (CacheZipUtils.isSingleAndSupportEntry(file.getPath()).first) {
                     ExtUtils.showDocument(a, file);
                 } else {
                     ZipDialog.show(a, Uri.fromFile(file), null);
                 }
             } else if (ExtUtils.isNotSupportedFile(file)) {
+                LOG.d("openFile isExteralSD isNotSupportedFile");
                 ExtUtils.openWith(a, file);
             } else {
+                LOG.d("openFile isExteralSD normal");
                 ExtUtils.showDocument(a, file);
             }
         }
@@ -575,6 +578,10 @@ public class ExtUtils {
         return name.substring(0, name.lastIndexOf("."));
     }
 
+    public static boolean isEqualFileNames(String name1, String name2) {
+        return getFileName(name1).equals(getFileName(name2));
+
+    }
     public static String getFileName(String name) {
         if (TxtUtils.isEmpty(name)) {
             return "";
@@ -933,15 +940,15 @@ public class ExtUtils {
         final Intent intent = new Intent(c, VerticalViewActivity.class);
         try {
             intent.putExtra(PasswordDialog.EXTRA_APP_PASSWORD, ((Activity) c).getIntent().getStringExtra(PasswordDialog.EXTRA_APP_PASSWORD));
+            if (percent > 0f) {
+                Intents.putFloat(intent, DocumentController.EXTRA_PERCENT, percent);
+            }
         } catch (Exception e) {
             LOG.e(e);
         }
         intent.setData(checkPlaylisturi(uri, intent, playlist));
 
-//        if (percent > 0f) {
-//            Intents.putFloat(intent,DocumentController.EXTRA_PERCENT, percent);
-//
-//        }
+
         c.startActivity(intent);
     }
 

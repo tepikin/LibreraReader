@@ -378,25 +378,36 @@ public class HorizontalViewActivity extends AdsFragmentActivity {
 
             @Override
             public void onClick(View v) {
-                AppState.get().isFullScreen = !AppState.get().isFullScreen;
-                onFullScreen.setImageResource(AppState.get().isFullScreen ? R.drawable.glyphicons_487_fit_frame_to_image : R.drawable.glyphicons_488_fit_image_to_frame);
-                DocumentController.chooseFullScreen(HorizontalViewActivity.this, AppState.get().isFullScreen);
-                if (dc.isTextFormat()) {
-                    if (onRefresh != null) {
-                        onRefresh.run();
-                    }
-                    nullAdapter();
-                    dc.restartActivity();
+                if (dc == null) {
+                    return;
                 }
+
+                DocumentController.showFullScreenPopup(dc.getActivity(), v, id -> {
+                    AppState.get().fullScreenMode = id;
+                    DocumentController.chooseFullScreen(HorizontalViewActivity.this, AppState.get().fullScreenMode);
+                    if (dc.isTextFormat()) {
+                        if (onRefresh != null) {
+                            onRefresh.run();
+                        }
+                        nullAdapter();
+                        dc.restartActivity();
+                    }
+                    return true;
+                });
+
+
             }
         });
-        onFullScreen.setImageResource(AppState.get().isFullScreen ? R.drawable.glyphicons_487_fit_frame_to_image : R.drawable.glyphicons_488_fit_image_to_frame);
+        //onFullScreen.setImageResource(AppState.get().isFullScreen ? R.drawable.glyphicons_487_fit_frame_to_image : R.drawable.glyphicons_488_fit_image_to_frame);
 
         ImageView dayNightButton = (ImageView) findViewById(R.id.bookNight);
         dayNightButton.setOnClickListener(new View.OnClickListener() {
 
             @Override
             public void onClick(final View v) {
+                if (dc == null) {
+                    return;
+                }
                 v.setEnabled(false);
                 AppState.get().isDayNotInvert = !AppState.get().isDayNotInvert;
                 nullAdapter();
@@ -484,6 +495,11 @@ public class HorizontalViewActivity extends AdsFragmentActivity {
                 }
                 DragingDialogs.textToSpeachDialog(anchor, dc);
             }
+        });
+        textToSpeach.setOnLongClickListener(v -> {
+            AlertDialogs.showTTSDebug(dc);
+            hideShow();
+            return true;
         });
         ttsActive = findViewById(R.id.ttsActive);
 
@@ -692,7 +708,9 @@ public class HorizontalViewActivity extends AdsFragmentActivity {
 
             @Override
             public void onClick(final View v) {
-                DragingDialogs.preferences(anchor, dc, onRefresh, reloadDoc);
+                if (dc != null) {
+                    DragingDialogs.preferences(anchor, dc, onRefresh, reloadDoc);
+                }
             }
         });
 
@@ -847,6 +865,7 @@ public class HorizontalViewActivity extends AdsFragmentActivity {
                     Toast.makeText(HorizontalViewActivity.this, R.string.msg_unexpected_error, Toast.LENGTH_SHORT).show();
                     AppState.get().isEditMode = true;
                     hideShow();
+                    onClose.setVisibility(View.VISIBLE);
                     return;
                 }
 
@@ -923,7 +942,7 @@ public class HorizontalViewActivity extends AdsFragmentActivity {
                     loadUI();
 
                     // AppState.get().isEditMode = false; //remember last
-                    int pageFromUri = dc.getPageFromUriSingleRun();
+                    int pageFromUri = dc.getCurentPage();
                     updateUI(pageFromUri);
                     hideShow();
 
@@ -1074,6 +1093,9 @@ public class HorizontalViewActivity extends AdsFragmentActivity {
     }
 
     private boolean closeDialogs() {
+        if (dc == null) {
+            return false;
+        }
         return dc.closeDialogs();
     }
 
@@ -1144,6 +1166,7 @@ public class HorizontalViewActivity extends AdsFragmentActivity {
 
         @Override
         public void run() {
+            dc.saveCurrentPageAsync();
             updateUI(viewPager.getCurrentItem());
             showHideInfoToolBar();
             updateSeekBarColorAndSize();
@@ -1341,7 +1364,7 @@ public class HorizontalViewActivity extends AdsFragmentActivity {
             createAdapter();
 
             loadUI();
-            dc.onGoToPage(dc.getPageFromUriSingleRun() + 1);
+            dc.onGoToPage(dc.getCurentPage() + 1);
         }
     };
     Runnable reloadDocBrigntness = new Runnable() {
@@ -1432,6 +1455,7 @@ public class HorizontalViewActivity extends AdsFragmentActivity {
     public void nullAdapter() {
         if (viewPager != null) {
             try {
+
                 ImageLoader.getInstance().clearAllTasks();
                 closeDialogs();
                 viewPager.setAdapter(null);
@@ -1445,7 +1469,7 @@ public class HorizontalViewActivity extends AdsFragmentActivity {
     protected void onResume() {
         super.onResume();
 
-        DocumentController.chooseFullScreen(this, AppState.get().isFullScreen);
+        DocumentController.chooseFullScreen(this, AppState.get().fullScreenMode);
         DocumentController.doRotation(this);
 
         if (clickUtils != null) {
@@ -1660,7 +1684,7 @@ public class HorizontalViewActivity extends AdsFragmentActivity {
             }
 
         };
-        dc.init(this);
+        // dc.init(this);
         dc.initAnchor(anchor);
     }
 
@@ -1813,10 +1837,12 @@ public class HorizontalViewActivity extends AdsFragmentActivity {
             }
 
 
-            getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-            LOG.d("FLAG addFlags", "FLAG_KEEP_SCREEN_ON", dc.getActivity().getWindow().getAttributes().flags);
-            handler.removeCallbacks(clearFlags);
-            handler.postDelayed(clearFlags, TimeUnit.MINUTES.toMillis(AppState.get().inactivityTime));
+            if (AppState.get().inactivityTime > 0) {
+                getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                LOG.d("FLAG addFlags", "FLAG_KEEP_SCREEN_ON", dc.getActivity().getWindow().getAttributes().flags);
+                handler.removeCallbacks(clearFlags);
+                handler.postDelayed(clearFlags, TimeUnit.MINUTES.toMillis(AppState.get().inactivityTime));
+            }
 
             LOG.d("onPageSelected", pos);
 
@@ -1915,7 +1941,7 @@ public class HorizontalViewActivity extends AdsFragmentActivity {
             }
         } else {
             Keyboards.hideNavigationOnCreate(this);
-            dc.udpateImageSize(viewPager.getWidth(), viewPager.getHeight());
+            dc.udpateImageSize(dc.isTextFormat(), viewPager.getWidth(), viewPager.getHeight());
             onRotateScreen();
         }
 
@@ -2055,7 +2081,7 @@ public class HorizontalViewActivity extends AdsFragmentActivity {
             bottomBar.setVisibility(AppState.get().isEditMode ? View.VISIBLE : View.GONE);
             adFrame.setVisibility(AppState.get().isEditMode ? View.VISIBLE : View.GONE);
 
-            DocumentController.chooseFullScreen(this, AppState.get().isFullScreen);
+            DocumentController.chooseFullScreen(this, AppState.get().fullScreenMode);
             return;
         }
 
@@ -2139,7 +2165,7 @@ public class HorizontalViewActivity extends AdsFragmentActivity {
         }
 
         if (pagerAdapter != null) {
-            DocumentController.chooseFullScreen(this, AppState.get().isFullScreen);
+            DocumentController.chooseFullScreen(this, AppState.get().fullScreenMode);
             pagerAdapter.notifyDataSetChanged();
         }
     }
@@ -2178,6 +2204,8 @@ public class HorizontalViewActivity extends AdsFragmentActivity {
         return super.onKeyUp(keyCode, event);
     }
 
+    long keyTimeout = 0;
+
     @Override
     public boolean onKeyDown(final int keyCode1, final KeyEvent event) {
 
@@ -2195,6 +2223,13 @@ public class HorizontalViewActivity extends AdsFragmentActivity {
                 isMyKey = true;
                 return true;
             }
+            if (repeatCount == 0 && System.currentTimeMillis() - keyTimeout < 250) {
+                LOG.d("onKeyDown timeout", System.currentTimeMillis() - keyTimeout);
+                isMyKey = true;
+                return true;
+            }
+
+            keyTimeout = System.currentTimeMillis();
 
 
             if (AppState.get().isZoomInOutWithVolueKeys) {
@@ -2212,12 +2247,12 @@ public class HorizontalViewActivity extends AdsFragmentActivity {
 
             }
 
-            LOG.d("onKeyDown", keyCode, repeatCount);
+            LOG.d("onKeyDown", keyCode, repeatCount, System.currentTimeMillis());
 
             if (AppState.get().isUseVolumeKeys && KeyEvent.KEYCODE_HEADSETHOOK == keyCode) {
                 if (TTSEngine.get().isPlaying()) {
                     if (AppState.get().isFastBookmarkByTTS) {
-                        TTSEngine.get().fastTTSBookmakr(getBaseContext(), dc.getCurentPageFirst1(), dc.getPageCount());
+                        TTSEngine.get().fastTTSBookmakr(dc);
                     } else {
                         TTSEngine.get().stop();
                     }
@@ -2320,9 +2355,13 @@ public class HorizontalViewActivity extends AdsFragmentActivity {
             handler.removeCallbacksAndMessages(null);
         }
         nullAdapter();
-        dc.saveCurrentPageAsync();
-        dc.onCloseActivityFinal(null);
-        dc.closeActivity();
+        if (dc != null) {
+            dc.saveCurrentPageAsync();
+            dc.onCloseActivityFinal(null);
+            dc.closeActivity();
+        } else {
+            finish();
+        }
     }
 
     private void updateAnimation(final TranslateAnimation a) {

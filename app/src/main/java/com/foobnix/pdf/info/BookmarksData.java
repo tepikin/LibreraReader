@@ -6,7 +6,9 @@ import com.foobnix.android.utils.IO;
 import com.foobnix.android.utils.LOG;
 import com.foobnix.android.utils.Objects;
 import com.foobnix.model.AppBookmark;
+import com.foobnix.model.AppData;
 import com.foobnix.model.AppProfile;
+import com.foobnix.model.AppState;
 
 import org.json.JSONObject;
 
@@ -17,6 +19,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
 
 public class BookmarksData {
 
@@ -29,10 +32,14 @@ public class BookmarksData {
 
 
     public void add(AppBookmark bookmark) {
-        LOG.d("BookmarksData", "add", bookmark.p, bookmark.text);
+        LOG.d("BookmarksData", "add", bookmark.p, bookmark.text, bookmark.path);
+
+
+        if (bookmark.p > 1) {
+            bookmark.p = 0;
+        }
         try {
             JSONObject obj = IO.readJsonObject(AppProfile.syncBookmarks);
-            final String fileName = ExtUtils.getFileName(bookmark.path);
             obj.put("" + bookmark.t, Objects.toJSONObject(bookmark));
             IO.writeObjAsync(AppProfile.syncBookmarks, obj);
         } catch (Exception e) {
@@ -41,15 +48,16 @@ public class BookmarksData {
     }
 
 
+
     public void remove(AppBookmark bookmark) {
-        LOG.d("BookmarksData", "remove", bookmark.p, bookmark.text);
+        LOG.d("BookmarksData", "remove", bookmark.t, bookmark.file);
 
         try {
-            JSONObject obj = IO.readJsonObject(AppProfile.syncBookmarks);
+            JSONObject obj = IO.readJsonObject(bookmark.file);
             if (obj.has("" + bookmark.t)) {
                 obj.remove("" + bookmark.t);
             }
-            IO.writeObjAsync(AppProfile.syncBookmarks, obj);
+            IO.writeObjAsync(bookmark.file, obj);
         } catch (Exception e) {
             LOG.e(e);
         }
@@ -59,29 +67,52 @@ public class BookmarksData {
         return getBookmarksByBook(file.getPath());
     }
 
-    public List<AppBookmark> getAll(Context c) {
-        String quick = c.getString(R.string.fast_bookmark);
+    public synchronized List<AppBookmark> getAll(Context c) {
+        final List<AppBookmark> all = getAll();
+        final Iterator<AppBookmark> iterator = all.iterator();
+        String fast = c.getString(R.string.fast_bookmark);
+        while (iterator.hasNext()) {
+            final AppBookmark next = iterator.next();
+
+            if (AppState.get().isShowOnlyAvailabeBooks) {
+                if (!new File(next.getPath()).isFile()) {
+                    iterator.remove();
+                    continue;
+                }
+            }
+
+            if (!AppState.get().isShowFastBookmarks) {
+                if (fast.equals(next.text)) {
+                    iterator.remove();
+                }
+
+            }
+
+        }
+        return all;
+    }
+
+
+    private List<AppBookmark> getAll() {
 
         List<AppBookmark> all = new ArrayList<>();
 
         try {
-            if (!AppProfile.syncBookmarks.isFile()) {
-                return all;
-            }
-            JSONObject obj = IO.readJsonObject(AppProfile.syncBookmarks);
 
-            if (!AppProfile.syncBookmarks.isFile()) {
-                return all;
-            }
+            for (File file : AppProfile.getAllFiles(AppProfile.APP_BOOKMARKS_JSON)) {
+                JSONObject obj = IO.readJsonObject(file);
 
-            final Iterator<String> keys = obj.keys();
-            while (keys.hasNext()) {
-                final String next = keys.next();
 
-                AppBookmark appBookmark = new AppBookmark();
-                final JSONObject local = obj.getJSONObject(next);
-                Objects.loadFromJson(appBookmark, local);
-                all.add(appBookmark);
+                final Iterator<String> keys = obj.keys();
+                while (keys.hasNext()) {
+                    final String next = keys.next();
+
+                    AppBookmark appBookmark = new AppBookmark();
+                    appBookmark.file = file;
+                    final JSONObject local = obj.getJSONObject(next);
+                    Objects.loadFromJson(appBookmark, local);
+                    all.add(appBookmark);
+                }
             }
         } catch (Exception e) {
             LOG.e(e);
@@ -106,23 +137,27 @@ public class BookmarksData {
 
         List<AppBookmark> all = new ArrayList<>();
 
-        try {
-            JSONObject obj = IO.readJsonObject(AppProfile.syncBookmarks);
 
-            final Iterator<String> keys = obj.keys();
-            while (keys.hasNext()) {
-                final String next = keys.next();
+        for (File file : AppProfile.getAllFiles(AppProfile.APP_BOOKMARKS_JSON)) {
+            JSONObject obj = IO.readJsonObject(file);
+            try {
+                final Iterator<String> keys = obj.keys();
+                while (keys.hasNext()) {
+                    final String next = keys.next();
 
-                AppBookmark appBookmark = new AppBookmark();
-                final JSONObject local = obj.getJSONObject(next);
-                Objects.loadFromJson(appBookmark, local);
-                if (appBookmark.getPath().equals(path)) {
-                    all.add(appBookmark);
+                    AppBookmark appBookmark = new AppBookmark();
+                    appBookmark.file = file;
+                    final JSONObject local = obj.getJSONObject(next);
+                    Objects.loadFromJson(appBookmark, local);
+                    if (appBookmark.getPath().equals(path)) {
+                        all.add(appBookmark);
+                    }
                 }
+            } catch (Exception e) {
+                LOG.e(e);
             }
-        } catch (Exception e) {
-            LOG.e(e);
         }
+
 
         LOG.d("getBookmarksByBook", path, all.size());
         Collections.sort(all, BY_PERCENT);
@@ -162,7 +197,8 @@ public class BookmarksData {
 
 
     public void cleanBookmarks() {
-        IO.writeObj(AppProfile.syncBookmarks.getPath(), "{}");
+        //IO.writeObj(AppProfile.syncBookmarks.getPath(), "{}");
+        AppData.get().clearAll(AppProfile.APP_BOOKMARKS_JSON);
     }
 
 

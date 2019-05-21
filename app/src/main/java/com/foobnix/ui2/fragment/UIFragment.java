@@ -58,6 +58,7 @@ public abstract class UIFragment<T> extends Fragment {
 
     View adFrame;
 
+
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
@@ -265,6 +266,9 @@ public abstract class UIFragment<T> extends Fragment {
             new Thread(new Runnable() {
                 @Override
                 public void run() {
+                    if (getActivity() == null) {
+                        return;
+                    }
 
                     getActivity().runOnUiThread(new Runnable() {
                         @Override
@@ -290,6 +294,9 @@ public abstract class UIFragment<T> extends Fragment {
                         inProgress = false;
 
                     }
+                    if (getActivity() == null) {
+                        return;
+                    }
 
                     getActivity().runOnUiThread(new Runnable() {
                         @Override
@@ -298,12 +305,10 @@ public abstract class UIFragment<T> extends Fragment {
                                 handler.removeCallbacksAndMessages(null);
                                 progressBar.setVisibility(View.GONE);
                             }
-                            if (getActivity() != null) {
-                                try {
-                                    populateDataInUI(result);
-                                } catch (Exception e) {
-                                    LOG.e(e);
-                                }
+                            try {
+                                populateDataInUI(result);
+                            } catch (Exception e) {
+                                LOG.e(e);
                             }
 
                         }

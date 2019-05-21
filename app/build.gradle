@@ -88,6 +88,7 @@ android {
                     admobFullId   : "ca-app-pub-8347903083053959/2769081274"
             ]
             buildConfigField "boolean", "IS_BETA", "true"
+            buildConfigField "boolean", "IS_BETA_SEND_REPORTS", "true"
         }
         librera {
             dimension "version"
@@ -259,6 +260,11 @@ dependencies {
     implementation 'com.burgstaller:okhttp-digest:1.18'
     implementation 'com.squareup.okio:okio-parent:1.17.3'
     implementation 'com.github.joniles:rtfparserkit:1.13.0'
+
+
+    //implementation 'com.google.cloud:google-cloud-texttospeech:+'
+    //implementation 'net.sourceforge.argparse4j:argparse4j:0.8.1'
+
 
 
 

@@ -14,6 +14,7 @@
    <string name="landscape_180">נופים (180)</string>
    <string name="portrait_180">דיוקן (180)</string>
    <string name="system_language">שפת מערכת</string>
+   <string name="system">מערכת</string>
    <string name="small">קָטָן</string>
    <string name="normal">נוֹרמָלִי</string>
    <string name="large">גָדוֹל</string>
@@ -558,4 +559,16 @@
    <string name="show_sync_wheel">הצג גלגל סינכרון</string>
    <string name="publication_date">תאריך פרסום</string>
    <string name="empy">ריק</string>
+   <string name="show_quick_bookmarks">להראות סימניות מהירה - -</string>
+   <string name="show_only_available_books">הצג רק ספרים זמינים</string>
+   <string name="share_as_text">שתף כטקסט</string>
+   <string name="share_as_image">לשתף תמונה</string>
+   <string name="copy_text">העתק טקסט</string>
+   <string name="show_fast_scroll">להראות גלילה מהירה</string>
+   <string name="replacements">תחליפים</string>
+   <string name="add_dictionary">הוסף מילון</string>
+   <string name="add_rule">הוסף כלל</string>
+   <string name="emphasis">דגש</string>
+   <string name="with_cutout">עם ניתוק</string>
+   <string name="screen">מסך</string>
 </resources>

@@ -127,6 +127,7 @@ public class TTSEngine {
         LOG.d(TAG, "stop");
         synchronized (helpObject) {
 
+
             if (ttsEngine != null) {
                 if (Build.VERSION.SDK_INT >= 15) {
                     ttsEngine.setOnUtteranceProgressListener(null);
@@ -141,6 +142,7 @@ public class TTSEngine {
 
     public void stopDestroy() {
         LOG.d(TAG, "stop");
+        TxtUtils.dictHash = "";
         synchronized (helpObject) {
             if (ttsEngine != null) {
                 ttsEngine.shutdown();
@@ -205,12 +207,18 @@ public class TTSEngine {
 
         if (AppState.get().ttsPauseDuration > 0 && text.contains(TxtUtils.TTS_PAUSE)) {
             String[] parts = text.split(TxtUtils.TTS_PAUSE);
-            ttsEngine.speak(" ", TextToSpeech.QUEUE_FLUSH, mapTemp);
+            ttsEngine.playSilence(0l, TextToSpeech.QUEUE_FLUSH, mapTemp);
             for (int i = AppTemp.get().lastBookParagraph; i < parts.length; i++) {
 
                 String big = parts[i];
                 big = big.trim();
+
                 if (TxtUtils.isNotEmpty(big)) {
+                    if (big.length() == 1 && !Character.isLetterOrDigit(big.charAt(0))) {
+                        LOG.d("Skip: " + big);
+                        continue;
+
+                    }
 
                     HashMap<String, String> mapTemp1 = new HashMap<String, String>();
                     mapTemp1.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, FINISHED + i);
@@ -287,24 +295,32 @@ public class TTSEngine {
 
     }
 
-    public static void fastTTSBookmakr(Context c, int page, int pages) {
+
+    public static AppBookmark fastTTSBookmakr(DocumentController dc) {
+        return fastTTSBookmakr(dc.getActivity(), dc.getCurrentBook().getPath(), dc.getCurentPageFirst1(), dc.getPageCount());
+
+    }
+
+    public static AppBookmark fastTTSBookmakr(Context c, String bookPath, int page, int pages) {
         LOG.d("fastTTSBookmakr", page, pages);
 
         if (pages == 0) {
             LOG.d("fastTTSBookmakr skip");
-            return;
+            return null;
         }
-        boolean hasBookmark = BookmarksData.get().hasBookmark(AppTemp.get().lastBookPath, page, pages);
+        boolean hasBookmark = BookmarksData.get().hasBookmark(bookPath, page, pages);
 
         if (!hasBookmark) {
-            final AppBookmark bookmark = new AppBookmark(AppTemp.get().lastBookPath, c.getString(R.string.fast_bookmark), MyMath.percent(page, pages));
+            final AppBookmark bookmark = new AppBookmark(bookPath, c.getString(R.string.fast_bookmark), MyMath.percent(page, pages));
             BookmarksData.get().add(bookmark);
 
             String TEXT = c.getString(R.string.fast_bookmark) + " " + TxtUtils.LONG_DASH1 + " " + c.getString(R.string.page) + " " + page + "";
             Toast.makeText(c, TEXT, Toast.LENGTH_SHORT).show();
-
+            return bookmark;
         }
         Vibro.vibrate();
+        return null;
+
 
     }
 
@@ -336,7 +352,7 @@ public class TTSEngine {
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     public String getCurrentLang() {
         try {
-            if (ttsEngine != null && Build.VERSION.SDK_INT >= 21) {
+            if (Build.VERSION.SDK_INT >= 21 && ttsEngine != null && ttsEngine.getDefaultVoice() != null) {
                 return ttsEngine.getDefaultVoice().getLocale().getDisplayLanguage();
             }
         } catch (Exception e) {

@@ -8,6 +8,7 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
@@ -74,7 +75,7 @@ public class TTSNotification {
 
     }
 
-    public static void show(String bookPath, int page, int maxPages) {
+    public static Notification show(String bookPath, int page, int maxPages) {
         bookPath1 = bookPath;
         page1 = page;
         pageCount = maxPages;
@@ -122,10 +123,11 @@ public class TTSNotification {
                 remoteViews.setImageViewResource(R.id.ttsPlay, R.drawable.glyphicons_174_play);
             }
 
-            remoteViews.setInt(R.id.ttsPlay, "setColorFilter", TintUtil.color);
-            remoteViews.setInt(R.id.ttsNext, "setColorFilter", TintUtil.color);
-            remoteViews.setInt(R.id.ttsPrev, "setColorFilter", TintUtil.color);
-            remoteViews.setInt(R.id.ttsStop, "setColorFilter", TintUtil.color);
+            final int color = TintUtil.color == Color.BLACK ? Color.LTGRAY : TintUtil.color;
+            remoteViews.setInt(R.id.ttsPlay, "setColorFilter", color);
+            remoteViews.setInt(R.id.ttsNext, "setColorFilter", color);
+            remoteViews.setInt(R.id.ttsPrev, "setColorFilter", color);
+            remoteViews.setInt(R.id.ttsStop, "setColorFilter", color);
 
             String fileMetaBookName = TxtUtils.getFileMetaBookName(fileMeta);
             String pageNumber = "(" + page + "/" + maxPages + ")";
@@ -145,6 +147,7 @@ public class TTSNotification {
 
             builder.setContentIntent(contentIntent) //
                     .setSmallIcon(R.drawable.glyphicons_185_volume_up1) //
+                    .setColor(color)
                     // .setLargeIcon(bookImage) //
                     // .setTicker(context.getString(R.string.app_name)) //
                     // .setWhen(System.currentTimeMillis()) //
@@ -165,9 +168,10 @@ public class TTSNotification {
 
             Notification n = builder.build(); //
             nm.notify(NOT_ID, n);
+            return n;
         } catch (Exception e) {
             LOG.e(e);
-            return;
+            return null;
         }
     }
 

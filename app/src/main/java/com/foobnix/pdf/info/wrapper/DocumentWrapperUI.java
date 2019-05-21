@@ -44,6 +44,7 @@ import com.foobnix.pdf.info.R;
 import com.foobnix.pdf.info.TintUtil;
 import com.foobnix.pdf.info.UiSystemUtils;
 import com.foobnix.pdf.info.model.OutlineLinkWrapper;
+import com.foobnix.pdf.info.view.AlertDialogs;
 import com.foobnix.pdf.info.view.AnchorHelper;
 import com.foobnix.pdf.info.view.BookmarkPanel;
 import com.foobnix.pdf.info.view.BrightnessHelper;
@@ -316,7 +317,7 @@ public class DocumentWrapperUI {
         if (AppState.get().isUseVolumeKeys && KeyEvent.KEYCODE_HEADSETHOOK == keyCode) {
             if (TTSEngine.get().isPlaying()) {
                 if (AppState.get().isFastBookmarkByTTS) {
-                    TTSEngine.get().fastTTSBookmakr(dc.getActivity(), dc.getCurentPageFirst1(), dc.getPageCount());
+                    TTSEngine.get().fastTTSBookmakr(dc);
                 } else {
                     TTSEngine.get().stop();
                 }
@@ -455,10 +456,12 @@ public class DocumentWrapperUI {
 
         progressDraw.updateProgress(current - 1);
 
-        dc.getActivity().getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        LOG.d("FLAG addFlags", "FLAG_KEEP_SCREEN_ON", dc.getActivity().getWindow().getAttributes().flags);
-        handler.removeCallbacks(clearFlags);
-        handler.postDelayed(clearFlags, TimeUnit.MINUTES.toMillis(AppState.get().inactivityTime));
+        if (AppState.get().inactivityTime > 0) {
+            dc.getActivity().getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            LOG.d("FLAG addFlags", "FLAG_KEEP_SCREEN_ON", dc.getActivity().getWindow().getAttributes().flags);
+            handler.removeCallbacks(clearFlags);
+            handler.postDelayed(clearFlags, TimeUnit.MINUTES.toMillis(AppState.get().inactivityTime));
+        }
 
         if (AppState.get().isAutoScroll) {
             pagesBookmark.setVisibility(View.GONE);
@@ -746,7 +749,7 @@ public class DocumentWrapperUI {
 
         ImageView fullscreen = (ImageView) a.findViewById(R.id.fullscreen);
         fullscreen.setOnClickListener(onFull);
-        fullscreen.setImageResource(AppState.get().isFullScreen ? R.drawable.glyphicons_487_fit_frame_to_image : R.drawable.glyphicons_488_fit_image_to_frame);
+        fullscreen.setImageResource(R.drawable.glyphicons_488_fit_image_to_frame);
 
         onCloseBook = a.findViewById(R.id.close);
         onCloseBook.setOnClickListener(onClose);
@@ -794,6 +797,11 @@ public class DocumentWrapperUI {
 
         textToSpeach = (ImageView) a.findViewById(R.id.textToSpeach);
         textToSpeach.setOnClickListener(onTextToSpeach);
+        textToSpeach.setOnLongClickListener(v -> {
+            AlertDialogs.showTTSDebug(dc);
+            hideShow();
+            return true;
+        });
 
         drawView = (DrawView) a.findViewById(R.id.drawView);
 
@@ -1157,7 +1165,7 @@ public class DocumentWrapperUI {
     }
 
     public void showHideHavigationBar() {
-        if (!AppState.get().isEditMode && AppState.get().isFullScreen) {
+        if (!AppState.get().isEditMode && AppState.get().fullScreenMode == AppState.FULL_SCREEN_FULLSCREEN) {
             Keyboards.hideNavigation(a);
         }
     }
@@ -1326,7 +1334,7 @@ public class DocumentWrapperUI {
 
         // hideSeekBarInReadMode();
         // showHideHavigationBar();
-        DocumentController.chooseFullScreen(dc.getActivity(), AppState.get().isFullScreen);
+        DocumentController.chooseFullScreen(dc.getActivity(), AppState.get().fullScreenMode);
         showPagesHelper();
     }
 
@@ -1549,24 +1557,18 @@ public class DocumentWrapperUI {
 
         @Override
         public void onClick(final View v) {
-            AppState.get().isFullScreen = !AppState.get().isFullScreen;
-            ((ImageView) v).setImageResource(AppState.get().isFullScreen ? R.drawable.glyphicons_487_fit_frame_to_image : R.drawable.glyphicons_488_fit_image_to_frame);
-            DocumentController.chooseFullScreen(a, AppState.get().isFullScreen);
-
-            if (dc.isTextFormat()) {
-                onRefresh.run();
-                dc.restartActivity();
-            }
+            DocumentController.showFullScreenPopup(dc.getActivity(), v, id -> {
+                AppState.get().fullScreenMode = id;
+                if (dc.isTextFormat()) {
+                    onRefresh.run();
+                    dc.restartActivity();
+                }
+                DocumentController.chooseFullScreen(a, AppState.get().fullScreenMode);
+                return true;
+            });
         }
     };
-    public View.OnClickListener onScreenMode = new View.OnClickListener() {
 
-        @Override
-        public void onClick(final View arg0) {
-            a.finish();
-            a.startActivity(a.getIntent());
-        }
-    };
 
     public View.OnClickListener onBCclick = new View.OnClickListener() {
 
@@ -1716,6 +1718,7 @@ public class DocumentWrapperUI {
 
         @Override
         public void run() {
+            dc.saveCurrentPageAsync();
             initToolBarPlusMinus();
             updateSeekBarColorAndSize();
             hideShow();

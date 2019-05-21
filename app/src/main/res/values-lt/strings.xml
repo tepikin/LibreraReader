@@ -14,6 +14,7 @@
    <string name="landscape_180">Kraštovaizdis (180)</string>
    <string name="portrait_180">Portretas (180)</string>
    <string name="system_language">Sistemos kalba</string>
+   <string name="system">Sistema</string>
    <string name="small">Mažas</string>
    <string name="normal">Normalus</string>
    <string name="large">Didelis</string>
@@ -558,4 +559,16 @@
    <string name="show_sync_wheel">Rodyti sinchronizavimo ratą</string>
    <string name="publication_date">Paskelbimo data</string>
    <string name="empy">Tuščia</string>
+   <string name="show_quick_bookmarks">Rodyti sparčias žymes</string>
+   <string name="show_only_available_books">Rodyti tik turimas knygas</string>
+   <string name="share_as_text">Dalintis kaip tekstas</string>
+   <string name="share_as_image">Dalintis kaip vaizdas</string>
+   <string name="copy_text">Kopijuoti tekstą</string>
+   <string name="show_fast_scroll">Rodyti greitą slinktį</string>
+   <string name="replacements">Pakeitimai</string>
+   <string name="add_dictionary">Pridėti žodyną</string>
+   <string name="add_rule">Pridėti taisyklę</string>
+   <string name="emphasis">Pabrėžimas</string>
+   <string name="with_cutout">Su išjungimu</string>
+   <string name="screen">Ekranas</string>
 </resources>

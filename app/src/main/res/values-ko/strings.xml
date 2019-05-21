@@ -14,6 +14,7 @@
    <string name="landscape_180">풍경 (180)</string>
    <string name="portrait_180">세로 방향 (180)</string>
    <string name="system_language">시스템 언어</string>
+   <string name="system">체계</string>
    <string name="small">작은</string>
    <string name="normal">표준</string>
    <string name="large">큰</string>
@@ -558,4 +559,16 @@
    <string name="show_sync_wheel">싱크 휠 표시</string>
    <string name="publication_date">발행일</string>
    <string name="empy">빈</string>
+   <string name="show_quick_bookmarks">빠른 북마크 표시</string>
+   <string name="show_only_available_books">사용 가능한 서적 만 표시</string>
+   <string name="share_as_text">텍스트로 공유</string>
+   <string name="share_as_image">이미지로 공유하다</string>
+   <string name="copy_text">텍스트 복사</string>
+   <string name="show_fast_scroll">빠른 스크롤을 보여라.</string>
+   <string name="replacements">대체</string>
+   <string name="add_dictionary">사전 추가</string>
+   <string name="add_rule">규칙 추가</string>
+   <string name="emphasis">힘</string>
+   <string name="with_cutout">컷 아웃과 함께</string>
+   <string name="screen">화면</string>
 </resources>

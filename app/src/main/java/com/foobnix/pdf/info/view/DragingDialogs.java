@@ -7,6 +7,7 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.app.SearchManager;
+import android.content.ClipData;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -29,6 +30,7 @@ import android.speech.tts.TextToSpeech.OnInitListener;
 import android.support.v4.app.FragmentActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.ClipboardManager;
 import android.text.Html;
 import android.text.format.DateFormat;
 import android.view.Gravity;
@@ -41,6 +43,7 @@ import android.view.View.OnClickListener;
 import android.view.View.OnKeyListener;
 import android.view.View.OnLongClickListener;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 import android.widget.AbsListView;
 import android.widget.AbsListView.OnScrollListener;
@@ -174,7 +177,7 @@ public class DragingDialogs {
 
             @Override
             public void run() {
-                AppProfile.save(controller.getActivity());
+
 
             }
         });
@@ -467,7 +470,7 @@ public class DragingDialogs {
 
             @Override
             public void run() {
-                AppProfile.save(controller.getActivity());
+
 
             }
 
@@ -540,7 +543,11 @@ public class DragingDialogs {
                 // TxtUtils.underlineTextView(ttsLang);
 
                 final TextView ttsPauseDuration = (TextView) view.findViewById(R.id.ttsPauseDuration);
-                ttsPauseDuration.setText("" + AppState.get().ttsPauseDuration + " ms");
+                if (AppState.get().ttsPauseDuration > 1000) {
+                    ttsPauseDuration.setText("" + AppState.get().ttsPauseDuration / 1000 + " sec");
+                } else {
+                    ttsPauseDuration.setText("" + AppState.get().ttsPauseDuration + " ms");
+                }
                 TxtUtils.underlineTextView(ttsPauseDuration);
 
                 ttsPauseDuration.setOnClickListener(new OnClickListener() {
@@ -548,7 +555,7 @@ public class DragingDialogs {
                     @Override
                     public void onClick(View v) {
                         final PopupMenu popupMenu = new PopupMenu(v.getContext(), v);
-                        for (int i = 0; i <= 500; i += 10) {
+                        for (int i = 0; i <= 500; i += (i <= 100 ? 10 : 25)) {
                             final int j = i;
                             popupMenu.getMenu().add(i + " ms").setOnMenuItemClickListener(new OnMenuItemClickListener() {
 
@@ -557,6 +564,21 @@ public class DragingDialogs {
                                     TTSEngine.get().stop();
                                     AppState.get().ttsPauseDuration = j;
                                     ttsPauseDuration.setText("" + AppState.get().ttsPauseDuration + " ms");
+                                    TxtUtils.underlineTextView(ttsPauseDuration);
+                                    return false;
+                                }
+                            });
+                        }
+
+                        for (int i = 1; i <= 10; i += 1) {
+                            final int j = i;
+                            popupMenu.getMenu().add(i + " sec").setOnMenuItemClickListener(new OnMenuItemClickListener() {
+
+                                @Override
+                                public boolean onMenuItemClick(MenuItem item) {
+                                    TTSEngine.get().stop();
+                                    AppState.get().ttsPauseDuration = j * 1000;
+                                    ttsPauseDuration.setText("" + j + " sec");
                                     TxtUtils.underlineTextView(ttsPauseDuration);
                                     return false;
                                 }
@@ -719,7 +741,6 @@ public class DragingDialogs {
                     }
                 });
 
-                final EditText ttsDoNotReadChars = (EditText) view.findViewById(R.id.ttsDoNotReadChars);
                 final EditText ttsSentecesDivs = (EditText) view.findViewById(R.id.ttsSentecesDivs);
 
 
@@ -745,8 +766,7 @@ public class DragingDialogs {
                                 textEngine.setText(TTSEngine.get().getCurrentEngineName());
                                 ttsLang.setText(TTSEngine.get().getCurrentLang());
                                 // TxtUtils.underlineTextView(textEngine);
-                                AppState.get().ttsSkipChars = AppState.SKIP_TTS_CHARS;
-                                ttsDoNotReadChars.setText(AppState.get().ttsSkipChars);
+
 
                                 AppState.get().ttsSentecesDivs = AppState.TTS_PUNCUATIONS;
                                 ttsSentecesDivs.setText(AppState.get().ttsSentecesDivs);
@@ -791,27 +811,32 @@ public class DragingDialogs {
                         TTSEngine.get().stop();
                     }
                 });
-                // skip text
-                ttsDoNotReadChars.setText(AppState.get().ttsSkipChars);
-                ttsDoNotReadChars.addTextChangedListener(new SmallTextWatcher() {
 
-                    @Override
-                    public void onTextChanged(String text) {
-                        AppState.get().ttsSkipChars = text;
-                        TTSEngine.get().stop();
-                    }
-                });
-                ttsDoNotReadChars.setEnabled(AppState.get().ttsDoNotReadCharsEnable);
 
-                CheckBox ttsDoNotReadCharsEnable = (CheckBox) view.findViewById(R.id.ttsDoNotReadCharsEnable);
-                ttsDoNotReadCharsEnable.setChecked(AppState.get().ttsDoNotReadCharsEnable);
-                ttsDoNotReadCharsEnable.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+                CheckBox isEnalbeTTSReplacements = (CheckBox) view.findViewById(R.id.isEnalbeTTSReplacements);
+                isEnalbeTTSReplacements.setChecked(AppState.get().isEnalbeTTSReplacements);
+                isEnalbeTTSReplacements.setOnCheckedChangeListener(new OnCheckedChangeListener() {
 
                     @Override
                     public void onCheckedChanged(final CompoundButton buttonView, final boolean isChecked) {
-                        AppState.get().ttsDoNotReadCharsEnable = isChecked;
-                        ttsDoNotReadChars.setEnabled(AppState.get().ttsDoNotReadCharsEnable);
+                        AppState.get().isEnalbeTTSReplacements = isChecked;
                         TTSEngine.get().stop();
+                    }
+                });
+
+                TxtUtils.underlineTextView(view.findViewById(R.id.replaces)).setOnClickListener(new OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        TTSEngine.get().stop();
+                        Dialogs.replaceTTSDialog(activity);
+                    }
+                });
+
+                TxtUtils.underlineTextView(view.findViewById(R.id.showDebug)).setOnClickListener(new OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        AlertDialogs.showTTSDebug(controller);
+
                     }
                 });
 
@@ -980,7 +1005,6 @@ public class DragingDialogs {
             @Override
             public void run() {
                 controller.stopTimer();
-                AppProfile.save(controller.getActivity());
 
             }
         });
@@ -1444,7 +1468,12 @@ public class DragingDialogs {
                     @Override
                     public void onClick(View v) {
                         TTSEngine.get().stop();
-                        TTSEngine.get().speek(editText.getText().toString().trim());
+
+                        String text = editText.getText().toString().trim();
+                        text = TxtUtils.replaceHTMLforTTS(text);
+                        text = text.replace(TxtUtils.TTS_PAUSE, "");
+
+                        TTSEngine.get().speek(text);
                     }
                 });
                 view.findViewById(R.id.readTTSNext).setOnClickListener(new View.OnClickListener() {
@@ -1486,6 +1515,7 @@ public class DragingDialogs {
                             android.content.ClipData clip = android.content.ClipData.newPlainText("Copied Text", editText.getText().toString().trim());
                             clipboard.setPrimaryClip(clip);
                         }
+                        Toast.makeText(c, R.string.copy_text, Toast.LENGTH_SHORT).show();
                         closeDialog();
                     }
                 });
@@ -1732,36 +1762,28 @@ public class DragingDialogs {
 
     }
 
-    public static DragingPopup thumbnailDialog(final FrameLayout anchor, final DocumentController controller) {
+    public static DragingPopup thumbnailDialog(final FrameLayout anchor, final DocumentController dc) {
         DragingPopup popup = new DragingPopup(R.string.go_to_page_dialog, anchor, 300, 400) {
             View searchLayout;
+            GridView grid;
 
             @Override
             public void beforeCreate() {
                 setTitlePopupIcon(R.drawable.glyphicons_518_option_vertical);
                 titlePopupMenu = new MyPopupMenu(anchor.getContext(), anchor);
-                titlePopupMenu.getMenu().add(R.string.hide_search_bar).setOnMenuItemClickListener(new OnMenuItemClickListener() {
 
-                    @Override
-                    public boolean onMenuItemClick(MenuItem item) {
-                        AppState.get().isShowSearchBar = false;
-                        searchLayout.setVisibility(View.GONE);
-                        return false;
-                    }
-                });
-                titlePopupMenu.getMenu().add(R.string.show_search_bar).setOnMenuItemClickListener(new OnMenuItemClickListener() {
-
-                    @Override
-                    public boolean onMenuItemClick(MenuItem item) {
-                        AppState.get().isShowSearchBar = true;
-                        searchLayout.setVisibility(View.VISIBLE);
-                        return false;
-                    }
+                titlePopupMenu.getMenu().addCheckbox(dc.getString(R.string.show_search_bar), AppState.get().isShowSearchBar, (buttonView, isChecked) -> {
+                    AppState.get().isShowSearchBar = isChecked;
+                    searchLayout.setVisibility(isChecked ? View.VISIBLE : View.GONE);
+                    beforeCreate();
                 });
 
+                titlePopupMenu.getMenu().addCheckbox(dc.getString(R.string.show_fast_scroll), AppState.get().isShowFastScroll, (buttonView, isChecked) -> {
+                    AppState.get().isShowFastScroll = isChecked;
+                    grid.setFastScrollEnabled(AppState.get().isShowFastScroll);
+                    beforeCreate();
+                });
             }
-
-            ;
 
             @Override
             public View getContentView(LayoutInflater inflater) {
@@ -1771,18 +1793,19 @@ public class DragingDialogs {
 
                 final EditText number = (EditText) view.findViewById(R.id.edit1);
                 number.clearFocus();
-                number.setText("" + controller.getCurentPageFirst1());
-                final GridView grid = (GridView) view.findViewById(R.id.grid1);
+                number.setText("" + dc.getCurentPageFirst1());
+                grid = (GridView) view.findViewById(R.id.grid1);
                 int dpToPx = Dips.dpToPx(AppState.get().coverSmallSize);
 
-                if (AppTemp.get().isDouble && !controller.isTextFormat()) {
+                if (AppTemp.get().isDouble && !dc.isTextFormat()) {
                     dpToPx = dpToPx * 2;
                 }
                 grid.setColumnWidth(dpToPx);
+                grid.setFastScrollEnabled(AppState.get().isShowFastScroll);
 
-                final File currentBook = controller.getCurrentBook();
+                final File currentBook = dc.getCurrentBook();
                 if (ExtUtils.isValidFile(currentBook)) {
-                    grid.setAdapter(new PageThumbnailAdapter(anchor.getContext(), controller.getPageCount(), controller.getCurentPageFirst1() - 1) {
+                    grid.setAdapter(new PageThumbnailAdapter(anchor.getContext(), dc.getPageCount(), dc.getCurentPageFirst1() - 1) {
                         @Override
                         public PageUrl getPageUrl(int page) {
                             return PageUrl.buildSmall(currentBook.getPath(), page);
@@ -1796,7 +1819,7 @@ public class DragingDialogs {
 
                     @Override
                     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                        controller.onGoToPage(position + 1);
+                        dc.onGoToPage(position + 1);
                         ((PageThumbnailAdapter) grid.getAdapter()).setCurrentPage(position);
                         ((PageThumbnailAdapter) grid.getAdapter()).notifyDataSetChanged();
                     }
@@ -1807,18 +1830,40 @@ public class DragingDialogs {
                     @Override
                     public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
                         Vibro.vibrate();
-                        if (grid.isFastScrollEnabled()) {
-                            grid.setFastScrollEnabled(false);
-                            grid.setFastScrollAlwaysVisible(false);
-                        } else {
-                            grid.setFastScrollEnabled(true);
-                            grid.setFastScrollAlwaysVisible(false);
-                        }
+
+
+                        MyPopupMenu menu = new MyPopupMenu(view);
+                        menu.getMenu().add(R.string.share_as_text).setIcon(R.drawable.glyphicons_basic_578_share).setOnMenuItemClickListener((it) -> {
+                            final Intent intent = new Intent(Intent.ACTION_SEND);
+                            intent.setType("text/plain");
+                            intent.putExtra(Intent.EXTRA_TEXT, dc.getTextForPage(position));
+                            dc.getActivity().startActivity(Intent.createChooser(intent, dc.getActivity().getString(R.string.share)));
+                            return true;
+                        });
+                        menu.getMenu().add(R.string.share_as_image).setIcon(R.drawable.glyphicons_1_picture).setOnMenuItemClickListener((it) -> {
+                            ExtUtils.sharePage(dc.getActivity(), dc.getCurrentBook(), position, dc.getPageUrl(position).toString());
+                            return true;
+                        });
+                        menu.getMenu().add(R.string.copy_text).setIcon(R.drawable.glyphicons_basic_614_copy).setOnMenuItemClickListener((it) -> {
+
+                            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
+                                ClipboardManager clipboard = (ClipboardManager) dc.getActivity().getSystemService(Context.CLIPBOARD_SERVICE);
+                                clipboard.setText(dc.getTextForPage(position));
+                            } else {
+                                android.content.ClipboardManager clipboard = (android.content.ClipboardManager) dc.getActivity().getSystemService(Context.CLIPBOARD_SERVICE);
+                                ClipData clip = ClipData.newPlainText(dc.getString(R.string.copy_text), dc.getTextForPage(position));
+                                clipboard.setPrimaryClip(clip);
+                            }
+                            Toast.makeText(dc.getActivity(), R.string.copy_text, Toast.LENGTH_SHORT).show();
+                            return true;
+                        });
+                        menu.show();
+
                         return true;
                     }
                 });
 
-                grid.setSelection(controller.getCurentPage() - 1);
+                grid.setSelection(dc.getCurentPage() - 1);
 
                 grid.setOnScrollListener(new OnScrollListener() {
 
@@ -1829,8 +1874,8 @@ public class DragingDialogs {
 
                     @Override
                     public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-                        LOG.d("onScroll", firstVisibleItem, Math.abs(firstVisibleItem - controller.getCurentPage()));
-                        if (firstVisibleItem < 3 || Math.abs(firstVisibleItem - controller.getCurentPage()) < 20) {
+                        LOG.d("onScroll", firstVisibleItem, Math.abs(firstVisibleItem - dc.getCurentPage()));
+                        if (firstVisibleItem < 3 || Math.abs(firstVisibleItem - dc.getCurentPage()) < 20) {
                             // searchLayout.setVisibility(View.VISIBLE);
                         } else {
                             // searchLayout.setVisibility(View.GONE);
@@ -1853,7 +1898,7 @@ public class DragingDialogs {
                     }
                 });
 
-                onSearch.setOnClickListener(new View.OnClickListener() {
+                onSearch.setOnClickListener(new OnClickListener() {
 
                     @Override
                     public void onClick(View v) {
@@ -1865,9 +1910,9 @@ public class DragingDialogs {
                                 txt = txt.replace("%", "").replace(",", ".");
                                 float parseFloat = Float.parseFloat(txt);
                                 if (parseFloat > 100) {
-                                    Toast.makeText(controller.getActivity(), R.string.incorrect_value, Toast.LENGTH_SHORT).show();
+                                    Toast.makeText(dc.getActivity(), R.string.incorrect_value, Toast.LENGTH_SHORT).show();
                                 }
-                                page = (int) (controller.getPageCount() * parseFloat) / 100;
+                                page = (int) (dc.getPageCount() * parseFloat) / 100;
                                 page = page + 1;
                             } else {
                                 page = Integer.valueOf(txt);
@@ -1878,8 +1923,8 @@ public class DragingDialogs {
                             number.setText("1");
                         }
 
-                        if (page >= 0 && page <= controller.getPageCount()) {
-                            controller.onGoToPage(page);
+                        if (page >= 0 && page <= dc.getPageCount()) {
+                            dc.onGoToPage(page);
                             grid.setSelection(page - 1);
                             Keyboards.close(number);
                         }
@@ -2103,22 +2148,7 @@ public class DragingDialogs {
     }
 
     public static void addBookmarksLong(final FrameLayout anchor, final DocumentController controller) {
-        Vibro.vibrate();
-        List<AppBookmark> objects = BookmarksData.get().getBookmarksByBook(controller.getCurrentBook());
-        int page = PageUrl.fakeToReal(controller.getCurentPageFirst1());
-
-        for (AppBookmark all : objects) {
-            if (all.getPage(controller.getPageCount()) == page) {
-                Toast.makeText(controller.getActivity(), R.string.bookmark_for_this_page_already_exists, Toast.LENGTH_LONG).show();
-                return;
-            }
-        }
-
-        final AppBookmark bookmark = new AppBookmark(controller.getCurrentBook().getPath(), controller.getString(R.string.fast_bookmark), controller.getPercentage());
-        BookmarksData.get().add(bookmark);
-
-        String TEXT = controller.getString(R.string.fast_bookmark) + " " + TxtUtils.LONG_DASH1 + " " + controller.getString(R.string.page) + " " + page + "";
-        Toast.makeText(controller.getActivity(), TEXT, Toast.LENGTH_SHORT).show();
+        TTSEngine.fastTTSBookmakr(controller);
 
     }
 
@@ -2126,7 +2156,7 @@ public class DragingDialogs {
         final List<AppBookmark> objects = new ArrayList<AppBookmark>();
         final BookmarksAdapter bookmarksAdapter = new BookmarksAdapter(anchor.getContext(), objects, true, controller);
 
-        final View.OnClickListener onAdd = new View.OnClickListener() {
+        final View.OnClickListener onAddBookmark = new View.OnClickListener() {
 
             @Override
             public void onClick(final View v) {
@@ -2142,18 +2172,6 @@ public class DragingDialogs {
                 final AppBookmark appBookmark = objects.get(position);
                 int page = appBookmark.getPage(controller.getPageCount());
 
-                if (page != controller.getCurentPageFirst1()) {
-                    final Integer offsetY = Integer.valueOf((int) controller.getOffsetY());
-                    LOG.d("onItemClick: Bookmark", offsetY);
-                    controller.getLinkHistory().clear();
-                    controller.getLinkHistory().add(offsetY);
-                }
-
-                //if (appBookmark.p > 0) {
-                //   controller.onScrollYPercent(appBookmark.p);
-                //} else {
-
-                //}
                 controller.onGoToPage(page);
 
                 onRefeshUI.run();
@@ -2182,36 +2200,19 @@ public class DragingDialogs {
                 contentList.setAdapter(bookmarksAdapter);
                 contentList.setOnItemClickListener(onItem);
                 contentList.setOnItemLongClickListener(onBooksLong);
-                a.findViewById(R.id.addBookmark).setOnClickListener(onAdd);
+                a.findViewById(R.id.addBookmarkNormal).setOnClickListener(onAddBookmark);
 
-                final View.OnClickListener onAddPAge = new View.OnClickListener() {
+                final View.OnClickListener onQuickBookmark = new View.OnClickListener() {
 
                     @Override
                     public void onClick(final View v) {
-                        int page = PageUrl.fakeToReal(controller.getCurentPageFirst1());
-
-                        for (AppBookmark all : objects) {
-                            if (all.getPage(controller.getPageCount()) == page) {
-                                Toast.makeText(controller.getActivity(), R.string.bookmark_for_this_page_already_exists, Toast.LENGTH_LONG).show();
-                                return;
-                            }
-                        }
-
-                        final AppBookmark bookmark = new AppBookmark(controller.getCurrentBook().getPath(), controller.getString(R.string.fast_bookmark), controller.getPercentage());
-                        BookmarksData.get().add(bookmark);
-
-                        objects.clear();
-                        objects.addAll(BookmarksData.get().getBookmarksByBook(controller.getCurrentBook()));
-                        bookmarksAdapter.notifyDataSetChanged();
-
+                        TTSEngine.fastTTSBookmakr(controller);
                         closeDialog();
-                        String TEXT = controller.getString(R.string.fast_bookmark) + " " + TxtUtils.LONG_DASH1 + " " + controller.getString(R.string.page) + " " + page + "";
-                        Toast.makeText(controller.getActivity(), TEXT, Toast.LENGTH_SHORT).show();
                         onRefeshUI.run();
                     }
                 };
 
-                a.findViewById(R.id.addPageBookmark).setOnClickListener(onAddPAge);
+                a.findViewById(R.id.addPageBookmarkQuick).setOnClickListener(onQuickBookmark);
 
                 objects.clear();
 
@@ -2226,28 +2227,6 @@ public class DragingDialogs {
                         () -> ExtUtils.sendBookmarksTo(controller.getActivity(), controller.getCurrentBook())
                 );
 
-//                titlePopupMenu.getMenu().add(R.string.export_as_backup_json_).setOnMenuItemClickListener(new OnMenuItemClickListener() {
-//
-//                    @Override
-//                    public boolean onMenuItemClick(MenuItem item) {
-//                        ExtUtils.exportAllBookmarksToJson((FragmentActivity) controller.getActivity(), controller.getCurrentBook());
-//                        return false;
-//                    }
-//                });
-//                titlePopupMenu.getMenu().add(R.string.import_from_backup_json_).setOnMenuItemClickListener(new OnMenuItemClickListener() {
-//
-//                    @Override
-//                    public boolean onMenuItemClick(MenuItem item) {
-//                        ExtUtils.importAllBookmarksFromJson((FragmentActivity) controller.getActivity(), new Runnable() {
-//
-//                            @Override
-//                            public void run() {
-//                                showBookmarksDialog(anchor, controller, onRefeshUI);
-//                            }
-//                        });
-//                        return false;
-//                    }
-//                });
 
                 return a;
             }
@@ -3357,6 +3336,13 @@ public class DragingDialogs {
                     @Override
                     public void onCheckedChanged(final CompoundButton buttonView, final boolean isChecked) {
                         AppState.get().isCustomizeBgAndColors = isChecked;
+                        if (!isChecked) {
+                            AppState.get().colorDayText = AppState.COLOR_BLACK;
+                            AppState.get().colorDayBg = AppState.COLOR_WHITE;
+
+                            AppState.get().colorNigthText = AppState.COLOR_WHITE;
+                            AppState.get().colorNigthBg = AppState.COLOR_BLACK;
+                        }
                     }
                 });
                 final CheckBox isReplaceWhite = (CheckBox) inflate.findViewById(R.id.isReplaceWhite);
@@ -3368,6 +3354,8 @@ public class DragingDialogs {
                     @Override
                     public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                         AppState.get().isReplaceWhite = isChecked;
+
+
                     }
                 });
 
@@ -3487,13 +3475,27 @@ public class DragingDialogs {
 
                 ///
                 final TextView inactivityTime = (TextView) inflate.findViewById(R.id.inactivityTime);
-                inactivityTime.setText("" + AppState.get().inactivityTime);
+                inactivityTime.setText(AppState.get().inactivityTime == -1 ? controller.getString(R.string.system) : "" + AppState.get().inactivityTime);
                 TxtUtils.underlineTextView(inactivityTime);
                 inactivityTime.setOnClickListener(new OnClickListener() {
 
                     @Override
                     public void onClick(View v) {
                         final PopupMenu popupMenu = new PopupMenu(v.getContext(), v);
+
+
+                        popupMenu.getMenu().add("" + controller.getString(R.string.system)).setOnMenuItemClickListener(new OnMenuItemClickListener() {
+
+                            @Override
+                            public boolean onMenuItemClick(MenuItem item) {
+                                AppState.get().inactivityTime = -1;
+                                controller.getActivity().getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                                inactivityTime.setText(R.string.system);
+                                TxtUtils.underlineTextView(inactivityTime);
+                                return false;
+                            }
+                        });
+
                         List<Integer> times = Arrays.asList(1, 2, 3, 4, 5, 10, 20, 30, 60);
                         for (int i : times) {
                             final int number = i;
@@ -4090,8 +4092,10 @@ public class DragingDialogs {
                 });
 
                 final CustomSeek emptyLine = (CustomSeek) inflate.findViewById(R.id.emptyLine);
-                boolean isShow = BookType.FB2.is(controller.getCurrentBook().getPath());// || //
-                // BookType.HTML.is(controller.getCurrentBook().getPath()) || //
+                boolean isShow =
+                        //
+                        BookType.FB2.is(controller.getCurrentBook().getPath()) || //
+                                BookType.DOCX.is(controller.getCurrentBook().getPath());
                 // BookType.TXT.is(controller.getCurrentBook().getPath());//
 
                 emptyLine.setVisibility(isShow ? View.VISIBLE : View.GONE);
@@ -4109,7 +4113,7 @@ public class DragingDialogs {
 
                 final CustomSeek marginTop = (CustomSeek) inflate.findViewById(R.id.marginTop);
                 int maxMargin = Dips.isLargeOrXLargeScreen() ? 200 : 30;
-                marginTop.init(-10, maxMargin, BookCSS.get().marginTop);
+                marginTop.init(0, maxMargin, BookCSS.get().marginTop);
                 marginTop.setOnSeekChanged(new IntegerResponse() {
 
                     @Override
@@ -4120,7 +4124,7 @@ public class DragingDialogs {
                 });
 
                 final CustomSeek marginBottom = (CustomSeek) inflate.findViewById(R.id.marginBottom);
-                marginBottom.init(-10, maxMargin, BookCSS.get().marginBottom);
+                marginBottom.init(0, maxMargin, BookCSS.get().marginBottom);
                 marginBottom.setOnSeekChanged(new IntegerResponse() {
 
                     @Override
@@ -4338,7 +4342,6 @@ public class DragingDialogs {
             @Override
             public void run() {
                 if (initHash != Objects.appHash()) {
-                    AppProfile.save(controller.getActivity());
                     if (onRefresh != null) {
                         onRefresh.run();
                     }
@@ -4466,19 +4469,23 @@ public class DragingDialogs {
                 });
                 TintUtil.setTintImageWithAlpha(bookCut, !AppTemp.get().isCut ? TintUtil.COLOR_TINT_GRAY : Color.LTGRAY);
 
-                inflate.findViewById(R.id.onFullScreen).setOnClickListener(new View.OnClickListener() {
+                inflate.findViewById(R.id.onFullScreen).setOnClickListener(v -> {
 
-                    @Override
-                    public void onClick(final View v) {
-                        AppState.get().isFullScreen = !AppState.get().isFullScreen;
-                        DocumentController.chooseFullScreen(controller.getActivity(), AppState.get().isFullScreen);
+
+                    DocumentController.showFullScreenPopup(controller.getActivity(), v, id -> {
+                        AppState.get().fullScreenMode = id;
+                        DocumentController.chooseFullScreen(controller.getActivity(), AppState.get().fullScreenMode);
                         if (controller.isTextFormat()) {
                             if (onRefresh != null) {
                                 onRefresh.run();
                             }
                             controller.restartActivity();
                         }
-                    }
+                        return true;
+                    });
+
+
+
                 });
                 View tts = inflate.findViewById(R.id.onTTS);
                 tts.setOnClickListener(new View.OnClickListener() {

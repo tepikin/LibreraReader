@@ -14,6 +14,7 @@
    <string name="landscape_180">Phong cảnh (180)</string>
    <string name="portrait_180">Chân dung (180)</string>
    <string name="system_language">Ngôn ngữ hệ thống</string>
+   <string name="system">Hệ thống</string>
    <string name="small">Nhỏ bé</string>
    <string name="normal">Bình thường</string>
    <string name="large">Lớn</string>
@@ -558,4 +559,16 @@
    <string name="show_sync_wheel">Hiển thị bánh xe đồng bộ</string>
    <string name="publication_date">Ngày xuất bản</string>
    <string name="empy">Trống</string>
+   <string name="show_quick_bookmarks">Hiển thị dấu trang nhanh</string>
+   <string name="show_only_available_books">Chỉ hiển thị những cuốn sách có sẵn</string>
+   <string name="share_as_text">Chia sẻ dưới dạng văn bản</string>
+   <string name="share_as_image">Chia sẻ như hình ảnh</string>
+   <string name="copy_text">Sao chép văn bản</string>
+   <string name="show_fast_scroll">Hiển thị cuộn nhanh</string>
+   <string name="replacements">Thay thế</string>
+   <string name="add_dictionary">Thêm từ điển</string>
+   <string name="add_rule">Thêm quy tắc</string>
+   <string name="emphasis">Nhấn mạnh</string>
+   <string name="with_cutout">Với sự cắt bỏ</string>
+   <string name="screen">Màn</string>
 </resources>

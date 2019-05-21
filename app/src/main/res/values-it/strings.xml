@@ -14,6 +14,7 @@
    <string name="landscape_180">Orizzontale (180)</string>
    <string name="portrait_180">Verticale (180)</string>
    <string name="system_language">Lingua di sistema</string>
+   <string name="system">Sistema</string>
    <string name="small">Piccolo</string>
    <string name="normal">Normale</string>
    <string name="large">Grande</string>
@@ -558,4 +559,16 @@
    <string name="show_sync_wheel">Mostra la rotella di sincronizzazione</string>
    <string name="publication_date">Data di pubblicazione</string>
    <string name="empy">Vuoto</string>
+   <string name="show_quick_bookmarks">Mostra segnalibri rapidi</string>
+   <string name="show_only_available_books">Mostra solo i libri disponibili</string>
+   <string name="share_as_text">Condividi come testo</string>
+   <string name="share_as_image">Condividi come immagine</string>
+   <string name="copy_text">Copia testo</string>
+   <string name="show_fast_scroll">Mostra scorrimento veloce</string>
+   <string name="replacements">Sostituzioni</string>
+   <string name="add_dictionary">Aggiungi un dizionario</string>
+   <string name="add_rule">Aggiungi regola</string>
+   <string name="emphasis">Enfasi</string>
+   <string name="with_cutout">Con il ritaglio</string>
+   <string name="screen">Schermo</string>
 </resources>

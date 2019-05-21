@@ -29,7 +29,7 @@ public class AppBook implements CurrentPageListener {
     public int d = 0;//delta
 
     public float p; //percent
-    public long t;
+    public long t;//time
     public String ln;
 
 
@@ -90,7 +90,7 @@ public class AppBook implements CurrentPageListener {
 
         }
 
-        int p = (int) (pages * this.p);
+        int p = Math.round(pages * this.p);
         if (p > 0) {
             p = p - 1;
         }

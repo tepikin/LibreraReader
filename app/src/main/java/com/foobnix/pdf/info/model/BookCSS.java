@@ -49,6 +49,8 @@ public class BookCSS {
     public String syncDropboxPath = new File(AppProfile.DOWNLOADS_DIR, "Librera/" + LIBRERA_CLOUD_DROPBOX).getPath();
     public String syncGdrivePath = new File(AppProfile.DOWNLOADS_DIR, "Librera/" + LIBRERA_CLOUD_GOOGLEDRIVE).getPath();
     public String syncOneDrivePath = new File(AppProfile.DOWNLOADS_DIR, "Librera/" + LIBRERA_CLOUD_ONEDRIVE).getPath();
+    public String dictPath;
+
 
 
     public static String DEFAULT_FOLDER = new File(AppProfile.SYNC_FOLDER_ROOT, "Fonts").getPath();
@@ -236,7 +238,7 @@ public class BookCSS {
         if (currentHash != instance.hashCode) {
             LOG.d("Objects-save", "SAVE BookCSS");
             hashCode = currentHash;
-            IO.writeObjAsync(AppProfile.syncCSS, instance);
+            IO.writeObj(AppProfile.syncCSS, instance);
         }
     }
 
@@ -612,7 +614,7 @@ public class BookCSS {
         builder.append("subtitle{text-align:center !important; text-indent:0px !important;}");
         builder.append("image{text-align:center; text-indent:0px;}");
         builder.append("section+section>title{page-break-before:always;}");
-        builder.append(String.format("empty-line{padding-top:%s;}", em(emptyLine)));
+        builder.append(String.format("empty-line{display:block; padding:%s;}", em(emptyLine)));
         builder.append("epigraph{text-align:right; margin-left:2em;font-style: italic;}");
 
         builder.append("text-author{font-style: italic;font-weight: bold;}");

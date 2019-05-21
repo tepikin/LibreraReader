@@ -674,10 +674,22 @@ public class Fb2Extractor extends BaseExtractor {
 
         HypenUtils.resetTokenizer();
 
+        boolean isValidXML = false;
+        boolean isValidXMLChecked = false;
+
         while ((line = input.readLine()) != null) {
             if (TempHolder.get().loadingCancelled) {
                 break;
             }
+            if (!isValidXMLChecked && TxtUtils.isNotEmpty(line)) {
+                isValidXMLChecked = true;
+                isValidXML = line.contains("<");
+                LOG.d("isValidXML", isValidXML, line);
+                if(!isValidXML) {
+                    writer.print("<html><body>");
+                }
+            }
+
 
             if (AppState.get().isShowFooterNotesInText) {
                 line = includeFooterNotes(line, notes);
@@ -688,9 +700,24 @@ public class Fb2Extractor extends BaseExtractor {
             if (BookCSS.get().isAutoHypens && TxtUtils.isNotEmpty(AppTemp.get().hypenLang)) {
                 line = HypenUtils.applyHypnes(line);
             }
+
+
+            if (!isValidXML) {
+                writer.println("<p>");
+            }
             writer.println(line);
+
+            if (!isValidXML) {
+                writer.println("</p>");
+            }
+
             // LOG.d("gen-ou", line);
+
         }
+        if (!isValidXML) {
+            writer.print("</body></html>");
+        }
+
         writer.close();
     }
 

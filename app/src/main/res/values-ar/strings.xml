@@ -14,6 +14,7 @@
    <string name="landscape_180">المناظر الطبيعية (180)</string>
    <string name="portrait_180">صورة (180)</string>
    <string name="system_language">لغة النظام</string>
+   <string name="system">النظام</string>
    <string name="small">صغير</string>
    <string name="normal">عادي</string>
    <string name="large">كبير</string>
@@ -558,4 +559,16 @@
    <string name="show_sync_wheel">عرض عجلة المزامنة</string>
    <string name="publication_date">تاريخ النشر</string>
    <string name="empy">فارغة</string>
+   <string name="show_quick_bookmarks">عرض إشارات مرجعية سريعة</string>
+   <string name="show_only_available_books">عرض الكتب المتاحة فقط</string>
+   <string name="share_as_text">مشاركة كنص</string>
+   <string name="share_as_image">مشاركة كصورة</string>
+   <string name="copy_text">نسخ النص</string>
+   <string name="show_fast_scroll">عرض التمرير السريع</string>
+   <string name="replacements">بدلاء</string>
+   <string name="add_dictionary">اضافة القاموس</string>
+   <string name="add_rule">أضف القاعدة</string>
+   <string name="emphasis">تشديد</string>
+   <string name="with_cutout">مع انقطاع</string>
+   <string name="screen">شاشة</string>
 </resources>

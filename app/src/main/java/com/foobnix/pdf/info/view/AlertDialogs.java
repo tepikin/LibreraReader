@@ -8,12 +8,14 @@ import android.content.DialogInterface.OnDismissListener;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.foobnix.android.utils.Dips;
 import com.foobnix.android.utils.Keyboards;
 import com.foobnix.pdf.info.R;
 import com.foobnix.pdf.info.Urls;
+import com.foobnix.pdf.info.wrapper.DocumentController;
 
 public class AlertDialogs {
 
@@ -174,6 +176,15 @@ public class AlertDialogs {
 
         create.show();
         return create;
+    }
+    public static void showTTSDebug(DocumentController controller){
+        TextView t = new TextView(controller.getActivity());
+        t.setMinWidth(Dips.DP_800);
+        //t.setMinHeight(Dips.DP_800);
+        String textForPage = controller.getPageHtml();
+        t.setText(textForPage);
+        final AlertDialog alertDialog = AlertDialogs.showViewDialog(controller.getActivity(), t);
+        t.setOnClickListener(a -> alertDialog.dismiss());
     }
 
 }

@@ -14,6 +14,7 @@
    <string name="landscape_180">Mazingira (180)</string>
    <string name="portrait_180">Picha (180)</string>
    <string name="system_language">Lugha ya mfumo</string>
+   <string name="system">Mfumo</string>
    <string name="small">Ndogo</string>
    <string name="normal">Kawaida</string>
    <string name="large">Kubwa</string>
@@ -558,4 +559,16 @@
    <string name="show_sync_wheel">Onyesha gurudumu la usawazishaji</string>
    <string name="publication_date">Tarehe ya kuchapishwa</string>
    <string name="empy">Tupu</string>
+   <string name="show_quick_bookmarks">Onyesha alama za haraka</string>
+   <string name="show_only_available_books">Onyesha vitabu vinavyopatikana tu</string>
+   <string name="share_as_text">Kushiriki kama maandiko</string>
+   <string name="share_as_image">Shiriki kama picha</string>
+   <string name="copy_text">Nakala ya nakala</string>
+   <string name="show_fast_scroll">Onyesha haraka kitabu</string>
+   <string name="replacements">Nafasi</string>
+   <string name="add_dictionary">Ongeza kamusi</string>
+   <string name="add_rule">Ongeza utawala</string>
+   <string name="emphasis">Msisitizo</string>
+   <string name="with_cutout">Na kata</string>
+   <string name="screen">Skrini</string>
 </resources>

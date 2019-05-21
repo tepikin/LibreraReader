@@ -14,6 +14,7 @@
    <string name="landscape_180">लैंडस्केप (180)</string>
    <string name="portrait_180">पोर्ट्रेट (180)</string>
    <string name="system_language">सिस्टम भाषा</string>
+   <string name="system">प्रणाली</string>
    <string name="small">छोटा</string>
    <string name="normal">साधारण</string>
    <string name="large">विशाल</string>
@@ -558,4 +559,16 @@
    <string name="show_sync_wheel">सिंक पहिया दिखाएं</string>
    <string name="publication_date">प्रकाशन तिथि</string>
    <string name="empy">खाली</string>
+   <string name="show_quick_bookmarks">त्वरित बुकमार्क दिखाएं</string>
+   <string name="show_only_available_books">केवल उपलब्ध पुस्तकें दिखाएं</string>
+   <string name="share_as_text">पाठ के रूप में साझा करें</string>
+   <string name="share_as_image">छवि के रूप में साझा करें</string>
+   <string name="copy_text">पाठ कॉपी करें</string>
+   <string name="show_fast_scroll">तेजी से स्क्रॉल दिखाओ</string>
+   <string name="replacements">प्रतिस्थापन</string>
+   <string name="add_dictionary">शब्दकोश जोड़ें</string>
+   <string name="add_rule">नियम जोड़ें</string>
+   <string name="emphasis">ज़ोर</string>
+   <string name="with_cutout">कटआउट के साथ</string>
+   <string name="screen">स्क्रीन</string>
 </resources>

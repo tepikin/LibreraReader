@@ -8,7 +8,10 @@ import android.content.DialogInterface.OnDismissListener;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.os.Handler;
+import android.support.v4.app.FragmentActivity;
 import android.text.InputType;
+import android.text.TextUtils;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -24,6 +27,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -37,21 +41,28 @@ import com.foobnix.android.utils.LOG;
 import com.foobnix.android.utils.ResultResponse;
 import com.foobnix.android.utils.StringDB;
 import com.foobnix.android.utils.TxtUtils;
+import com.foobnix.android.utils.UI;
 import com.foobnix.android.utils.Vibro;
 import com.foobnix.dao2.FileMeta;
 import com.foobnix.drive.GFile;
 import com.foobnix.model.AppProfile;
 import com.foobnix.model.AppState;
+import com.foobnix.model.AppTemp;
 import com.foobnix.model.TagData;
 import com.foobnix.pdf.info.ExtUtils;
 import com.foobnix.pdf.info.R;
 import com.foobnix.pdf.info.TintUtil;
 import com.foobnix.pdf.info.WebViewHepler;
+import com.foobnix.pdf.info.model.BookCSS;
+import com.foobnix.pdf.info.widget.ChooserDialogFragment;
 import com.foobnix.pdf.info.wrapper.DocumentController;
 import com.foobnix.pdf.info.wrapper.MagicHelper;
 import com.foobnix.sys.TempHolder;
 import com.foobnix.ui2.AppDB;
 import com.foobnix.ui2.AppDB.SEARCH_IN;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -65,6 +76,226 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Dialogs {
+
+
+    public static void replaceTTSDialog(Activity activity) {
+        LinearLayout root = new LinearLayout(activity);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(Dips.DP_5, Dips.DP_5, Dips.DP_5, Dips.DP_5);
+
+
+        LinearLayout dicts = UI.verticalLayout(activity);
+
+        if (TxtUtils.isNotEmpty(BookCSS.get().dictPath)) {
+            final List<String> strings = StringDB.asList(BookCSS.get().dictPath);
+            for (String s : strings) {
+                final TextView text = UI.text(activity, s);
+                text.setSingleLine();
+                text.setEllipsize(TextUtils.TruncateAt.START);
+                text.setPadding(Dips.DP_2, Dips.DP_2, Dips.DP_2, Dips.DP_2);
+
+                text.setOnClickListener(a -> StringDB.delete(BookCSS.get().dictPath, s, result -> {
+                    BookCSS.get().dictPath = result;
+                    text.setVisibility(View.GONE);
+                }));
+                dicts.addView(text);
+            }
+        }
+        root.addView(dicts);
+
+
+        try {
+            JSONObject jsonObject = new JSONObject(AppState.get().lineTTSReplacements);
+
+            final Iterator<String> keys = jsonObject.keys();
+            while (keys.hasNext()) {
+                String key = keys.next();
+                String value = jsonObject.getString(key);
+
+                LinearLayout h = new LinearLayout(activity);
+                h.setOrientation(LinearLayout.HORIZONTAL);
+
+                EditText from = new EditText(activity);
+                from.setWidth(Dips.DP_200);
+                from.setText(key);
+                from.setSingleLine();
+
+
+                TextView text = new TextView(activity);
+                text.setText(" -> ");
+                root.setPadding(Dips.DP_10, Dips.DP_0, Dips.DP_10, Dips.DP_0);
+
+
+                EditText to = new EditText(activity);
+                to.setWidth(Dips.DP_120);
+                to.setText(value);
+                to.setSingleLine();
+                to.setHint("_");
+
+                h.addView(from);
+                h.addView(text);
+                h.addView(to);
+                root.addView(h);
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        EditText lineTTSAccents = new EditText(activity);
+
+        if ("ru".equals(AppTemp.get().hypenLang)) {
+            root.addView(UI.text(activity, activity.getString(R.string.emphasis)));
+            lineTTSAccents.setGravity(Gravity.TOP);
+            lineTTSAccents.setLines(2);
+            lineTTSAccents.setText(AppState.get().lineTTSAccents);
+
+            root.addView(lineTTSAccents);
+        }
+
+        TextView add = new TextView(activity, null, R.style.textLink);
+        add.setText(activity.getString(R.string.add_rule));
+        add.setPadding(Dips.DP_2, Dips.DP_2, Dips.DP_2, Dips.DP_2);
+
+        TxtUtils.underlineTextView(add);
+        add.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                LinearLayout h = new LinearLayout(activity);
+                h.setOrientation(LinearLayout.HORIZONTAL);
+
+                EditText from = new EditText(activity);
+                from.setWidth(Dips.DP_200);
+                from.setSingleLine();
+
+
+                TextView text = new TextView(activity);
+                text.setText(" -> ");
+                root.setPadding(Dips.DP_10, Dips.DP_0, Dips.DP_10, Dips.DP_0);
+
+
+                EditText to = new EditText(activity);
+                to.setWidth(Dips.DP_120);
+                to.setSingleLine();
+                to.setHint("_");
+
+                h.addView(from);
+                h.addView(text);
+                h.addView(to);
+                root.addView(h, root.getChildCount() - 3);
+            }
+        });
+        root.addView(add);
+
+
+        TextView addDict = new TextView(activity, null, R.style.textLink);
+        addDict.setText(activity.getString(R.string.add_dictionary)+" (.txt RegEx @Voice)");
+        addDict.setPadding(Dips.DP_2, Dips.DP_2, Dips.DP_2, Dips.DP_2);
+        TxtUtils.underlineTextView(addDict);
+        addDict.setOnClickListener(v -> {
+            ChooserDialogFragment.chooseFile((FragmentActivity) activity, ".txt").setOnSelectListener((result1, result2) -> {
+                if (!StringDB.contains(BookCSS.get().dictPath, result1)) {
+                    StringDB.add(BookCSS.get().dictPath, result1, result ->
+                            BookCSS.get().dictPath = result);
+
+
+                    final TextView text = UI.text(activity, result1);
+                    text.setSingleLine();
+                    text.setPadding(Dips.DP_2, Dips.DP_2, Dips.DP_2, Dips.DP_2);
+                    text.setEllipsize(TextUtils.TruncateAt.START);
+                    text.setOnClickListener(a -> StringDB.delete(BookCSS.get().dictPath, result1, result3 -> {
+                        BookCSS.get().dictPath = result3;
+                        text.setVisibility(View.GONE);
+                    }));
+                    dicts.addView(text);
+
+                    Vibro.vibrate();
+                }
+                result2.dismiss();
+                return false;
+            });
+        });
+
+
+        root.addView(addDict);
+
+        TextView restore = new TextView(activity, null, R.style.textLink);
+        restore.setPadding(Dips.DP_2, Dips.DP_2, Dips.DP_2, Dips.DP_2);
+
+        restore.setText(R.string.restore_defaults_short);
+        TxtUtils.underlineTextView(restore);
+        root.addView(restore);
+
+
+        ScrollView scroll = new ScrollView(activity);
+        scroll.addView(root);
+
+
+        final AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+        builder.setTitle(R.string.replacements);
+        builder.setCancelable(true);
+        builder.setView(scroll);
+        builder.setNegativeButton(R.string.close, new DialogInterface.OnClickListener() {
+
+            @Override
+            public void onClick(final DialogInterface dialog, final int id) {
+            }
+        });
+
+        builder.setPositiveButton(R.string.apply, new DialogInterface.OnClickListener() {
+
+            @Override
+            public void onClick(final DialogInterface dialog, final int id) {
+                JSONObject res = new JSONObject();
+                AppState.get().lineTTSAccents = lineTTSAccents.getText().toString();
+                for (int i = 0; i < root.getChildCount(); i++) {
+                    final View childAt = root.getChildAt(i);
+                    if (childAt instanceof LinearLayout) {
+                        final LinearLayout line = (LinearLayout) childAt;
+                        if (line.getOrientation() == LinearLayout.VERTICAL) {
+                            continue;
+                        }
+                        String from = ((EditText) line.getChildAt(0)).getText().toString();
+                        String to = ((EditText) line.getChildAt(2)).getText().toString();
+                        try {
+                            if (TxtUtils.isNotEmpty(from)) {
+                                res.put(from, to);
+                            }
+                        } catch (JSONException e) {
+                            LOG.e(e);
+                        }
+
+
+                    }
+                }
+                AppState.get().lineTTSReplacements = res.toString();
+                LOG.d("lineTTSReplacements", AppState.get().lineTTSReplacements);
+
+
+            }
+        });
+        final AlertDialog create = builder.create();
+
+        restore.setOnClickListener((a) -> {
+            AppState.get().lineTTSReplacements = AppState.TTS_REPLACEMENTS;
+            AppState.get().lineTTSAccents = AppState.TTS_ACCENTS;
+            BookCSS.get().dictPath = "";
+
+            create.dismiss();
+            replaceTTSDialog(activity);
+        });
+
+
+        create.setOnDismissListener(new OnDismissListener() {
+
+            @Override
+            public void onDismiss(DialogInterface dialog) {
+                Keyboards.hideNavigation(activity);
+            }
+        });
+
+        create.show();
+    }
 
     public static void showSyncLOGDialog(Activity a) {
         TextView result = new TextView(a);
@@ -90,12 +321,15 @@ public class Dialogs {
         result.setMinWidth(Dips.dpToPx(1000));
         result.setMinHeight(Dips.dpToPx(1000));
 
+        TextView t = UI.uText(a, "Clear debug log");
+        t.setOnClickListener(v -> GFile.debugOut = "");
+
         AlertDialogs.showViewDialog(a, new Runnable() {
             @Override
             public void run() {
                 flag.set(false);
             }
-        }, result);
+        }, t, result);
     }
 
     public static void testWebView(final Activity a, final String path) {
@@ -129,7 +363,8 @@ public class Dialogs {
 
     }
 
-    public static void customValueDialog(final Context a, final int initValue, final IntegerResponse reponse) {
+    public static void customValueDialog(final Context a, final int initValue,
+                                         final IntegerResponse reponse) {
         final AlertDialog.Builder builder = new AlertDialog.Builder(a);
         builder.setTitle(R.string.custom_value);
 
@@ -290,7 +525,8 @@ public class Dialogs {
 
     }
 
-    public static void showEditDialog(final Context c, String title, String init, final ResultResponse<String> onresult) {
+    public static void showEditDialog(final Context c, String title, String init,
+                                      final ResultResponse<String> onresult) {
         final AlertDialog.Builder builder = new AlertDialog.Builder(c);
         builder.setTitle(title);
         final EditText input = new EditText(c);
@@ -335,7 +571,8 @@ public class Dialogs {
 
     }
 
-    public static void showDeltaPage(final FrameLayout anchor, final DocumentController controller, final int pageNumber, final Runnable reloadUI) {
+    public static void showDeltaPage(final FrameLayout anchor,
+                                     final DocumentController controller, final int pageNumber, final Runnable reloadUI) {
         Vibro.vibrate();
         String txt = controller.getString(R.string.set_the_current_page_number);
 
@@ -599,7 +836,8 @@ public class Dialogs {
         });
     }
 
-    public static void showTagsDialog(final Activity a, final File file, final boolean isReadBookOption, final Runnable refresh) {
+    public static void showTagsDialog(final Activity a, final File file,
+                                      final boolean isReadBookOption, final Runnable refresh) {
         final FileMeta fileMeta = file == null ? null : AppDB.get().getOrCreate(file.getPath());
         final String tag = file == null ? "" : fileMeta.getTag();
 
@@ -781,7 +1019,9 @@ public class Dialogs {
 
     private static List<String> getAllTags(final String tag) {
         Collection<String> res = new LinkedHashSet<String>();
+
         res.addAll(StringDB.asList(AppState.get().bookTags));
+
         res.addAll(StringDB.asList(tag));
         res.addAll(AppDB.get().getAll(SEARCH_IN.TAGS));
 

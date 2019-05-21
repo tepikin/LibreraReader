@@ -14,7 +14,6 @@ import com.foobnix.model.AppProfile;
 import com.foobnix.model.AppTemp;
 import com.foobnix.model.TagData;
 import com.foobnix.pdf.info.Clouds;
-import com.foobnix.pdf.info.ExportConverter;
 import com.foobnix.pdf.info.ExtUtils;
 import com.foobnix.pdf.info.IMG;
 import com.foobnix.pdf.info.model.BookCSS;
@@ -36,6 +35,8 @@ import com.google.api.services.drive.DriveScopes;
 import com.google.api.services.drive.model.File;
 import com.google.api.services.drive.model.FileList;
 
+import org.ebookdroid.common.settings.books.SharedBooks;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -47,7 +48,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public class GFile {
     public static final int REQUEST_CODE_SIGN_IN = 1110;
@@ -83,6 +83,7 @@ public class GFile {
         GoogleSignInClient client = GoogleSignIn.getClient(c, signInOptions);
         client.signOut();
         googleDriveService = null;
+        BookCSS.get().syncRootID = "";
         AppTemp.get().syncTime = 0;
 
     }
@@ -170,7 +171,7 @@ public class GFile {
         do {
             //debugOut += "\n:" + q;
 
-            final FileList list = googleDriveService.files().list().setQ(q).setPageToken(nextPageToken).setFields("nextPageToken, files(*)").setPageSize(PAGE_SIZE).setOrderBy("modifiedTime").execute();
+            final FileList list = googleDriveService.files().list().setSpaces("drive").setQ(q).setPageToken(nextPageToken).setFields("nextPageToken, files(*)").setPageSize(PAGE_SIZE).setOrderBy("modifiedTime").execute();
             nextPageToken = list.getNextPageToken();
             res.addAll(list.getFiles());
             debugOut += "\nGet remote files info: " + list.getFiles().size();
@@ -188,7 +189,7 @@ public class GFile {
     }
 
     public static List<File> getFilesAll(boolean withTrashed) throws Exception {
-        return withTrashed ? exeQ("") : exeQ("trashed = false or");
+        return withTrashed ? exeQ("") : exeQ("trashed = false");
     }
 
     public static File findLibreraSync() throws Exception {
@@ -299,12 +300,18 @@ public class GFile {
 
     public static void uploadFile(String roodId, File file, final java.io.File inFile) throws IOException {
         debugOut += "\nUpload: " + inFile.getParentFile().getName() + "/" + inFile.getName();
-        File metadata = new File().setName(inFile.getName()).setModifiedTime(new DateTime(getLastModified(inFile)));
-        FileContent contentStream = new FileContent("text/plain", inFile);
-        LOG.d(TAG, "Upload: " + inFile.getParentFile().getName() + "/" + inFile.getName());
-        googleDriveService.files().update(file.getId(), metadata, contentStream).execute();
+
         setLastModifiedTime(inFile, inFile.lastModified());
+        File metadata = new File().setName(inFile.getName()).setModifiedTime(new DateTime(getLastModified(inFile)));
+        FileContent contentStream = new FileContent(ExtUtils.getMimeType(inFile), inFile);
+
+
         file.setModifiedTime(new DateTime(inFile.lastModified()));
+        googleDriveService.files().update(file.getId(), metadata, contentStream).execute();
+
+        LOG.d(TAG, "Upload: " + inFile.getParentFile().getName() + "/" + inFile.getName());
+
+
     }
 
 
@@ -355,10 +362,12 @@ public class GFile {
                 setLastModifiedTime(file, lastModified);
 
                 if (Clouds.isLibreraSyncFile(file.getPath())) {
+                    IMG.clearCache(file.getPath());
                     FileMeta meta = AppDB.get().getOrCreate(file.getPath());
                     FileMetaCore.createMetaIfNeed(file.getPath(), true);
                     IMG.loadCoverPageWithEffect(meta.getPath(), IMG.getImageSize());
                 }
+                SharedBooks.cache.clear();
 
             }
         } finally {
@@ -391,22 +400,33 @@ public class GFile {
     }
 
     public static void setLastModifiedTime(java.io.File file, long lastModified) {
+        if (file.isFile()) {
+            for (String key : sp.getAll().keySet()) {
+                if (key.startsWith(file.getPath())) {
+                    sp.edit().remove(key).commit();
+                    LOG.d("hasLastModified remove", key);
+                }
+            }
+        }
         sp.edit().putLong(file.getPath() + file.lastModified(), lastModified).commit();
+        LOG.d("hasLastModified put", file.getPath() + file.lastModified(), lastModified);
+
+    }
+
+    public static boolean hasLastModified(java.io.File file) {
+        for (String key : sp.getAll().keySet()) {
+            if (key.startsWith(file.getPath())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static long getLastModified(java.io.File file) {
-        long l = sp.getLong(file.getPath() + file.lastModified(), file.lastModified());
-        final Set<String> strings = sp.getAll().keySet();
-        for (String key : strings) {
-            if (key.equals(file.getPath() + file.lastModified())) {
-                continue;
-            }
-
-            if (key.startsWith(file.getPath())) {
-                sp.edit().remove(key).commit();
-            }
+        if (file.lastModified() == 0) {
+            return 0;
         }
-        return l;
+        return sp.getLong(file.getPath() + file.lastModified(), file.lastModified());
     }
 
 
@@ -439,25 +459,55 @@ public class GFile {
 
     public static volatile boolean isNeedUpdate = false;
 
+
     public static synchronized void sycnronizeAll(final Context c) throws Exception {
+
 
         try {
             isNeedUpdate = false;
-            debugOut = "\nBegin: " + DateFormat.getTimeInstance().format(new Date());
+            debugOut += "\n ----------------------------------";
+            debugOut += "\nBegin: " + DateFormat.getTimeInstance().format(new Date());
             buildDriveService(c);
             LOG.d(TAG, "sycnronizeAll", "begin");
             if (TxtUtils.isEmpty(BookCSS.get().syncRootID)) {
                 File syncRoot = GFile.findLibreraSync();
                 LOG.d(TAG, "findLibreraSync finded", syncRoot);
-                if (syncRoot == null) {
+                if (syncRoot == null || syncRoot.getTrashed() == true) {
                     syncRoot = GFile.createFolder("root", "Librera");
+                    debugOut += "\n Create remote [Librera]";
                 }
                 BookCSS.get().syncRootID = syncRoot.getId();
                 AppProfile.save(c);
+            } else {
+//                try {
+//                    final File execute = GFile.googleDriveService.files().get(BookCSS.get().syncRootID).execute();
+//                    if (execute.getTrashed() == true) {
+//                        File syncRoot = GFile.createFolder("root", "Librera");
+//                        debugOut += "\n Create remote [Librera]";
+//                        BookCSS.get().syncRootID = syncRoot.getId();
+//                        AppProfile.save(c);
+//                    }
+//                } catch (GoogleJsonResponseException e) {
+//                    LOG.e(e);
+//                    if (e.getDetails().getCode() == 404) {
+//                        File syncRoot = GFile.createFolder("root", "Librera");
+//                        debugOut += "\n Create remote [Librera]";
+//                        BookCSS.get().syncRootID = syncRoot.getId();
+//                        AppProfile.save(c);
+//                    }
+//                }
+
+
             }
+
+
+            //googleDriveService.files().update( BookCSS.get().syncRootID, metadata).execute();
+
+
             if (!AppProfile.SYNC_FOLDER_ROOT.exists()) {
                 sp.edit().clear().commit();
                 AppProfile.SYNC_FOLDER_ROOT.mkdirs();
+                debugOut += "\n Create local [Librera]";
             }
 
 
@@ -497,9 +547,27 @@ public class GFile {
 
     static Map<java.io.File, File> map2 = new HashMap<>();
 
-    private static void sync(String syncId, final java.io.File ioRoot) throws Exception {
+    public static long timeout = 0;
+
+    private static void sync(final String syncId, final java.io.File ioRoot) throws Exception {
+
+        if (System.currentTimeMillis() - timeout < 20 * 1000) {
+            debugOut += "\n 20 sec time-out";
+            return;
+        }
+        timeout = System.currentTimeMillis();
+
         final List<File> driveFiles = getFilesAll(true);
         LOG.d(TAG, "getFilesAll", "end");
+//        if (LOG.isEnable) {
+//            FileWriter out = new FileWriter(new java.io.File(BookCSS.get().downlodsPath, "dump-sync.txt"));
+//            for (File file : driveFiles) {
+//                out.write(file.toString() + "\n");
+//            }
+//            out.flush();
+//            out.close();
+//        }
+
 
         Map<String, File> map = new HashMap<>();
         map2.clear();
@@ -521,24 +589,25 @@ public class GFile {
             final File other = map2.get(local);
             if (other == null) {
                 map2.put(local, file);
-                LOG.d(TAG, "map2-put", file.getName(), file.getId(), file.getTrashed());
-            } else if (other.getTrashed() == true) {
+                LOG.d(TAG, "map2-put-1", file.getName(), file.getId(), file.getTrashed());
+            } else if (file.getModifiedTime().getValue() > other.getModifiedTime().getValue()) {
                 map2.put(local, file);
-                LOG.d(TAG, "map2-put", file.getName(), file.getId(), file.getTrashed());
-
+                LOG.d(TAG, "map2-put-2", file.getName(), file.getId(), file.getModifiedTime(), file.getTrashed());
             }
-
-
         }
 
         for (java.io.File local : map2.keySet()) {
             File remote = map2.get(local);
-            LOG.d("CHECK-to-REMOVE", local.getPath(), remote.getModifiedTime().getValue(), getLastModified(local));
-            if (remote.getTrashed() && local.exists() && remote.getModifiedTime().getValue() / 1000 > getLastModified(local) / 1000) {
-                debugOut += "\nDelete local: " + local.getPath();
-                LOG.d(TAG, "Delete local", local.getPath());
-                ExtUtils.deleteRecursive(local);
-                isNeedUpdate = true;
+            if (remote.getTrashed() && local.exists()) {
+
+                LOG.d("CHECK-to-REMOVE", local.getPath(), remote.getModifiedTime().getValue(), getLastModified(local));
+
+                if (remote.getModifiedTime().getValue() - getLastModified(local) > 0) {
+                    debugOut += "\nDelete local: " + local.getPath();
+                    LOG.d(TAG, "Delete locale", local.getPath());
+                    ExtUtils.deleteRecursive(local);
+                    isNeedUpdate = true;
+                }
             }
 
         }
@@ -546,7 +615,7 @@ public class GFile {
 
         //upload second files
         for (File remote : driveFiles) {
-            if (true == remote.getTrashed()) {
+            if (remote.getTrashed()) {
                 LOG.d(TAG, "Skip trashed", remote.getName());
                 continue;
             }
@@ -560,48 +629,35 @@ public class GFile {
 
                 java.io.File local = new java.io.File(ioRoot, filePath);
 
-
-                if (local.exists() && (remote.getModifiedTime().getValue() / 1000 != getLastModified(local) / 1000 || remote.getSize().longValue() != local.length())) {
-
-                    if (local.getName().endsWith(AppProfile.APP_PROGRESS_JSON)) {
-                        LOG.d("merge-" + local.getName());
-                        //debugOut += "\n merge-" + local.getName();
-
-
-                        java.io.File merge = new java.io.File(local.getPath() + ".[merge]");
-                        try {
-                            downloadTemp(remote.getId(), merge);
-                            //merge
-                            ExportConverter.mergeBookProgrss(merge, local);
-                            uploadFile(syncId, remote, local);
-
-                        } finally {
-                            merge.delete();
-                        }
-
-
-                        skip = true;
-
-                    }
-
+                if (!hasLastModified(local) || local.length() == remote.getSize().longValue()) {
+                    setLastModifiedTime(local, remote.getModifiedTime().getValue());
+                    skip = true;
+                    //debugOut += "\n skip: " + local.getName();
+                    LOG.d(TAG, "Skip", local.getName());
                 }
 
 
-                if (!skip) {
-                    if (!local.exists() || (remote.getModifiedTime().getValue() / 1000 > getLastModified(local) / 1000 && (local.getPath().endsWith("json") || remote.getSize().longValue() != local.length()))) {
-                        final java.io.File parentFile = local.getParentFile();
-                        if (parentFile.exists()) {
-                            parentFile.mkdirs();
-                        }
-                        downloadFile(remote.getId(), local, remote.getModifiedTime().getValue());
-                        isNeedUpdate = true;
+                if (!skip && compareBySizeModifiedTime(remote, local) > 0) {
+                    final java.io.File parentFile = local.getParentFile();
+                    if (parentFile.exists()) {
+                        parentFile.mkdirs();
                     }
+                    downloadFile(remote.getId(), local, remote.getModifiedTime().getValue());
+                    isNeedUpdate = true;
                 }
             }
         }
         syncUpload(syncId, ioRoot, map2);
+    }
 
+    public static long compareBySizeModifiedTime(File remote, java.io.File local) {
+        if (!remote.getName().endsWith("json")) {
+            if (remote.getSize() != null && remote.getSize().longValue() == local.length()) {
+                return 0;
+            }
+        }
 
+        return remote.getModifiedTime().getValue() - getLastModified(local);
     }
 
     private static void syncUpload(String syncId, java.io.File ioRoot, Map<java.io.File, File> map2) throws IOException {
@@ -611,9 +667,9 @@ public class GFile {
         }
         for (java.io.File local : files) {
             File remote = map2.get(local);
-            if (remote != null && remote.getTrashed() == true) {
-                remote = null;
-            }
+//            if (remote != null && remote.getTrashed() == true) {
+//                remote = null;
+//            }
             if (local.isDirectory()) {
                 if (remote == null) {
                     remote = createFolder(syncId, local.getName());
@@ -623,7 +679,7 @@ public class GFile {
                 if (remote == null) {
                     File add = createFirstTime(syncId, local);
                     uploadFile(syncId, add, local);
-                } else if (remote.getModifiedTime().getValue() / 1000 < getLastModified(local) / 1000 && (local.getPath().endsWith("json") || remote.getSize().longValue() != local.length())) {
+                } else if (compareBySizeModifiedTime(remote, local) < 0) {
                     uploadFile(syncId, remote, local);
                 }
 
@@ -660,6 +716,7 @@ public class GFile {
 
     }
 
+
     public static void runSyncService(Activity a, boolean force) {
 
 
@@ -680,7 +737,9 @@ public class GFile {
             }
         }
 
+
     }
+
 
 }
 

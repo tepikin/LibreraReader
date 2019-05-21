@@ -17,9 +17,11 @@ public class HtmlContext extends PdfContext {
     public CodecDocument openDocumentInner(String fileName, String password) {
         try {
             return openDocumentInnerForce(fileName, password, false);
-        } catch (Exception e) {
+        } catch (Exception e1) {
+            LOG.e(e1);
             return openDocumentInnerForce(fileName, password, true);
         }
+
     }
 
     public CodecDocument openDocumentInnerForce(String fileName, String password, boolean forse) {

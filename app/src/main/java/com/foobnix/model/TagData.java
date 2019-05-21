@@ -2,13 +2,16 @@ package com.foobnix.model;
 
 import com.foobnix.android.utils.IO;
 import com.foobnix.android.utils.LOG;
+import com.foobnix.android.utils.StringDB;
 import com.foobnix.dao2.FileMeta;
 import com.foobnix.ui2.AppDB;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.File;
 import java.util.Iterator;
+import java.util.List;
 
 public class TagData {
 
@@ -44,6 +47,7 @@ public class TagData {
             JSONObject obj = IO.readJsonObject(AppProfile.syncTags);
             obj.put(MyPath.toRelative(path), tags);
             IO.writeObjAsync(AppProfile.syncTags, obj);
+            LOG.d("saveTags", tags, path);
         } catch (Exception e) {
             LOG.e(e);
         }
@@ -62,28 +66,43 @@ public class TagData {
     public static void restoreTags() {
         LOG.d("restoreTags");
 
-        JSONObject obj = IO.readJsonObject(AppProfile.syncTags);
+        final List<FileMeta> allWithTag = AppDB.get().getAllWithTag();
+        for (FileMeta m : allWithTag) {
+            m.setTag(null);
+        }
+        AppDB.get().updateAll(allWithTag);
 
-        final Iterator<String> keys = obj.keys();
 
-        while (keys.hasNext()) {
-            final String key = keys.next();
+        for (File file : AppProfile.getAllFiles(AppProfile.APP_TAGS_JSON)) {
+            JSONObject obj = IO.readJsonObject(file);
 
-            try {
+            final Iterator<String> keys = obj.keys();
 
-                Tag tag = new Tag(key, obj.getString(key));
-                LOG.d("restoreTags-in", tag.path, tag.tags);
+            while (keys.hasNext()) {
+                final String key = keys.next();
 
-                FileMeta load = AppDB.get().load(tag.getPath());
-                if (load != null) {
-                    load.setTag(tag.tags);
-                    LOG.d("restoreTags-do", tag.getPath(), tag.tags);
-                    AppDB.get().update(load);
+                try {
+
+                    Tag tag = new Tag(key, obj.getString(key));
+                    LOG.d("restoreTags-in", tag.path, tag.tags);
+
+                    FileMeta load = AppDB.get().load(tag.getPath());
+                    if (load != null) {
+                        if (load.getTag() != null) {
+                            load.setTag(StringDB.merge(load.getTag(), tag.tags));
+                            LOG.d("restoreTags-do-merge", tag.getPath(), load.getTag());
+                        } else {
+                            load.setTag(tag.tags);
+                            LOG.d("restoreTags-do", tag.getPath(), tag.tags);
+
+                        }
+                        AppDB.get().update(load);
+                    }
+                } catch (JSONException e) {
+                    LOG.e(e);
                 }
-            } catch (JSONException e) {
-                LOG.e(e);
-            }
 
+            }
         }
         AppDB.get().clearSession();
 

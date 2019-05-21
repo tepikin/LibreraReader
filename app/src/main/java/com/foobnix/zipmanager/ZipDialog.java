@@ -25,9 +25,7 @@ import com.foobnix.sys.ArchiveEntry;
 import com.foobnix.sys.ZipArchiveInputStream;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -100,24 +98,29 @@ public class ZipDialog {
             public void populateView(View layout, int position, String item) {
                 TextView text = (TextView) layout.findViewById(R.id.text1);
                 text.setText(item);
-            };
+            }
+
+            ;
         };
 
         ListView list = new ListView(a);
         try {
 
-            InputStream openInputStream = getStream(a, uri);
-            ZipArchiveInputStream zipInputStream = new ZipArchiveInputStream(openInputStream);
+
+            ZipArchiveInputStream zipInputStream = getStream(a, uri);
+
+
             ArchiveEntry nextEntry = null;
             while ((nextEntry = zipInputStream.getNextEntry()) != null) {
                 String nameFull = nextEntry.getName();
                 LOG.d(nameFull);
                 if (!nextEntry.isDirectory()) {
-                    items.add(nameFull);
+                    if (!ExtUtils.isImagePath(nameFull)) {
+                        items.add(nameFull);
+                    }
                 }
             }
             zipInputStream.close();
-            openInputStream.close();
 
         } catch (Exception e) {
             LOG.e(e);
@@ -137,14 +140,14 @@ public class ZipDialog {
         return list;
     }
 
-    private static InputStream getStream(final Activity a, final Uri uri) {
+    private static ZipArchiveInputStream getStream(final Activity a, final Uri uri) {
         try {
             LOG.d("getStream", uri);
             File file = new File(uri.getPath());
             if (file.isFile()) {
-                return new FileInputStream(file);
+                return new ZipArchiveInputStream(file.getPath());
             }
-            return a.getContentResolver().openInputStream(uri);
+            return new ZipArchiveInputStream(a.getContentResolver().openInputStream(uri));
         } catch (Exception e) {
             return null;
         }
@@ -160,7 +163,9 @@ public class ZipDialog {
             @Override
             protected File doInBackground(Object... params) {
                 return extractFile(a, name, uri, single);
-            };
+            }
+
+            ;
 
             @Override
             protected void onPostExecute(File file) {
@@ -177,7 +182,9 @@ public class ZipDialog {
                 } else {
                     ExtUtils.showDocument(a, file);
                 }
-            };
+            }
+
+            ;
         }.execute();
 
     }
@@ -191,6 +198,8 @@ public class ZipDialog {
                 return null;
             }
 
+            CacheZipUtils.removeFiles(CacheZipUtils.CACHE_RECENT.listFiles());
+
             String outFileName = ExtUtils.getFileName(fileName);
             File out = new File(CacheZipUtils.CACHE_RECENT, outFileName);
             if (out.isFile()) {
@@ -199,8 +208,9 @@ public class ZipDialog {
 
             // CacheZipUtils.removeFiles(CacheZipUtils.CACHE_UN_ZIP_DIR.listFiles());
 
-            InputStream openInputStream = getStream(a, uri);
-            ZipArchiveInputStream zipInputStream = new ZipArchiveInputStream(openInputStream);
+            ZipArchiveInputStream zipInputStream = getStream(a, uri);
+
+
             ArchiveEntry nextEntry = null;
             while ((nextEntry = zipInputStream.getNextEntry()) != null) {
                 String name = nextEntry.getName();
@@ -209,11 +219,20 @@ public class ZipDialog {
 
                     LOG.d("File extract", out.getPath());
                     IOUtils.copyClose(zipInputStream, new FileOutputStream(out));
-                    return out;
+                    zipInputStream.close();
+                } else if (ExtUtils.isImagePath(name)) {
+                    final File img = new File(out.getParentFile(), ExtUtils.getFileName(name));
+                    LOG.d("Copy-image", name, ">>", img);
+                    IOUtils.copyClose(zipInputStream, new FileOutputStream(img));
+                    zipInputStream.close();
+
                 }
+
             }
+
             zipInputStream.close();
-            openInputStream.close();
+            zipInputStream.release();
+            return out;
         } catch (Exception e) {
             LOG.e(e);
         }

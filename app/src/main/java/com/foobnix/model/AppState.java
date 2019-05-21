@@ -105,6 +105,11 @@ public class AppState {
     public static final int THEME_INK = 3;
 
 
+    public static final int FULL_SCREEN_NORMAL = 0;
+    public static final int FULL_SCREEN_FULLSCREEN = 1;
+    public static final int FULL_SCREEN_FULLSCREEN_CUTOUT = 2;
+
+
     public static List<Integer> NEXT_KEYS = Arrays.asList(//
             KeyEvent.KEYCODE_VOLUME_UP, //
             KeyEvent.KEYCODE_PAGE_UP, //
@@ -148,10 +153,18 @@ public class AppState {
             "#CDDC39"//
     );
 
-    public static final List<String> STYLE_COLORS = Arrays.asList(//
+    public static final List<String> STYLE_COLORS_1 = Arrays.asList(//
             "#008760", //
             "#007dc7", //
             "#ff001e", //
+            "#000000" //
+
+    );
+
+    public static final List<String> STYLE_COLORS = Arrays.asList(//
+            "#7e007e", //
+            "#a4632f", //
+            "#477e52", //
             "#000000" //
 
     );
@@ -194,8 +207,9 @@ public class AppState {
 
     public String readColors = READ_COLORS_DEAFAUL;
 
-    public static final String SKIP_TTS_CHARS = "[]()?!\"«»*’”“—–−-/";
+    public static final String TTS_REPLACEMENTS = "{'[()\"«»*”“/[]]':' ', '[?!:;–|—|―]':',' , 'Lib.':'Libréra'}";
     public static final String TTS_PUNCUATIONS = ".;:!?";
+    public static final String TTS_ACCENTS = "";
 
     public final static String DEFAULTS_TABS_ORDER = "0#1,1#1,2#1,3#1,4#1,5#1,6#0,7#0";
     // public static String DEFAULTS_TABS_ORDER =
@@ -313,8 +327,11 @@ public class AppState {
 
     @IgnoreHashCode
     public boolean isEditMode = true;
-    public boolean isFullScreen = true;
-    public boolean isFullScreenMain = false;
+    //public boolean isFullScreen = true;
+    //public boolean isFullScreenMain = false;
+
+    public int fullScreenMode = FULL_SCREEN_NORMAL;
+    public int fullScreenMainMode = FULL_SCREEN_NORMAL;
 
 
     public boolean isShowImages = true;
@@ -391,12 +408,16 @@ public class AppState {
     @IgnoreHashCode
     public boolean ttsTunnOnLastWord = false;
 
-    @IgnoreHashCode
-    public boolean ttsDoNotReadCharsEnable = true;
-
 
     @IgnoreHashCode
-    public String ttsSkipChars = SKIP_TTS_CHARS;
+    public boolean isEnalbeTTSReplacements = true;
+
+    @IgnoreHashCode
+    public String lineTTSReplacements = TTS_REPLACEMENTS;
+
+    @IgnoreHashCode
+    public String lineTTSAccents = TTS_ACCENTS;
+
 
     public List<Integer> nextKeys = NEXT_KEYS;
     public List<Integer> prevKeys = PREV_KEYS;
@@ -437,6 +458,7 @@ public class AppState {
 
     public boolean isDayNotInvert = true;
     public boolean isShowSearchBar = true;
+    public boolean isShowFastScroll = true;
 
     public boolean isUseBGImageDay = false;
     public boolean isUseBGImageNight = false;
@@ -618,6 +640,10 @@ public class AppState {
 
     public boolean isStarsInWidget = false;
 
+
+    public boolean isShowFastBookmarks = true;
+    public boolean isShowOnlyAvailabeBooks = false;
+
     public boolean isCropBookCovers = true;
     public boolean isBorderAndShadow = true;
     public int coverBigSize = (int) (((Dips.screenWidthDP() / (Dips.screenWidthDP() / 120)) - 8) * (Dips.isXLargeScreen() ? 1.5f : 1));
@@ -655,7 +681,7 @@ public class AppState {
     public boolean isAutomaticExport = false;
     public boolean isDisplayAllFilesInFolder = false;
 
-    public String myAutoCompleteDb="";
+    public String myAutoCompleteDb = "";
 
     public String bookTags = "";
     public String recentTag = "";
@@ -698,6 +724,7 @@ public class AppState {
         providers.put("Academic.ru", String.format("https://dic.academic.ru/searchall.php?SWord=%s", text));
         providers.put("Treccani.it", String.format("http://www.treccani.it/vocabolario/ricerca/%s", text));
         providers.put("Deepl.com", String.format("https://www.deepl.com/translator#%s/%s/%s", from, ln, text));
+        providers.put("Vocabulary.com", String.format("https://www.vocabulary.com/dictionary/%s", text));
         return providers;
     }
 
@@ -746,7 +773,6 @@ public class AppState {
             isEnableBC = true;
             brigtnessImage = -50;
             isZoomInOutWithLock = false;
-
         }
 
         if (!AppsConfig.LIBRERA_READER.equals(Apps.getPackageName(a)) && !AppsConfig.PRO_LIBRERA_READER.equals(Apps.getPackageName(a))) {
@@ -815,7 +841,7 @@ public class AppState {
         int currentHash = Objects.hashCode(instance, false);
         if (currentHash != instance.hashCode) {
             hashCode = currentHash;
-            IO.writeObjAsync(AppProfile.syncState, instance);
+            IO.writeObj(AppProfile.syncState, instance);
         }
     }
 

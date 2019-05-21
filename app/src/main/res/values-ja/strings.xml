@@ -14,6 +14,7 @@
    <string name="landscape_180">風景（180）</string>
    <string name="portrait_180">ポートレート（180）</string>
    <string name="system_language">システム言語</string>
+   <string name="system">システム</string>
    <string name="small">小さい</string>
    <string name="normal">ノーマル</string>
    <string name="large">大</string>
@@ -558,4 +559,16 @@
    <string name="show_sync_wheel">同期ホイールを表示</string>
    <string name="publication_date">発行日</string>
    <string name="empy">空の</string>
+   <string name="show_quick_bookmarks">クイックブックマークを表示</string>
+   <string name="show_only_available_books">利用可能な本のみを表示</string>
+   <string name="share_as_text">テキストとして共有</string>
+   <string name="share_as_image">画像として共有</string>
+   <string name="copy_text">テキストをコピーする</string>
+   <string name="show_fast_scroll">高速スクロールを表示</string>
+   <string name="replacements">代替品</string>
+   <string name="add_dictionary">辞書を追加</string>
+   <string name="add_rule">ルールを追加</string>
+   <string name="emphasis">強調</string>
+   <string name="with_cutout">切り欠き付き</string>
+   <string name="screen">画面</string>
 </resources>

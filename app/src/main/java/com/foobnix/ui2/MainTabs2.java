@@ -45,6 +45,7 @@ import com.foobnix.pdf.info.Android6;
 import com.foobnix.pdf.info.AndroidWhatsNew;
 import com.foobnix.pdf.info.AppsConfig;
 import com.foobnix.pdf.info.FontExtractor;
+import com.foobnix.pdf.info.IMG;
 import com.foobnix.pdf.info.PasswordDialog;
 import com.foobnix.pdf.info.R;
 import com.foobnix.pdf.info.TintUtil;
@@ -65,7 +66,6 @@ import com.foobnix.sys.TempHolder;
 import com.foobnix.ui2.adapter.TabsAdapter2;
 import com.foobnix.ui2.fragment.BookmarksFragment2;
 import com.foobnix.ui2.fragment.BrowseFragment2;
-import com.foobnix.ui2.fragment.CloudsFragment2;
 import com.foobnix.ui2.fragment.OpdsFragment2;
 import com.foobnix.ui2.fragment.PrefFragment2;
 import com.foobnix.ui2.fragment.RecentFragment2;
@@ -284,6 +284,13 @@ public class MainTabs2 extends AdsFragmentActivity {
                     tabFragments.add(tab.getClazz().newInstance());
                 }
             }
+            if (tabFragments.size() == 0) {
+                AppState.get().tabsOrder7 = AppState.DEFAULTS_TABS_ORDER;
+                for (UITab tab : UITab.getOrdered(AppState.get().tabsOrder7)) {
+                    tabFragments.add(tab.getClazz().newInstance());
+                }
+            }
+
         } catch (Exception e) {
             LOG.e(e);
             Toast.makeText(MainTabs2.this, R.string.msg_unexpected_error, Toast.LENGTH_LONG).show();
@@ -293,7 +300,7 @@ public class MainTabs2 extends AdsFragmentActivity {
             tabFragments.add(new BookmarksFragment2());
             tabFragments.add(new OpdsFragment2());
             tabFragments.add(new PrefFragment2());
-            tabFragments.add(new CloudsFragment2());
+            //tabFragments.add(new CloudsFragment2());
         }
         getSupportFragmentManager().beginTransaction().replace(R.id.left_drawer, new PrefFragment2()).commit();
 
@@ -602,7 +609,7 @@ public class MainTabs2 extends AdsFragmentActivity {
 
         LOG.d(TAG, "onResume");
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        DocumentController.chooseFullScreen(this, AppState.get().isFullScreenMain);
+        DocumentController.chooseFullScreen(this, AppState.get().fullScreenMainMode);
         TintUtil.updateAll();
         AppTemp.get().lastClosedActivity = MainTabs2.class.getSimpleName();
         LocalBroadcastManager.getInstance(this).registerReceiver(broadcastReceiver, new IntentFilter(UIFragment.INTENT_TINT_CHANGE));
@@ -611,7 +618,12 @@ public class MainTabs2 extends AdsFragmentActivity {
         }
 
         try {
-            tabFragments.get(pager.getCurrentItem()).onSelectFragment();
+            if(pager!=null) {
+                final UIFragment uiFragment = tabFragments.get(pager.getCurrentItem());
+                uiFragment.onSelectFragment();
+            }
+
+
         } catch (Exception e) {
             LOG.e(e);
         }
@@ -683,6 +695,7 @@ public class MainTabs2 extends AdsFragmentActivity {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        GFile.timeout = 0;
         GFile.runSyncService(this);
 
         LOG.d(TAG, "onDestroy");
@@ -725,8 +738,9 @@ public class MainTabs2 extends AdsFragmentActivity {
 
         if (pager != null) {
             int currentItem = pager.getCurrentItem();
-            pager.setAdapter(adapter);
+            //pager.setAdapter(adapter); //WHY???
             pager.setCurrentItem(currentItem);
+            IMG.clearMemoryCache();
         }
         activateAds();
 
@@ -738,11 +752,17 @@ public class MainTabs2 extends AdsFragmentActivity {
     }
 
     OnPageChangeListener onPageChangeListener = new OnPageChangeListener() {
+        UIFragment uiFragment = null;
 
         @Override
         public void onPageSelected(int pos) {
-            tabFragments.get(pos).onSelectFragment();
+            uiFragment = tabFragments.get(pos);
+            uiFragment.onSelectFragment();
             TempHolder.get().currentTab = pos;
+
+            LOG.d("onPageSelected", uiFragment);
+
+
         }
 
         @Override
@@ -752,11 +772,24 @@ public class MainTabs2 extends AdsFragmentActivity {
 
         @Override
         public void onPageScrollStateChanged(int state) {
-            if (BookCSS.get().isEnableSync) {
+            if (BookCSS.get().isEnableSync && swipeRefreshLayout != null) {
                 swipeRefreshLayout.setEnabled(state == ViewPager.SCROLL_STATE_IDLE);
             }
+            LOG.d("onPageSelected onPageScrollStateChanged", state);
+            if (state == ViewPager.SCROLL_STATE_IDLE) {
+                check();
+            }
 
+        }
 
+        public void check() {
+            if (BookCSS.get().isEnableSync && swipeRefreshLayout != null) {
+                if (uiFragment instanceof PrefFragment2) {
+                    swipeRefreshLayout.setEnabled(false);
+                } else {
+                    swipeRefreshLayout.setEnabled(true);
+                }
+            }
         }
     };
     private SlidingTabLayout indicator;

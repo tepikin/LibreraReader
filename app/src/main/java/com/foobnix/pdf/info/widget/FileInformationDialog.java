@@ -162,7 +162,7 @@ public class FileInformationDialog {
         if (TxtUtils.isListNotEmpty(objects)) {
             for (AppBookmark b : objects) {
                 if (!fast.equals(b.getText())) {
-                    lines.append(b.getPercent() * 100 + "%" + ": " + b.getText());
+                    lines.append(b.getText());
                     lines.append("\n");
                 }
             }
@@ -441,7 +441,7 @@ public class FileInformationDialog {
                 } else {
                     starIcon.setImageResource(R.drawable.star_1);
                 }
-                TintUtil.setTintImageWithAlpha(starIcon, TintUtil.color);
+                TintUtil.setTintImageNoAlpha(starIcon,TintUtil.getColorInDayNighth());
 
             }
         });
@@ -451,8 +451,12 @@ public class FileInformationDialog {
         } else {
             starIcon.setImageResource(R.drawable.star_1);
         }
-        TintUtil.setTintImageWithAlpha(starIcon, TintUtil.color);
+
+        TintUtil.setTintImageNoAlpha(starIcon,TintUtil.getColorInDayNighth());
+
         TintUtil.setBackgroundFillColor(openFile, TintUtil.color);
+
+
 
         // builder.setTitle(R.string.file_info);
         builder.setView(dialog);

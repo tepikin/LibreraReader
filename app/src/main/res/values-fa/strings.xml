@@ -14,6 +14,7 @@
    <string name="landscape_180">چشم انداز (180)</string>
    <string name="portrait_180">پرتره (180)</string>
    <string name="system_language">زبان سیستم</string>
+   <string name="system">سیستم</string>
    <string name="small">کوچک</string>
    <string name="normal">طبیعی</string>
    <string name="large">بزرگ</string>
@@ -558,4 +559,16 @@
    <string name="show_sync_wheel">چرخ همگام سازی نشان می دهد</string>
    <string name="publication_date">تاریخ انتشار</string>
    <string name="empy">خالی</string>
+   <string name="show_quick_bookmarks">نشانکهای سریع را نشان بده</string>
+   <string name="show_only_available_books">فقط کتابهای موجود را نشان می دهد</string>
+   <string name="share_as_text">به عنوان متن به اشتراک بگذارید</string>
+   <string name="share_as_image">به عنوان تصویر به اشتراک بگذارید</string>
+   <string name="copy_text">متن را کپی کنید</string>
+   <string name="show_fast_scroll">نشان می دهد اسکرول سریع</string>
+   <string name="replacements">جایگزین</string>
+   <string name="add_dictionary">اضافه کردن فرهنگ لغت</string>
+   <string name="add_rule">اضافه کردن قانون</string>
+   <string name="emphasis">تاکید</string>
+   <string name="with_cutout">با برش</string>
+   <string name="screen">صفحه نمایش</string>
 </resources>

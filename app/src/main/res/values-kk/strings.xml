@@ -14,6 +14,7 @@
    <string name="landscape_180">Пейзаж (бұрылмалы)</string>
    <string name="portrait_180">Портрет (аударылған)</string>
    <string name="system_language">Жүйе</string>
+   <string name="system">Жүйе</string>
    <string name="small">Кішкентай</string>
    <string name="normal">Қалыпты</string>
    <string name="large">Үлкен</string>
@@ -558,4 +559,16 @@
    <string name="show_sync_wheel">Синхрондау дөңгелегін көрсету</string>
    <string name="publication_date">Жариялау күні</string>
    <string name="empy">Бос</string>
+   <string name="show_quick_bookmarks">Жылдам бетбелгілерді көрсету</string>
+   <string name="show_only_available_books">Тек қол жетімді кітаптарды көрсетіңіз</string>
+   <string name="share_as_text">Мәтін ретінде бөлісу</string>
+   <string name="share_as_image">Сурет ретінде бөлісу</string>
+   <string name="copy_text">Мәтінді көшіру</string>
+   <string name="show_fast_scroll">Жылдам айналдыруды көрсетіңіз</string>
+   <string name="replacements">Ауыстыру</string>
+   <string name="add_dictionary">Сөздік қосу</string>
+   <string name="add_rule">Ереже қосу</string>
+   <string name="emphasis">Назар аударыңыз</string>
+   <string name="with_cutout">Бар</string>
+   <string name="screen">Экран</string>
 </resources>

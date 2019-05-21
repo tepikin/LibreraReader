@@ -18,13 +18,16 @@ import com.foobnix.android.utils.LOG;
 import com.foobnix.dao2.FileMeta;
 import com.foobnix.drive.GFile;
 import com.foobnix.mobi.parser.IOUtils;
+import com.foobnix.model.AppBookmark;
 import com.foobnix.model.AppData;
 import com.foobnix.model.AppProfile;
 import com.foobnix.model.AppState;
 import com.foobnix.model.AppTemp;
+import com.foobnix.model.MyPath;
 import com.foobnix.model.SimpleMeta;
 import com.foobnix.model.TagData;
 import com.foobnix.pdf.info.AppsConfig;
+import com.foobnix.pdf.info.BookmarksData;
 import com.foobnix.pdf.info.Clouds;
 import com.foobnix.pdf.info.DialogSpeedRead;
 import com.foobnix.pdf.info.ExtUtils;
@@ -267,7 +270,7 @@ public class ShareDialog {
         final boolean canCopy = !ExtUtils.isExteralSD(file.getPath()) && !Clouds.isCloud(file.getPath());
         final boolean isShowInfo = !ExtUtils.isExteralSD(file.getPath());
 
-        final boolean isRemovedFromLibrary = AppData.get().getAllExcluded().contains(file.getPath());
+        final boolean isRemovedFromLibrary = AppData.get().getAllExcluded().contains(new SimpleMeta(file.getPath()));
 
         if (file.getPath().contains(AppProfile.PROFILE_PREFIX)) {
             canDelete1 = false;
@@ -284,9 +287,6 @@ public class ShareDialog {
             if (!isRemovedFromLibrary) {
                 items.add(a.getString(R.string.remove_from_library));
             }
-        }
-        if (!isMainTabs) {
-            items.add(a.getString(R.string.send_snapshot_of_the_page) + " " + (Math.max(page, 0) + 1) + "");
         }
 
         if (!isExternalOrCloud) {
@@ -389,18 +389,14 @@ public class ShareDialog {
                         load.setTag(null);
                         AppDB.get().update(load);
 
+                        AppData.get().removeFavorite(load);
+                        AppData.get().addExclue(load.getPath());
+
                     }
-                    AppData.get().removeFavorite(new SimpleMeta(load.getPath()));
-                    AppData.get().addExclue(load.getPath());
+
 
                     EventBus.getDefault().post(new UpdateAllFragments());
-                } else if (!isMainTabs && which == i++) {
-                    if (dc != null) {
-                        ExtUtils.sharePage(a, file, page, dc.getPageUrl(page).toString());
-                    } else {
-                        ExtUtils.sharePage(a, file, page, null);
-                    }
-                } else if (!isExternalOrCloud && which == i++) {
+                }else if (!isExternalOrCloud && which == i++) {
                     Dialogs.showTagsDialog(a, file, false, null);
                 } else if (AppsConfig.isCloudsEnable && which == i++) {
                     showAddToCloudDialog(a, file);
@@ -416,6 +412,12 @@ public class ShareDialog {
 
                         String tags = TagData.getTags(file.getPath());
                         TagData.saveTags(to.getPath(), tags);
+
+                        final List<AppBookmark> bookmarks = BookmarksData.get().getBookmarksByBook(file.getPath());
+                        for (AppBookmark appBookmark : bookmarks) {
+                            appBookmark.path = MyPath.toRelative(to.getPath());
+                            BookmarksData.get().add(appBookmark);
+                        }
 
                         GFile.runSyncService(a);
                     }
