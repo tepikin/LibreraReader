@@ -117,20 +117,21 @@ public abstract class HorizontalModeController extends DocumentController {
             pagesCount = 0;
         }
 
-        if (pagesCount == -1) {
-            throw new IllegalArgumentException("Pages count = -1");
-        }
-
         try {
             if (pagesCount > 0) {
-                FileMeta meta = AppDB.get().load(bs.path);
+                FileMeta meta = AppDB.get().load(bookPath);
                 if (meta != null) {
                     meta.setPages(pagesCount);
                     AppDB.get().update(meta);
+                    LOG.d("update openDocument.getPageCount()", bookPath, pagesCount);
                 }
             }
         } catch (Exception e) {
             LOG.e(e);
+        }
+
+        if (pagesCount == -1) {
+            throw new IllegalArgumentException("Pages count = -1");
         }
 
 
@@ -295,6 +296,7 @@ public abstract class HorizontalModeController extends DocumentController {
             CodecPage codecPage = codeDocument.getPage(page);
             if (!codecPage.isRecycled()) {
                 String pageHTML = codecPage.getPageHTML();
+                codecPage.recycle();
                 pageHTML = TxtUtils.replaceHTMLforTTS(pageHTML);
                 pageHTML = pageHTML.replace(TxtUtils.TTS_PAUSE, "");
                 pageHTML = pageHTML.replace(TxtUtils.NON_BREAKE_SPACE, " ");

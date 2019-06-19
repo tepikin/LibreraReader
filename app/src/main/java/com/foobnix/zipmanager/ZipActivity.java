@@ -1,10 +1,15 @@
 package com.foobnix.zipmanager;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 
+import com.foobnix.OpenerActivity;
+import com.foobnix.android.utils.LOG;
 import com.foobnix.model.AppState;
 import com.foobnix.pdf.info.R;
+
+import org.ebookdroid.BookType;
 
 public class ZipActivity extends Activity {
 
@@ -16,6 +21,28 @@ public class ZipActivity extends Activity {
             setTheme(R.style.StyledIndicatorsBlack);
         }
         super.onCreate(savedInstanceState);
+
+
+        LOG.d("ZipActivity", getIntent());
+        LOG.d("ZipActivity Data", getIntent().getData());
+        LOG.d("ZipActivity Path", getIntent().getData().getPath());
+        LOG.d("ZipActivity Scheme", getIntent().getScheme());
+        LOG.d("ZipActivity Mime", getIntent().getType());
+
+
+        final String path = getIntent().getData().getPath();
+        final String contentName = OpenerActivity.getContentName(this);
+
+        LOG.d("ZipActivity contentName", contentName);
+
+        if ((BookType.isSupportedExtByPath(path) || BookType.isSupportedExtByPath(contentName) ||
+                BookType.getByMimeType(getIntent().getType()) != null) && !BookType.ZIP.is(path)) {
+            final Intent intent = new Intent(this, OpenerActivity.class);
+            intent.setData(getIntent().getData());
+            startActivity(intent);
+            finish();
+            return;
+        }
 
         ZipDialog.show(this, getIntent().getData(), new Runnable() {
 

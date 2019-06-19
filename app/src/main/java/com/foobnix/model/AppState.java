@@ -161,10 +161,17 @@ public class AppState {
 
     );
 
-    public static final List<String> STYLE_COLORS = Arrays.asList(//
+    public static final List<String> STYLE_COLORS_2 = Arrays.asList(//
             "#7e007e", //
             "#a4632f", //
             "#477e52", //
+            "#000000" //
+
+    );
+    public static final List<String> STYLE_COLORS = Arrays.asList(//
+            "#3949AB", //
+            "#EA5964", //
+            "#00897B", //
             "#000000" //
 
     );
@@ -221,6 +228,8 @@ public class AppState {
     public boolean isUiTextColor = false;
     public int uiTextColor = Color.BLUE;
     public int uiTextColorUser = Color.MAGENTA;
+
+
 
     public int statusBarColorDay = Color.parseColor(TEXT_COLOR_DAY);
     public int statusBarColorNight = Color.parseColor(TEXT_COLOR_NIGHT);
@@ -443,6 +452,10 @@ public class AppState {
 
     @IgnoreHashCode
     public boolean isShowRectangularTapZones = true;
+    @IgnoreHashCode
+    public boolean isShowLastPageRed = true;
+    @IgnoreHashCode
+    public boolean isShowLineDividing = true;
 
     @IgnoreHashCode
     public boolean isShowBookmarsPanelText = true;
@@ -477,7 +490,7 @@ public class AppState {
 
 
     @IgnoreHashCode
-    public boolean isLoopAutoplay = false;
+    public volatile boolean isLoopAutoplay = false;
 
     public boolean isBookCoverEffect = false;
 
@@ -573,7 +586,9 @@ public class AppState {
     public boolean isShowCloseAppDialog = true;
 
     public boolean isFirstSurname = false;
+
     public boolean isAuthorTitleFromMetaPDF = false;
+    public boolean isShowOnlyOriginalFileNames = false;
 
     public boolean isOLED = false;
 
@@ -616,6 +631,8 @@ public class AppState {
 
     @IgnoreHashCode
     public boolean isVibration = true;
+
+    public boolean isExperimental = false;
 
     @IgnoreHashCode
     public boolean isLockPDF = false;
@@ -691,6 +708,7 @@ public class AppState {
 
     @IgnoreHashCode
     public boolean isSelectTexByTouch = false;
+    public boolean isAppPassword;
 
     public List<Integer> getNextKeys() {
         return isReverseKeys ? prevKeys : nextKeys;
@@ -781,7 +799,8 @@ public class AppState {
 
     }
 
-    private boolean isLoaded = false;
+
+    public boolean isLoaded = false;
 
     public boolean loadInit(final Context a) {
         boolean init = isLoaded;

@@ -528,7 +528,6 @@
    <string name="export_as_backup_json_">Export to JSON file</string>
    <string name="import_from_backup_json_">Import from JSON file</string>
    <string name="additional_bookmarks_bar">Bookmarks Ribbon</string>
-   <string name="show_rectangular_tap_zones">Indicate tap zones</string>
    <string name="turn_the_page_on_the_last_word">Break at page turn</string>
    <string name="paste">Paste</string>
    <string name="move">Move</string>
@@ -568,7 +567,14 @@
    <string name="replacements">Replacements</string>
    <string name="add_dictionary">Add dictionary</string>
    <string name="add_rule">Add rule</string>
-   <string name="emphasis">Stress mark(s)</string>
-   <string name="with_cutout">With cutout</string>
+   <string name="emphasis">Manual Stress Mark(s)</string>
+   <string name="with_cutout">Notched</string>
    <string name="screen">Screen</string>
+   <string name="please_enter_more_characters_to_search">Need a longer search string!</string>
+   <string name="enable_experimental_features">Enable experimental features</string>
+   <string name="display_original_file_names_without_metadata">Ignore metadata (display filenames only)</string>
+   <string name="use_fingerprint_as_the_password">Allow fingerprint authentication</string>
+   <string name="show_tap_zones_on_screen">Delineate tap zones (dotted line)</string>
+   <string name="show_the_last_page_with_the_red_line">Mark last page with red stripes</string>
+   <string name="show_dividing_lines_on_pages_more_contrast">Highlight page separators</string>
 </resources>

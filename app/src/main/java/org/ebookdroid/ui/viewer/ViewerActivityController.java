@@ -60,7 +60,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class ViewerActivityController extends ActionController<VerticalViewActivity> implements IActivityController, DecodingProgressListener, CurrentPageListener, IBookSettingsChangeListener {
 
-    private static final String E_MAIL_ATTACHMENT = "[E-mail Attachment]";
 
     private final AtomicReference<IViewController> ctrl = new AtomicReference<IViewController>(ViewContollerStub.STUB);
 
@@ -77,8 +76,6 @@ public class ViewerActivityController extends ActionController<VerticalViewActiv
 
     private String m_fileName;
     private String title;
-
-    private String currentSearchPattern;
 
     private DocumentWrapperUI wrapperControlls;
 
@@ -135,6 +132,11 @@ public class ViewerActivityController extends ActionController<VerticalViewActiv
 
             FileMeta meta = FileMetaCore.createMetaIfNeed(m_fileName, false);
             title = meta.getTitle();
+            if (TxtUtils.isEmpty(title)) {
+                title = ExtUtils.getFileName(m_fileName);
+            }
+            LOG.d("Book-title", title);
+
 
 
             if (codecType == null) {
@@ -164,6 +166,7 @@ public class ViewerActivityController extends ActionController<VerticalViewActiv
                 wrapperControlls.showSelectTextMenu();
             }
 
+            wrapperControlls.setTitle(title);
         }
         wrapperControlls.updateUI();
 
@@ -332,6 +335,7 @@ public class ViewerActivityController extends ActionController<VerticalViewActiv
 
         wrapperControlls.setTitle(title);
         controller.setTitle(title);
+
     }
 
     public void createWrapper(Activity a) {
@@ -617,6 +621,9 @@ public class ViewerActivityController extends ActionController<VerticalViewActiv
                     closeActivity(null);
                     return;
                 }
+
+
+                wrapperControlls.onLoadBookFinish();
                 if (result == null) {
                     try {
                         getDocumentController().show();

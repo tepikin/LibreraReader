@@ -52,6 +52,7 @@ import java.util.Map;
 public class GFile {
     public static final int REQUEST_CODE_SIGN_IN = 1110;
 
+
     public static final String MIME_FOLDER = "application/vnd.google-apps.folder";
 
     public static final String TAG = "GFile";
@@ -83,7 +84,7 @@ public class GFile {
         GoogleSignInClient client = GoogleSignIn.getClient(c, signInOptions);
         client.signOut();
         googleDriveService = null;
-        BookCSS.get().syncRootID = "";
+        AppTemp.get().syncRootID = "";
         AppTemp.get().syncTime = 0;
 
     }
@@ -299,17 +300,17 @@ public class GFile {
 
 
     public static void uploadFile(String roodId, File file, final java.io.File inFile) throws IOException {
-        debugOut += "\nUpload: " + inFile.getParentFile().getName() + "/" + inFile.getName();
+        debugOut += "\nUpload: " + inFile.getParentFile().getParentFile().getName() + "/" + inFile.getParentFile().getName() + "/" + inFile.getName();
 
         setLastModifiedTime(inFile, inFile.lastModified());
-        File metadata = new File().setName(inFile.getName()).setModifiedTime(new DateTime(getLastModified(inFile)));
+        File metadata = new File().setName(inFile.getName()).setModifiedTime(new DateTime(inFile.lastModified()));
         FileContent contentStream = new FileContent(ExtUtils.getMimeType(inFile), inFile);
 
 
         file.setModifiedTime(new DateTime(inFile.lastModified()));
         googleDriveService.files().update(file.getId(), metadata, contentStream).execute();
 
-        LOG.d(TAG, "Upload: " + inFile.getParentFile().getName() + "/" + inFile.getName());
+        LOG.d(TAG, "Upload: " + inFile.getParentFile().getParentFile().getName() + "/" + inFile.getParentFile().getName() + "/" + inFile.getName());
 
 
     }
@@ -340,8 +341,11 @@ public class GFile {
 
 
     public static void downloadFile(String fileId, java.io.File file, long lastModified) throws IOException {
-        LOG.d(TAG, "Download: " + file.getParentFile().getName() + "/" + file.getName());
-        debugOut += "\nDownload: " + file.getParentFile().getName() + "/" + file.getName();
+
+        //file = new java.io.File(TxtUtils.fixFilePath(file.getPath()));
+
+        LOG.d(TAG, "Download: " + file.getParentFile().getParentFile().getName() + "/" + file.getName());
+        debugOut += "\nDownload: " + file.getParentFile().getParentFile().getName() + "/" + file.getParentFile().getName() + "/" + file.getName();
         InputStream is = null;
         //if (!file.getPath().endsWith("json")) {
         //    is = googleDriveService.files().get(fileId).executeMediaAsInputStream();
@@ -469,22 +473,22 @@ public class GFile {
             debugOut += "\nBegin: " + DateFormat.getTimeInstance().format(new Date());
             buildDriveService(c);
             LOG.d(TAG, "sycnronizeAll", "begin");
-            if (TxtUtils.isEmpty(BookCSS.get().syncRootID)) {
+            if (TxtUtils.isEmpty(AppTemp.get().syncRootID)) {
                 File syncRoot = GFile.findLibreraSync();
                 LOG.d(TAG, "findLibreraSync finded", syncRoot);
                 if (syncRoot == null || syncRoot.getTrashed() == true) {
                     syncRoot = GFile.createFolder("root", "Librera");
                     debugOut += "\n Create remote [Librera]";
                 }
-                BookCSS.get().syncRootID = syncRoot.getId();
+                AppTemp.get().syncRootID = syncRoot.getId();
                 AppProfile.save(c);
             } else {
 //                try {
-//                    final File execute = GFile.googleDriveService.files().get(BookCSS.get().syncRootID).execute();
+//                    final File execute = GFile.googleDriveService.files().get(AppTemp.get().syncRootID).execute();
 //                    if (execute.getTrashed() == true) {
 //                        File syncRoot = GFile.createFolder("root", "Librera");
 //                        debugOut += "\n Create remote [Librera]";
-//                        BookCSS.get().syncRootID = syncRoot.getId();
+//                        AppTemp.get().syncRootID = syncRoot.getId();
 //                        AppProfile.save(c);
 //                    }
 //                } catch (GoogleJsonResponseException e) {
@@ -492,7 +496,7 @@ public class GFile {
 //                    if (e.getDetails().getCode() == 404) {
 //                        File syncRoot = GFile.createFolder("root", "Librera");
 //                        debugOut += "\n Create remote [Librera]";
-//                        BookCSS.get().syncRootID = syncRoot.getId();
+//                        AppTemp.get().syncRootID = syncRoot.getId();
 //                        AppProfile.save(c);
 //                    }
 //                }
@@ -501,7 +505,7 @@ public class GFile {
             }
 
 
-            //googleDriveService.files().update( BookCSS.get().syncRootID, metadata).execute();
+            //googleDriveService.files().update( AppTemp.get().syncRootID, metadata).execute();
 
 
             if (!AppProfile.SYNC_FOLDER_ROOT.exists()) {
@@ -513,7 +517,7 @@ public class GFile {
 
             LOG.d("Begin");
 
-            sync(BookCSS.get().syncRootID, AppProfile.SYNC_FOLDER_ROOT);
+            sync(AppTemp.get().syncRootID, AppProfile.SYNC_FOLDER_ROOT);
 
             //updateLock(AppState.get().syncRootID, beginTime);
 
@@ -551,11 +555,11 @@ public class GFile {
 
     private static void sync(final String syncId, final java.io.File ioRoot) throws Exception {
 
-        if (System.currentTimeMillis() - timeout < 20 * 1000) {
-            debugOut += "\n 20 sec time-out";
-            return;
-        }
-        timeout = System.currentTimeMillis();
+//        if (System.currentTimeMillis() - timeout < 10 * 1000) {
+//            debugOut += "\n 10 sec time-out";
+//            return;
+//        }
+//        timeout = System.currentTimeMillis();
 
         final List<File> driveFiles = getFilesAll(true);
         LOG.d(TAG, "getFilesAll", "end");
@@ -578,11 +582,12 @@ public class GFile {
         }
 
         for (File file : driveFiles) {
-            final String filePath = findFile(file, map);
+            String filePath = findFile(file, map);
 
             if (filePath.startsWith(SKIP)) {
                 continue;
             }
+            //filePath = TxtUtils.fixFilePath(filePath);
 
             java.io.File local = new java.io.File(ioRoot, filePath);
 
@@ -621,15 +626,17 @@ public class GFile {
             }
             boolean skip = false;
             if (!MIME_FOLDER.equals(remote.getMimeType())) {
-                final String filePath = findFile(remote, map);
+                String filePath = findFile(remote, map);
                 if (filePath.startsWith(SKIP)) {
                     LOG.d(TAG, "Skip", filePath);
                     continue;
                 }
 
+                //filePath = TxtUtils.fixFilePath(filePath);
+
                 java.io.File local = new java.io.File(ioRoot, filePath);
 
-                if (!hasLastModified(local) || local.length() == remote.getSize().longValue()) {
+                if (!hasLastModified(local) && local.length() == remote.getSize().longValue()) {
                     setLastModifiedTime(local, remote.getModifiedTime().getValue());
                     skip = true;
                     //debugOut += "\n skip: " + local.getName();
@@ -651,13 +658,16 @@ public class GFile {
     }
 
     public static long compareBySizeModifiedTime(File remote, java.io.File local) {
-        if (!remote.getName().endsWith("json")) {
+        if (!(remote.getName().endsWith("json") || remote.getName().endsWith("playlist"))) {
             if (remote.getSize() != null && remote.getSize().longValue() == local.length()) {
+                LOG.d("compareBySizeModifiedTime-1: 0", remote.getName(), local.getPath());
                 return 0;
             }
         }
 
-        return remote.getModifiedTime().getValue() - getLastModified(local);
+        final long res = remote.getModifiedTime().getValue() - getLastModified(local);
+        LOG.d("compareBySizeModifiedTime-2: " + res, remote.getName(), local.getPath());
+        return res;
     }
 
     private static void syncUpload(String syncId, java.io.File ioRoot, Map<java.io.File, File> map2) throws IOException {
@@ -688,12 +698,6 @@ public class GFile {
         }
     }
 
-    public static void upload(java.io.File local) throws IOException {
-        final File remoteParent = map2.get(local.getParentFile());
-        final File firstTime = createFirstTime(remoteParent.getId(), local);
-        uploadFile(remoteParent.getId(), firstTime, local);
-    }
-
 
     private static String findFile(File file, Map<String, File> map) {
         if (file == null) {
@@ -703,7 +707,7 @@ public class GFile {
             return SKIP;
         }
 
-        if (file.getId().equals(BookCSS.get().syncRootID)) {
+        if (file.getId().equals(AppTemp.get().syncRootID)) {
             return "";
         }
 
@@ -719,22 +723,25 @@ public class GFile {
 
     public static void runSyncService(Activity a, boolean force) {
 
+        try {
+            if (AppTemp.get().isEnableSync && !BooksService.isRunning) {
+                if (!force && BookCSS.get().isSyncManualOnly) {
+                    LOG.d("runSyncService", "manual sync only");
+                    return;
+                }
+                if (BookCSS.get().isSyncWifiOnly && !Apps.isWifiEnabled(a)) {
+                    LOG.d("runSyncService", "wifi not available");
+                    return;
+                }
 
-        if (BookCSS.get().isEnableSync && !BooksService.isRunning) {
-            if (!force && BookCSS.get().isSyncManualOnly) {
-                LOG.d("runSyncService", "manual sync only");
-                return;
+                GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(a);
+                if (account != null) {
+                    GFile.buildDriveService(a);
+                    a.startService(new Intent(a, BooksService.class).setAction(BooksService.ACTION_RUN_SYNCRONICATION));
+                }
             }
-            if (BookCSS.get().isSyncWifiOnly && !Apps.isWifiEnabled(a)) {
-                LOG.d("runSyncService", "wifi not available");
-                return;
-            }
-
-            GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(a);
-            if (account != null) {
-                GFile.buildDriveService(a);
-                a.startService(new Intent(a, BooksService.class).setAction(BooksService.ACTION_RUN_SYNCRONICATION));
-            }
+        } catch (Exception e) {
+            LOG.e(e);
         }
 
 

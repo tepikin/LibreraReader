@@ -63,7 +63,6 @@ import android.widget.ImageView.ScaleType;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.PopupMenu;
-import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.Spinner;
@@ -644,6 +643,7 @@ public class DragingDialogs {
                     public void onInit(int status) {
                         textEngine.setText(TTSEngine.get().getCurrentEngineName());
                         ttsLang.setText(TTSEngine.get().getCurrentLang());
+                        TxtUtils.bold(ttsLang);
 
                     }
                 });
@@ -654,12 +654,14 @@ public class DragingDialogs {
                     public void run() {
                         textEngine.setText(TTSEngine.get().getCurrentEngineName());
                         ttsLang.setText(TTSEngine.get().getCurrentLang());
+                        TxtUtils.bold(ttsLang);
 
                     }
                 });
 
                 textEngine.setText(TTSEngine.get().getCurrentEngineName());
                 ttsLang.setText(TTSEngine.get().getCurrentLang());
+                TxtUtils.bold(ttsLang);
 
                 TxtUtils.underlineTextView(view.findViewById(R.id.ttsSettings)).setOnClickListener(new OnClickListener() {
 
@@ -911,11 +913,11 @@ public class DragingDialogs {
                         View inflate = LayoutInflater.from(v.getContext()).inflate(R.layout.dialog_tts_wav, null, false);
                         final TextView ttsSpeakPath = (TextView) inflate.findViewById(R.id.ttsSpeakPath);
                         final TextView progressText = (TextView) inflate.findViewById(R.id.progressText);
-                        final ProgressBar progressBar1 = (ProgressBar) inflate.findViewById(R.id.progressBarTTS);
+                        final MyProgressBar MyProgressBar1 = (MyProgressBar) inflate.findViewById(R.id.MyProgressBarTTS);
                         final Button start = (Button) inflate.findViewById(R.id.start);
                         final Button stop = (Button) inflate.findViewById(R.id.stop);
 
-                        progressBar1.setVisibility(View.GONE);
+                        MyProgressBar1.setVisibility(View.GONE);
                         progressText.setText("");
 
                         ttsSpeakPath.setText(Html.fromHtml("<u>" + BookCSS.get().ttsSpeakPath + "/<b>" + controller.getCurrentBook().getName() + "</b></u>"));
@@ -955,7 +957,7 @@ public class DragingDialogs {
                             @Override
                             public void onClick(View v) {
                                 TempHolder.isRecordTTS = false;
-                                progressBar1.setVisibility(View.GONE);
+                                MyProgressBar1.setVisibility(View.GONE);
                             }
                         });
 
@@ -965,7 +967,7 @@ public class DragingDialogs {
                             public void onClick(View v) {
                                 if (!TempHolder.isRecordTTS) {
                                     TempHolder.isRecordTTS = true;
-                                    progressBar1.setVisibility(View.VISIBLE);
+                                    MyProgressBar1.setVisibility(View.VISIBLE);
                                     TTSEngine.get().speakToFile(controller, info);
                                 }
                             }
@@ -1021,7 +1023,7 @@ public class DragingDialogs {
                 final EditText searchEdit = (EditText) view.findViewById(R.id.edit1);
                 searchEdit.setText(text);
 
-                final ProgressBar progressBar = (ProgressBar) view.findViewById(R.id.progressBarSearch);
+                final MyProgressBar MyProgressBar = (MyProgressBar) view.findViewById(R.id.progressBarSearch);
                 final TextView searchingMsg = (TextView) view.findViewById(R.id.searching);
                 final GridView gridView = (GridView) view.findViewById(R.id.grid1);
                 gridView.setColumnWidth(Dips.dpToPx(80));
@@ -1099,7 +1101,7 @@ public class DragingDialogs {
                     public void handleMessage(android.os.Message msg) {
                         int pageNumber = msg.what;
                         LOG.d("Receive page", pageNumber);
-                        progressBar.setVisibility(View.GONE);
+                        MyProgressBar.setVisibility(View.GONE);
                         gridView.setVisibility(View.VISIBLE);
 
                         if (pageNumber < -1) {
@@ -1144,6 +1146,7 @@ public class DragingDialogs {
                         }
                         String searchString = searchEdit.getText().toString().trim();
                         if (searchString.length() < 2) {
+                            Toast.makeText(controller.getActivity(), R.string.please_enter_more_characters_to_search, Toast.LENGTH_SHORT).show();
                             return;
                         }
                         TempHolder.isSeaching = true;
@@ -1151,7 +1154,7 @@ public class DragingDialogs {
                         searchingMsg.setText(R.string.searching_please_wait_);
                         searchingMsg.setVisibility(View.VISIBLE);
 
-                        progressBar.setVisibility(View.VISIBLE);
+                        MyProgressBar.setVisibility(View.VISIBLE);
                         gridView.setVisibility(View.GONE);
                         adapter.getItems().clear();
                         adapter.notifyDataSetChanged();
@@ -1763,6 +1766,9 @@ public class DragingDialogs {
     }
 
     public static DragingPopup thumbnailDialog(final FrameLayout anchor, final DocumentController dc) {
+        if (dc == null) {
+            return null;
+        }
         DragingPopup popup = new DragingPopup(R.string.go_to_page_dialog, anchor, 300, 400) {
             View searchLayout;
             GridView grid;
@@ -2113,6 +2119,10 @@ public class DragingDialogs {
     }
 
     public static void recentBooks(final FrameLayout anchor, final DocumentController controller) {
+        if (controller == null) {
+            return;
+        }
+
         new DragingPopup(R.string.recent_favorites_tags, anchor, PREF_WIDTH, PREF_HEIGHT) {
 
             @Override
@@ -2235,6 +2245,7 @@ public class DragingDialogs {
 
     public static DragingPopup showContent(final FrameLayout anchor, final DocumentController controller) {
 
+
         final OnItemClickListener onClickContent = new OnItemClickListener() {
 
             @Override
@@ -2269,6 +2280,9 @@ public class DragingDialogs {
             @Override
             public View getContentView(LayoutInflater inflater) {
                 View view = inflater.inflate(R.layout.dialog_recent_books, null, false);
+                if (controller == null) {
+                    return view;
+                }
 
                 LinearLayout attachemnts = (LinearLayout) view.findViewById(R.id.mediaAttachments);
                 List<String> mediaAttachments = controller.getMediaAttachments();
@@ -2722,16 +2736,35 @@ public class DragingDialogs {
 
                 CheckBox isShowRectangularTapZones = (CheckBox) inflate.findViewById(R.id.isShowRectangularTapZones);
                 isShowRectangularTapZones.setVisibility(AppTemp.get().readingMode == AppState.READING_MODE_MUSICIAN ? View.VISIBLE : View.GONE);
-
                 isShowRectangularTapZones.setChecked(AppState.get().isShowRectangularTapZones);
-                isShowRectangularTapZones.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+                isShowRectangularTapZones.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                    AppState.get().isShowRectangularTapZones = isChecked;
+                    if (onRefresh != null) {
+                        onRefresh.run();
+                    }
+                });
 
-                    @Override
-                    public void onCheckedChanged(final CompoundButton buttonView, final boolean isChecked) {
-                        AppState.get().isShowRectangularTapZones = isChecked;
-                        if (onRefresh != null) {
-                            onRefresh.run();
-                        }
+                CheckBox isShowLineDividing = (CheckBox) inflate.findViewById(R.id.isShowLineDividing);
+                isShowLineDividing.setVisibility(AppTemp.get().readingMode == AppState.READING_MODE_MUSICIAN ? View.VISIBLE : View.GONE);
+                isShowLineDividing.setChecked(AppState.get().isShowLineDividing);
+                isShowLineDividing.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                    AppState.get().isShowLineDividing = isChecked;
+                    if (onRefresh != null) {
+                        controller.updateRendering();
+                        //onRefresh.run();
+                    }
+                });
+
+
+                CheckBox isShowLastPageRed = (CheckBox) inflate.findViewById(R.id.isShowLastPageRed);
+                isShowLastPageRed.setVisibility(AppTemp.get().readingMode == AppState.READING_MODE_MUSICIAN ? View.VISIBLE : View.GONE);
+                isShowLastPageRed.setChecked(AppState.get().isShowLastPageRed);
+                isShowLastPageRed.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                    AppState.get().isShowLastPageRed = isChecked;
+                    if (onRefresh != null) {
+                        controller.updateRendering();
+                        //onRefresh.run();
+
                     }
                 });
 
@@ -3293,6 +3326,17 @@ public class DragingDialogs {
                     @Override
                     public void onCheckedChanged(final CompoundButton buttonView, final boolean isChecked) {
                         AppState.get().isVibration = isChecked;
+                    }
+                });
+                CheckBox isExperimental = (CheckBox) inflate.findViewById(R.id.isExperimental);
+                isExperimental.setVisibility(TxtUtils.visibleIf(BookType.EPUB.is(controller.getCurrentBook().getPath())));
+                isExperimental.setText(isExperimental.getText() + " (SVG, MathML)");
+                isExperimental.setChecked(AppState.get().isExperimental);
+                isExperimental.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+
+                    @Override
+                    public void onCheckedChanged(final CompoundButton buttonView, final boolean isChecked) {
+                        AppState.get().isExperimental = isChecked;
                     }
                 });
 
@@ -4482,8 +4526,7 @@ public class DragingDialogs {
                             controller.restartActivity();
                         }
                         return true;
-                    });
-
+                    }, AppState.get().fullScreenMode);
 
 
                 });

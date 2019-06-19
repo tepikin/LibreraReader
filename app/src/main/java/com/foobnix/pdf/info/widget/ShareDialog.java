@@ -35,7 +35,6 @@ import com.foobnix.pdf.info.Playlists;
 import com.foobnix.pdf.info.R;
 import com.foobnix.pdf.info.TintUtil;
 import com.foobnix.pdf.info.Urls;
-import com.foobnix.pdf.info.model.BookCSS;
 import com.foobnix.pdf.info.view.Dialogs;
 import com.foobnix.pdf.info.view.DialogsPlaylist;
 import com.foobnix.pdf.info.wrapper.DocumentController;
@@ -396,7 +395,7 @@ public class ShareDialog {
 
 
                     EventBus.getDefault().post(new UpdateAllFragments());
-                }else if (!isExternalOrCloud && which == i++) {
+                } else if (!isExternalOrCloud && which == i++) {
                     Dialogs.showTagsDialog(a, file, false, null);
                 } else if (AppsConfig.isCloudsEnable && which == i++) {
                     showAddToCloudDialog(a, file);
@@ -405,13 +404,27 @@ public class ShareDialog {
                 } else if (!isSyncronized && which == i++) {
                     final File to = new File(AppProfile.SYNC_FOLDER_BOOKS, file.getName());
                     boolean result = IO.copyFile(file, to);
-                    if (result && BookCSS.get().isEnableSync) {
+                    if (result && AppTemp.get().isEnableSync) {
 
                         AppDB.get().setIsSearchBook(file.getPath(), false);
                         FileMetaCore.createMetaIfNeed(to.getPath(), true);
 
                         String tags = TagData.getTags(file.getPath());
                         TagData.saveTags(to.getPath(), tags);
+
+                        boolean isRecent = AppData.contains(AppData.get().getAllRecent(), file.getPath());
+                        LOG.d("isRecent", isRecent, file.getPath());
+
+                        if (isRecent) {
+                            AppData.get().removeRecent(new FileMeta(file.getPath()));
+
+                            final FileMeta load = AppDB.get().load(file.getPath());
+                            if (load != null && load.getIsRecentTime() != null) {
+                                AppData.get().addRecent(new SimpleMeta(to.getPath(), load.getIsRecentTime()));
+                            } else {
+                                AppData.get().addRecent(new SimpleMeta(to.getPath()));
+                            }
+                        }
 
                         final List<AppBookmark> bookmarks = BookmarksData.get().getBookmarksByBook(file.getPath());
                         for (AppBookmark appBookmark : bookmarks) {

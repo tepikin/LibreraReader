@@ -69,7 +69,7 @@ public abstract class DocumentController {
 
     public final static List<Integer> orientationIds = Arrays.asList(//
             ActivityInfo.SCREEN_ORIENTATION_SENSOR, //
-            ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE, //
+            ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE, //onCrop
             ActivityInfo.SCREEN_ORIENTATION_PORTRAIT, //
             ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE, //
             ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT//
@@ -412,6 +412,11 @@ public abstract class DocumentController {
         }
     }
 
+
+    public boolean isVisibleDialog() {
+        return anchor != null && anchor.getVisibility() == View.VISIBLE;
+    }
+
     public boolean closeDialogs() {
         if (anchor == null) {
             return false;
@@ -539,6 +544,7 @@ public abstract class DocumentController {
         } else if (mode == AppState.FULL_SCREEN_FULLSCREEN_CUTOUT) {
             runFullScreenCutOut(a);
         }
+
     }
 
     public static String getFullScreenName(final Activity a, final int mode) {
@@ -553,38 +559,52 @@ public abstract class DocumentController {
         return "-";
     }
 
-    public static void showFullScreenPopup(Activity a, View v, IntegerResponse response) {
-        List<Integer> ids = Arrays.asList(AppState.FULL_SCREEN_FULLSCREEN_CUTOUT, AppState.FULL_SCREEN_FULLSCREEN, AppState.FULL_SCREEN_NORMAL);
-
-        MyPopupMenu popup = new MyPopupMenu(a, v);
-        for (int id : ids)
-
-            if (id == AppState.FULL_SCREEN_FULLSCREEN_CUTOUT && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                LOG.d("getDisplayCutout", a.getWindow().getDecorView().getRootWindowInsets().getDisplayCutout());
-                // if (getActivity().getWindow().getDecorView().getRootWindowInsets().getDisplayCutout() != null) {
-                popup.getMenu().add(DocumentController.getFullScreenName(a, id)).setOnMenuItemClickListener(item -> {
-                    response.onResultRecive(id);
-                    return false;
-                });
-                //}
-            } else {
-                popup.getMenu().add(DocumentController.getFullScreenName(a, id)).setOnMenuItemClickListener(item -> {
-                    response.onResultRecive(id);
-                    return false;
-                });
-
-            }
-        popup.show();
+    public static int getFullScreenIcon(final Activity a, final int mode) {
+        switch (mode) {
+            case AppState.FULL_SCREEN_FULLSCREEN_CUTOUT:
+                return R.drawable.glyphicons_487_fit_frame_to_image;
+            case AppState.FULL_SCREEN_NORMAL:
+                return R.drawable.glyphicons_488_fit_image_to_frame;
+            case AppState.FULL_SCREEN_FULLSCREEN:
+                return R.drawable.glyphicons_487_fit_frame_to_image;
+        }
+        return R.drawable.glyphicons_488_fit_image_to_frame;
     }
 
+    public static void showFullScreenPopup(Activity a, View v, IntegerResponse response, int currentMode) {
 
-    public static void chooseFullScreen(final Activity a, final boolean isFullscren) {
-        if (isFullscren) {
-            runFullScreen(a);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && a.getWindow().getDecorView().getRootWindowInsets().getDisplayCutout() != null) {
+            List<Integer> ids = Arrays.asList(AppState.FULL_SCREEN_FULLSCREEN_CUTOUT, AppState.FULL_SCREEN_FULLSCREEN, AppState.FULL_SCREEN_NORMAL);
+
+            MyPopupMenu popup = new MyPopupMenu(a, v);
+            for (int id : ids)
+
+                if (id == AppState.FULL_SCREEN_FULLSCREEN_CUTOUT && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    LOG.d("getDisplayCutout", a.getWindow().getDecorView().getRootWindowInsets().getDisplayCutout());
+                    // if (getActivity().getWindow().getDecorView().getRootWindowInsets().getDisplayCutout() != null) {
+                    popup.getMenu().add(DocumentController.getFullScreenName(a, id)).setOnMenuItemClickListener(item -> {
+                        response.onResultRecive(id);
+                        return false;
+                    });
+                    //}
+                } else {
+                    popup.getMenu().add(DocumentController.getFullScreenName(a, id)).setOnMenuItemClickListener(item -> {
+                        response.onResultRecive(id);
+                        return false;
+                    });
+
+                }
+            popup.show();
         } else {
-            runNormalScreen(a);
+            if (currentMode == AppState.FULL_SCREEN_NORMAL) {
+                response.onResultRecive(AppState.FULL_SCREEN_FULLSCREEN);
+            } else {
+                response.onResultRecive(AppState.FULL_SCREEN_NORMAL);
+            }
         }
     }
+
 
     private static void applyTheme(final Activity a) {
         if (AppState.get().appTheme == AppState.THEME_LIGHT) {
@@ -760,8 +780,5 @@ public abstract class DocumentController {
 
     public abstract void centerHorizontal();
 
-    public void recyclePage(int page) {
-
-    }
-
+    public abstract void recyclePage(int page);
 }

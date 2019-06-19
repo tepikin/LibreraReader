@@ -2,6 +2,7 @@ package com.foobnix.pdf.info.wrapper;
 
 import com.foobnix.android.utils.LOG;
 import com.foobnix.model.AppState;
+import com.foobnix.pdf.info.BuildConfig;
 import com.foobnix.ui2.fragment.BookmarksFragment2;
 import com.foobnix.ui2.fragment.BrowseFragment2;
 import com.foobnix.ui2.fragment.CloudsFragment2;
@@ -81,9 +82,13 @@ public enum UITab {
 
     public static int getCurrentTabIndex(UITab tab) {
         List<UITab> ordered = getOrdered(AppState.get().tabsOrder7);
+        int count = -1;
         for (int i = 0; i < ordered.size(); i++) {
+            if (ordered.get(i).isVisible) {
+                count++;
+            }
             if (ordered.get(i) == tab) {
-                return i;
+                return count;
             }
         }
         return 0;
@@ -102,6 +107,9 @@ public enum UITab {
     }
 
     public boolean isVisible() {
+        if (BuildConfig.IS_FDROID && (this == UITab.OpdsFragment || this == UITab.CloudsFragment)) {
+            return false;
+        }
         return isVisible;
     }
 

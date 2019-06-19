@@ -80,6 +80,8 @@ public class AppProfile {
 
     public static String profile = "";
 
+
+
     public static void init(Context c) {
 
         sp = c.getSharedPreferences("AppProfile", Context.MODE_PRIVATE);
@@ -141,6 +143,7 @@ public class AppProfile {
                 File file = new File(f, name);
                 if (file.isFile()) {
                     list.add(file);
+                    LOG.d("getAllFiles", file);
                 }
             }
         }
@@ -424,5 +427,6 @@ public class AppProfile {
 
     public static void clear() {
         profile = "";
+        AppState.get().isLoaded = false;
     }
 }

@@ -43,6 +43,7 @@ import com.buzzingandroid.ui.HSVColorPickerDialog;
 import com.buzzingandroid.ui.HSVColorPickerDialog.OnColorSelectedListener;
 import com.foobnix.android.utils.Apps;
 import com.foobnix.android.utils.Dips;
+import com.foobnix.android.utils.IO;
 import com.foobnix.android.utils.IntegerResponse;
 import com.foobnix.android.utils.Keyboards;
 import com.foobnix.android.utils.LOG;
@@ -55,6 +56,7 @@ import com.foobnix.model.AppTemp;
 import com.foobnix.pdf.info.AndroidWhatsNew;
 import com.foobnix.pdf.info.AppsConfig;
 import com.foobnix.pdf.info.BookmarksData;
+import com.foobnix.pdf.info.BuildConfig;
 import com.foobnix.pdf.info.ExtUtils;
 import com.foobnix.pdf.info.IMG;
 import com.foobnix.pdf.info.PasswordDialog;
@@ -162,7 +164,7 @@ public class PrefFragment2 extends UIFragment {
         String gdriveInfo = GFile.getDisplayInfo(getActivity());
 
         if (TxtUtils.isEmpty(gdriveInfo)) {
-            BookCSS.get().isEnableSync = false;
+            AppTemp.get().isEnableSync = false;
             syncInfo.setVisibility(View.GONE);
             singIn.setText(R.string.sign_in);
             TxtUtils.underlineTextView(singIn);
@@ -182,8 +184,8 @@ public class PrefFragment2 extends UIFragment {
             singIn.setOnClickListener(new OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    BookCSS.get().isEnableSync = false;
-                    BookCSS.get().syncRootID = "";
+                    AppTemp.get().isEnableSync = false;
+                    AppTemp.get().syncRootID = "";
                     AppTemp.get().syncTime = 0;
                     GFile.logout(getActivity());
                     updateSyncInfo(null);
@@ -191,13 +193,13 @@ public class PrefFragment2 extends UIFragment {
             });
         }
 
-        isEnableSync.setChecked(BookCSS.get().isEnableSync);
+        isEnableSync.setChecked(AppTemp.get().isEnableSync);
         onSync(null);
 
 
     }
 
-    TextView singIn, syncInfo, syncHeader;
+    TextView singIn, syncInfo, syncInfo2, syncHeader;
     CheckBox isEnableSync;
 
     @Subscribe(threadMode = ThreadMode.MAIN)
@@ -217,8 +219,11 @@ public class PrefFragment2 extends UIFragment {
                 status = "...";
             }
 
-            syncHeader.setText(getString(R.string.sync) + " (" + format + " - " + status + ")");
+            syncInfo2.setText(format + " - " + status);
+            syncInfo2.setVisibility(View.VISIBLE);
         } else {
+            syncInfo2.setText("");
+            syncInfo2.setVisibility(View.GONE);
             syncHeader.setText(R.string.sync_google_drive);
 
         }
@@ -232,15 +237,16 @@ public class PrefFragment2 extends UIFragment {
 
         singIn = inflate.findViewById(R.id.signIn);
         syncInfo = inflate.findViewById(R.id.syncInfo);
+        syncInfo2 = inflate.findViewById(R.id.syncInfo2);
         syncHeader = inflate.findViewById(R.id.syncHeader);
         onSync(null);
         syncHeader.setOnClickListener((in) -> Dialogs.showSyncLOGDialog(getActivity()));
 
 
         isEnableSync = inflate.findViewById(R.id.isEnableSync);
-        isEnableSync.setChecked(BookCSS.get().isEnableSync);
+        isEnableSync.setChecked(AppTemp.get().isEnableSync);
         isEnableSync.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            BookCSS.get().isEnableSync = isChecked;
+            AppTemp.get().isEnableSync = isChecked;
             if (isChecked) {
                 if (GoogleSignIn.getLastSignedInAccount(getActivity()) == null) {
                     GFile.init(getActivity());
@@ -274,6 +280,9 @@ public class PrefFragment2 extends UIFragment {
 
 
         section8 = inflate.findViewById(R.id.section8);
+
+        section8.setVisibility(BuildConfig.IS_FDROID ? View.GONE : View.VISIBLE);
+
         section9 = inflate.findViewById(R.id.section9);
 
 
@@ -309,7 +318,11 @@ public class PrefFragment2 extends UIFragment {
             public void run() {
                 dragLinearLayout.removeAllViews();
                 for (UITab tab : UITab.getOrdered(AppState.get().tabsOrder7)) {
-                    if (Apps.getVersionName(getActivity()).endsWith("-fdroid") && tab == UITab.CloudsFragment) {
+                    if (BuildConfig.IS_FDROID && tab == UITab.CloudsFragment) {
+                        continue;
+                    }
+
+                    if (BuildConfig.IS_FDROID && tab == UITab.OpdsFragment) {
                         continue;
                     }
 
@@ -545,7 +558,7 @@ public class PrefFragment2 extends UIFragment {
                 TxtUtils.underlineTextView(onFullScreen);
                 DocumentController.chooseFullScreen(getActivity(), AppState.get().fullScreenMainMode);
                 return true;
-            });
+            }, AppState.get().fullScreenMainMode);
 
 
         });
@@ -1094,38 +1107,39 @@ public class PrefFragment2 extends UIFragment {
             }
         };
 
-        inflate.findViewById(R.id.moreLybraryettings).
+        inflate.findViewById(R.id.moreLybraryettings).setOnClickListener(v -> {
+            final CheckBox isAuthorTitleFromMetaPDF = new CheckBox(v.getContext());
+            isAuthorTitleFromMetaPDF.setText(R.string.displaying_the_author_and_title_of_the_pdf_book_from_the_meta_tags);
 
-                setOnClickListener(new OnClickListener() {
+            final CheckBox isShowOnlyOriginalFileNames = new CheckBox(v.getContext());
+            isShowOnlyOriginalFileNames.setText(R.string.display_original_file_names_without_metadata);
+
+            final AlertDialog d = AlertDialogs.showViewDialog(getActivity(), null, isShowOnlyOriginalFileNames, isAuthorTitleFromMetaPDF);
+
+            isAuthorTitleFromMetaPDF.setChecked(AppState.get().isAuthorTitleFromMetaPDF);
+            isShowOnlyOriginalFileNames.setChecked(AppState.get().isShowOnlyOriginalFileNames);
+
+
+            final OnCheckedChangeListener listener = (buttonView, isChecked) -> {
+                AppState.get().isAuthorTitleFromMetaPDF = isAuthorTitleFromMetaPDF.isChecked();
+                AppState.get().isShowOnlyOriginalFileNames = isShowOnlyOriginalFileNames.isChecked();
+
+
+                handler.removeCallbacksAndMessages(null);
+                handler.postDelayed(ask, timeout);
+                handler.postDelayed(new Runnable() {
 
                     @Override
-                    public void onClick(View v) {
-                        final CheckBox check = new CheckBox(v.getContext());
-                        check.setText(R.string.displaying_the_author_and_title_of_the_pdf_book_from_the_meta_tags);
-
-                        final AlertDialog d = AlertDialogs.showViewDialog(getActivity(), check);
-
-                        check.setChecked(AppState.get().isAuthorTitleFromMetaPDF);
-
-                        check.setOnCheckedChangeListener(new OnCheckedChangeListener() {
-
-                            @Override
-                            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                                AppState.get().isAuthorTitleFromMetaPDF = isChecked;
-                                handler.removeCallbacksAndMessages(null);
-                                handler.postDelayed(ask, timeout);
-                                handler.postDelayed(new Runnable() {
-
-                                    @Override
-                                    public void run() {
-                                        d.dismiss();
-                                    }
-                                }, timeout);
-                            }
-                        });
-
+                    public void run() {
+                        d.dismiss();
                     }
-                });
+                }, timeout);
+            };
+
+            isAuthorTitleFromMetaPDF.setOnCheckedChangeListener(listener);
+            isShowOnlyOriginalFileNames.setOnCheckedChangeListener(listener);
+
+        });
 
         final CheckBox isFirstSurname = (CheckBox) inflate.findViewById(R.id.isFirstSurname);
         isFirstSurname.setChecked(AppState.get().isFirstSurname);
@@ -1356,75 +1370,45 @@ public class PrefFragment2 extends UIFragment {
         supportOther.setText(
 
                 getString(R.string.other) + " (CHM/...)");
-        supportOther.setOnCheckedChangeListener(new
-
-                                                        OnCheckedChangeListener() {
-
-                                                            @Override
-                                                            public void onCheckedChanged(final CompoundButton buttonView,
-                                                                                         final boolean isChecked) {
-                                                                AppState.get().supportOther = isChecked;
-                                                                ExtUtils.updateSearchExts();
-                                                                handler.removeCallbacks(ask);
-                                                                handler.postDelayed(ask, timeout);
-                                                            }
-                                                        });
+        supportOther.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            AppState.get().supportOther = isChecked;
+            ExtUtils.updateSearchExts();
+            handler.removeCallbacks(ask);
+            handler.postDelayed(ask, timeout);
+        });
 
         CheckBox isDisplayAllFilesInFolder = (CheckBox) inflate.findViewById(R.id.isDisplayAllFilesInFolder);
         isDisplayAllFilesInFolder.setChecked(AppState.get().isDisplayAllFilesInFolder);
-        isDisplayAllFilesInFolder.setOnCheckedChangeListener(new
-
-                                                                     OnCheckedChangeListener() {
-
-                                                                         @Override
-                                                                         public void onCheckedChanged(final CompoundButton buttonView,
-                                                                                                      final boolean isChecked) {
-                                                                             AppState.get().isDisplayAllFilesInFolder = isChecked;
-                                                                             TempHolder.listHash++;
-                                                                         }
-                                                                     });
+        isDisplayAllFilesInFolder.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            AppState.get().isDisplayAllFilesInFolder = isChecked;
+            TempHolder.listHash++;
+        });
         // app password
         final CheckBox isAppPassword = (CheckBox) inflate.findViewById(R.id.isAppPassword);
-        isAppPassword.setChecked(PasswordState.get().isAppPassword);
-        isAppPassword.setOnCheckedChangeListener(new
+        isAppPassword.setChecked(PasswordState.get().hasPassword() && AppState.get().isAppPassword);
+        isAppPassword.setOnCheckedChangeListener((buttonView, isChecked) -> {
 
-                                                         OnCheckedChangeListener() {
+            if (isChecked && PasswordState.get().hasPassword()) {
+                AppState.get().isAppPassword = true;
+            } else if (!PasswordState.get().hasPassword()) {
+                PasswordDialog.showDialog(getActivity(), true, () ->
+                        isAppPassword.setChecked(PasswordState.get().hasPassword())
+                );
+            } else {
+                AppState.get().isAppPassword = false;
+                isAppPassword.setChecked(false);
+            }
+        });
 
-                                                             @Override
-                                                             public void onCheckedChanged(final CompoundButton buttonView,
-                                                                                          final boolean isChecked) {
-                                                                 PasswordState.get().isAppPassword = isChecked;
-                                                                 if (isChecked && TxtUtils.isEmpty(PasswordState.get().appPassword)) {
-                                                                     PasswordDialog.showDialog(getActivity(), true, new Runnable() {
-
-                                                                         @Override
-                                                                         public void run() {
-                                                                             if (TxtUtils.isEmpty(PasswordState.get().appPassword)) {
-                                                                                 isAppPassword.setChecked(false);
-                                                                             }
-                                                                         }
-                                                                     });
-                                                                 }
-                                                             }
-                                                         });
-
-        TxtUtils.underlineTextView(inflate.findViewById(R.id.appPassword)).
-
-                setOnClickListener(new OnClickListener() {
-
-                    @Override
-                    public void onClick(View v) {
-                        PasswordDialog.showDialog(getActivity(), true, new Runnable() {
-
-                            @Override
-                            public void run() {
-                                if (TxtUtils.isEmpty(PasswordState.get().appPassword)) {
-                                    isAppPassword.setChecked(false);
-                                }
+        TxtUtils.underlineTextView(inflate.findViewById(R.id.appPassword)).setOnClickListener(v ->
+                PasswordDialog.showDialog(getActivity(), true, () -> {
+                            if (PasswordState.get().hasPassword()) {
+                                isAppPassword.setChecked(true);
+                                AppState.get().isAppPassword = true;
                             }
-                        });
-                    }
-                });
+                        }
+                )
+        );
 
         // What is new
         CheckBox showWhatIsNew = (CheckBox) inflate.findViewById(R.id.isShowWhatIsNewDialog);
@@ -2219,6 +2203,33 @@ public class PrefFragment2 extends UIFragment {
 
         });
         profileLetter.setOnClickListener(v -> onProfile.performClick());
+
+        final View.OnLongClickListener onDefaultProfile = v -> {
+            AlertDialogs.showOkDialog(getActivity(), getString(R.string.restore_defaults_full), new Runnable() {
+                @Override
+                public void run() {
+                    //AppProfile.clear();
+
+                    final BookCSS b = new BookCSS();
+                    b.resetToDefault(getActivity());
+                    IO.writeObjAsync(AppProfile.syncCSS, b);
+
+                    final AppState o = new AppState();
+                    o.defaults(getActivity());
+
+                    IO.writeObjAsync(AppProfile.syncState, o);
+
+                    //AppProfile.init(getActivity());
+                    getActivity().startService(new Intent(getActivity(), BooksService.class).setAction(BooksService.ACTION_SEARCH_ALL));
+                    onTheme();
+
+                }
+            });
+
+            return true;
+        };
+        onProfile.setOnLongClickListener(onDefaultProfile);
+        profileLetter.setOnLongClickListener(onDefaultProfile);
 
         inflate.findViewById(R.id.onProfileEdit).
 

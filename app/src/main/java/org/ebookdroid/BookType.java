@@ -32,7 +32,7 @@ import java.util.Map;
 
 public enum BookType {
 
-    PDF(PdfContext.class, false, Arrays.asList("pdf", "xps"), Arrays.asList("application/pdf")),
+    PDF(PdfContext.class, false, Arrays.asList("pdf", "xps"), Arrays.asList("application/pdf","application/oxps","application/vnd.ms-xpsdocument")),
     TIFF(PdfContext.class, false, Arrays.asList("tiff", "tif"), Arrays.asList("image/tiff")),
 
     CBZ(PdfContext.class, false, Arrays.asList("cbz"), Arrays.asList("application/x-cbz")),
@@ -49,7 +49,7 @@ public enum BookType {
 
     MOBI(MobiContext.class, true, Arrays.asList("mobi", "azw", "azw3", "azw4", "pdb", "prc"), Arrays.asList("application/x-mobipocket-ebook", "application/x-palm-database")),
 
-    TXT(TxtContext.class, true, Arrays.asList("txt", "playlist"), Arrays.asList("text/plain")),
+    TXT(TxtContext.class, true, Arrays.asList("txt", "playlist","log"), Arrays.asList("text/plain","text/x-log")),
 
     JSON(TxtContext.class, true, Arrays.asList("json"), Arrays.asList("application/json")),
 

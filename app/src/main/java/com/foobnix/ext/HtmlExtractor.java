@@ -3,6 +3,7 @@ package com.foobnix.ext;
 import com.foobnix.android.utils.IO;
 import com.foobnix.android.utils.LOG;
 import com.foobnix.android.utils.TxtUtils;
+import com.foobnix.android.utils.WebViewUtils;
 import com.foobnix.hypen.HypenUtils;
 import com.foobnix.model.AppState;
 import com.foobnix.model.AppTemp;
@@ -41,6 +42,9 @@ public class HtmlExtractor {
             HypenUtils.resetTokenizer();
 
             boolean accurate = !LOG.isEnable || AppState.get().isAccurateFontSize || force;
+
+            //accurate = false;
+
             if (!accurate) {
                 File root = new File(inputPath).getParentFile();
                 for (File f : root.listFiles()) {
@@ -66,7 +70,54 @@ public class HtmlExtractor {
                     }
                 }
             } else {
+
+                boolean findSVG = false;
+                String svg = "";
+                int svgNumbver = 0;
+
                 while ((line = input.readLine()) != null) {
+
+                    if (AppState.get().isExperimental) {
+                        if (line.contains("<math")) {
+                            svgNumbver++;
+                            findSVG = true;
+                            svg = line.substring(line.indexOf("<math"));
+
+                            LOG.d("MathMl", "begin");
+
+                        } else if (line.contains("</math>")) {
+
+                            svg += line.substring(0, line.indexOf("</math>") + "</math>".length());
+
+                            final String imageName = "test" + "-" + svgNumbver + ".png";
+
+                            line += "<img src=\"" + imageName + "\" />";
+
+                            LOG.d("MathMl", svg);
+                            LOG.d("MathMl", "end");
+
+                            Object lock = new Object();
+
+                            FileOutputStream out = new FileOutputStream(new File(CacheZipUtils.CACHE_BOOK_DIR, imageName));
+
+                            WebViewUtils.renterToPng(imageName, svg, out, lock);
+
+                            synchronized (lock) {
+                                lock.wait();
+                            }
+                            out.flush();
+                            out.close();
+
+
+                            findSVG = false;
+                            svg = "";
+
+                        } else if (findSVG) {
+                            svg += line;
+                        }
+                    }
+
+
                     html.append(line + "\n");
                 }
             }

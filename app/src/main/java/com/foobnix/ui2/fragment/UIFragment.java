@@ -18,14 +18,14 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.View;
 import android.widget.ImageView;
-import android.widget.ProgressBar;
 
 import com.foobnix.android.utils.Dips;
 import com.foobnix.android.utils.LOG;
 import com.foobnix.android.utils.TxtUtils;
 import com.foobnix.model.AppState;
+import com.foobnix.model.AppTemp;
 import com.foobnix.pdf.info.R;
-import com.foobnix.pdf.info.model.BookCSS;
+import com.foobnix.pdf.info.view.MyProgressBar;
 import com.foobnix.pdf.info.wrapper.PopupHelper;
 import com.foobnix.pdf.search.activity.msg.NotifyAllFragments;
 import com.foobnix.pdf.search.activity.msg.OpenDirMessage;
@@ -43,26 +43,31 @@ import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public abstract class UIFragment<T> extends Fragment {
     public static String INTENT_TINT_CHANGE = "INTENT_TINT_CHANGE";
 
     Handler handler;
-    protected volatile ProgressBar progressBar;
+    protected volatile MyProgressBar MyProgressBar;
     protected RecyclerView recyclerView;
 
     public abstract Pair<Integer, Integer> getNameAndIconRes();
 
+
     View adFrame;
+    final static ExecutorService executorService = Executors.newCachedThreadPool();
 
 
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
         handler = new Handler();
+
+
     }
 
     SwipeRefreshLayout swipeRefreshLayout;
@@ -87,7 +92,7 @@ public abstract class UIFragment<T> extends Fragment {
                 public void onFastScrollStop() {
                     ImageLoader.getInstance().resume();
                     LOG.d("ImageLoader resume");
-                    if (BookCSS.get().isEnableSync) {
+                    if (AppTemp.get().isEnableSync) {
                         swipeRefreshLayout.setEnabled(true);
                     }
                 }
@@ -96,7 +101,7 @@ public abstract class UIFragment<T> extends Fragment {
                 public void onFastScrollStart() {
                     LOG.d("ImageLoader pause");
                     ImageLoader.getInstance().pause();
-                    if (BookCSS.get().isEnableSync) {
+                    if (AppTemp.get().isEnableSync) {
                         swipeRefreshLayout.setEnabled(false);
                     }
                 }
@@ -249,7 +254,7 @@ public abstract class UIFragment<T> extends Fragment {
     }
 
     public boolean isInProgress() {
-        return progressBar != null && progressBar.getVisibility() == View.VISIBLE;
+        return MyProgressBar != null && MyProgressBar.getVisibility() == View.VISIBLE;
     }
 
     AsyncTask<Object, Object, List<T>> execute;
@@ -261,106 +266,61 @@ public abstract class UIFragment<T> extends Fragment {
             LOG.d("IN_PROGRESS");
             return;
         }
-        if (true) {
 
-            new Thread(new Runnable() {
+        final Runnable target = () -> {
+
+            if (getActivity() == null) {
+                return;
+            }
+
+            getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    if (getActivity() == null) {
-                        return;
-                    }
-
-                    getActivity().runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (progressBar != null) {
-                                handler.postDelayed(new Runnable() {
-
-                                    @Override
-                                    public void run() {
-                                        progressBar.setVisibility(View.VISIBLE);
-                                    }
-                                }, 100);
-                            }
-                        }
-                    });
-
-
-                    final List<T> result;
-                    try {
-                        inProgress = true;
-                        result = prepareDataInBackgroundSync();
-                    } finally {
-                        inProgress = false;
-
-                    }
-                    if (getActivity() == null) {
-                        return;
-                    }
-
-                    getActivity().runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (progressBar != null) {
-                                handler.removeCallbacksAndMessages(null);
-                                progressBar.setVisibility(View.GONE);
-                            }
-                            try {
-                                populateDataInUI(result);
-                            } catch (Exception e) {
-                                LOG.e(e);
-                            }
-
-                        }
-                    });
-                }
-            }).start();
-
-        } else {
-
-            execute = new AsyncTask<Object, Object, List<T>>() {
-                @Override
-                protected List<T> doInBackground(Object... params) {
-                    try {
-                        LOG.d("UIFragment", "prepareDataInBackground");
-                        return prepareDataInBackgroundSync();
-                    } catch (Exception e) {
-                        LOG.e(e);
-                        return new ArrayList<T>();
-                    }
-                }
-
-                @Override
-                protected void onPreExecute() {
-                    if (progressBar != null) {
+                    if (MyProgressBar != null) {
                         handler.postDelayed(new Runnable() {
 
                             @Override
                             public void run() {
-                                progressBar.setVisibility(View.VISIBLE);
+                                MyProgressBar.setVisibility(View.VISIBLE);
                             }
                         }, 100);
                     }
                 }
+            });
 
 
+            final List<T> result;
+            try {
+                inProgress = true;
+                result = prepareDataInBackgroundSync();
+            } finally {
+                inProgress = false;
+
+            }
+            if (getActivity() == null) {
+                return;
+            }
+
+            getActivity().runOnUiThread(new Runnable() {
                 @Override
-                protected void onPostExecute(List<T> result) {
-                    if (progressBar != null) {
-                        handler.removeCallbacksAndMessages(null);
-                        progressBar.setVisibility(View.GONE);
-                    }
-                    if (getActivity() != null) {
+                public void run() {
+                    if (isAdded()) {
+                        if (MyProgressBar != null) {
+                            handler.removeCallbacksAndMessages(null);
+                            MyProgressBar.setVisibility(View.GONE);
+                        }
                         try {
                             populateDataInUI(result);
                         } catch (Exception e) {
                             LOG.e(e);
                         }
                     }
-                }
-            }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-        }
 
+                }
+            });
+        };
+        executorService.submit(target);
+        //new Thread(target).start();
     }
 
     public void onGridList(int mode, ImageView onGridlList, final FileMetaAdapter searchAdapter, AuthorsAdapter2 authorsAdapter) {

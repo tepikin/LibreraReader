@@ -65,12 +65,10 @@ public class BookCSS {
     public String pathSAF = "";
 
 
-    public boolean isEnableSync;
     public boolean isSyncManualOnly;
     public boolean isSyncWifiOnly;
     public boolean isShowSyncWheel = true;
 
-    public String syncRootID;
 
 
     public boolean isTextFormat() {
@@ -228,6 +226,8 @@ public class BookCSS {
 
 
     }
+
+
 
     public void save(Context c) {
         if (c == null) {
@@ -594,6 +594,7 @@ public class BookCSS {
 
 
         builder.append("svg {display:block}");
+        builder.append("math, m, svg>text {display:none}");
         builder.append("tr {display:block}");
         builder.append("td>* {display:inline}");
         builder.append("sup>* {font-size:0.83em;vertical-align:super; font-weigh:bold}");

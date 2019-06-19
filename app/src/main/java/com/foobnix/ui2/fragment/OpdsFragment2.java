@@ -26,7 +26,6 @@ import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.PopupMenu;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -52,6 +51,7 @@ import com.foobnix.pdf.info.TintUtil;
 import com.foobnix.pdf.info.Urls;
 import com.foobnix.pdf.info.model.BookCSS;
 import com.foobnix.pdf.info.view.AlertDialogs;
+import com.foobnix.pdf.info.view.MyProgressBar;
 import com.foobnix.pdf.info.widget.AddCatalogDialog;
 import com.foobnix.pdf.info.widget.ChooserDialogFragment;
 import com.foobnix.sys.TempHolder;
@@ -120,7 +120,10 @@ public class OpdsFragment2 extends UIFragment<Entry> {
                 continue;
             }
             String[] it = line.split(",");
-            res.add(new Entry(it[0], it[1], it[2], it[3], true));
+            final Entry e = new Entry(it[0], it[1], it[2], it[3], true);
+            e.appState = line + ";";
+            res.add(e);
+
         }
         if (hasStars) {
             res.add(0, new Entry(SamlibOPDS.ROOT_FAVORITES, getString(R.string.favorites), getString(R.string.my_favorites_links), "assets://opds/star_1.png", true));
@@ -137,7 +140,7 @@ public class OpdsFragment2 extends UIFragment<Entry> {
     @Override
     public void onTintChanged() {
         TintUtil.setBackgroundFillColor(pathContainer, TintUtil.color);
-        ((FastScrollRecyclerView)recyclerView).myConfiguration();
+        ((FastScrollRecyclerView) recyclerView).myConfiguration();
     }
 
     @Override
@@ -153,9 +156,9 @@ public class OpdsFragment2 extends UIFragment<Entry> {
         pathContainer = view.findViewById(R.id.pathContainer);
         view1 = view.findViewById(R.id.view1);
         view2 = view.findViewById(R.id.view2);
-        progressBar = (ProgressBar) view.findViewById(R.id.progressBarOPDS);
-        progressBar.setVisibility(View.GONE);
-        TintUtil.setDrawableTint(progressBar.getIndeterminateDrawable().getCurrent(), Color.WHITE);
+        MyProgressBar = (MyProgressBar) view.findViewById(R.id.MyProgressBarOPDS);
+        MyProgressBar.setVisibility(View.GONE);
+        TintUtil.setDrawableTint(MyProgressBar.getIndeterminateDrawable().getCurrent(), Color.WHITE);
 
         onPlus.setOnClickListener(new OnClickListener() {
 
@@ -616,14 +619,14 @@ public class OpdsFragment2 extends UIFragment<Entry> {
 
                         @Override
                         protected void onPreExecute() {
-                            progressBar.setVisibility(View.VISIBLE);
+                            MyProgressBar.setVisibility(View.VISIBLE);
                         }
 
                         ;
 
                         @Override
                         protected void onPostExecute(Object result) {
-                            progressBar.setVisibility(View.GONE);
+                            MyProgressBar.setVisibility(View.GONE);
                             if ((Boolean) result == false) {
                                 Toast.makeText(getContext(), R.string.loading_error, Toast.LENGTH_LONG).show();
                                 // Urls.openWevView(getActivity(), link.href, null);
@@ -699,7 +702,7 @@ public class OpdsFragment2 extends UIFragment<Entry> {
                 return samlibResult;
             }
 
-            Feed feed = OPDS.getFeed(url);
+            Feed feed = OPDS.getFeed(url, getContext());
             if (feed == null) {
                 return Collections.emptyList();
             }
@@ -774,13 +777,7 @@ public class OpdsFragment2 extends UIFragment<Entry> {
     @Override
     public void populateDataInUI(List<Entry> entries) {
         if (isNeedLoginPassword) {
-            AddCatalogDialog.showDialogLogin(getActivity(), new Runnable() {
-
-                @Override
-                public void run() {
-                    populate();
-                }
-            });
+            AddCatalogDialog.showDialogLogin(getActivity(),url, () -> populate());
             return;
         }
 

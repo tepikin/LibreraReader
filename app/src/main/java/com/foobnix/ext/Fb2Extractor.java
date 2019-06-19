@@ -434,8 +434,11 @@ public class Fb2Extractor extends BaseExtractor {
                             map.put(key, link.trim());
                             LOG.d("getFooterNotes", key, ">", link);
 
-                            isLink = false;
+
                             key = "";
+                        }
+                        if (isLink) {
+                            isLink = false;
                         }
                     }
                 }
@@ -666,7 +669,7 @@ public class Fb2Extractor extends BaseExtractor {
         return line;
     }
 
-    public static void generateHyphenFileEpub(InputStreamReader inputStream, Map<String, String> notes, OutputStream out) throws Exception {
+    public static void generateHyphenFileEpub(InputStreamReader inputStream, Map<String, String> notes, OutputStream out, String name, Map<String, String> svgs) throws Exception {
         BufferedReader input = new BufferedReader(inputStream);
 
         PrintWriter writer = new PrintWriter(out);
@@ -677,6 +680,11 @@ public class Fb2Extractor extends BaseExtractor {
         boolean isValidXML = false;
         boolean isValidXMLChecked = false;
 
+        String svg = "";
+        boolean findSVG = false;
+        int svgNumbver = 0;
+        String defs = "";
+
         while ((line = input.readLine()) != null) {
             if (TempHolder.get().loadingCancelled) {
                 break;
@@ -685,7 +693,7 @@ public class Fb2Extractor extends BaseExtractor {
                 isValidXMLChecked = true;
                 isValidXML = line.contains("<");
                 LOG.d("isValidXML", isValidXML, line);
-                if(!isValidXML) {
+                if (!isValidXML) {
                     writer.print("<html><body>");
                 }
             }
@@ -697,6 +705,69 @@ public class Fb2Extractor extends BaseExtractor {
 
             // LOG.d("gen-in", line);
             line = accurateLine(line);
+
+            if (AppState.get().isExperimental && svgs != null) {
+
+
+                line = line.replace("<m:", "<");
+                if (line.contains("<svg")) {
+                    svgNumbver++;
+                    findSVG = true;
+                    svg = line.substring(line.indexOf("<svg"));
+                } else if (line.contains("<math")) {
+                    svgNumbver++;
+                    findSVG = true;
+                    svg = line.substring(line.indexOf("<math"));
+                } else if (line.contains("</svg>")) {
+                    LOG.d("SVG", svg);
+                    svg += line.substring(0, line.indexOf("</svg>") + "</svg>".length());
+
+
+                    String defsCurrent = TxtUtils.getStringInTag(svg, "defs");
+
+                    svg = svg.replace("<defs>", "<defs>" + defs);
+                    svg = svg.replace("<defs/>", "<defs>" + defs + "</defs>");
+                    if (TxtUtils.isNotEmpty(defsCurrent)) {
+                        defs = defs + defsCurrent;
+                    }
+                    LOG.d("DEFS:", defs);
+
+                    //LOG.d("DEFS:",name, TxtUtils.getStringInTag(svg, "defs"));
+
+                    final String imageName = name + "-" + svgNumbver + ".png";
+                    final String imageName2 = ExtUtils.getFileName(name) + "-" + svgNumbver + ".png";
+                    svgs.put(imageName, svg);
+
+                    LOG.d("SVG:", imageName, svg);
+
+                    line += "<img src=\"" + imageName2 + "\" />";
+                    //line += "[img " + "png" + "]<img src=\"" + imageName2 + "\" />";
+                    //line += "[img " + "svg" + "]<img src=\"" + imageName2+".svg" + "\" />";
+
+                    findSVG = false;
+                    svg = "";
+                } else if (line.contains("</math>")) {
+
+                    svg += line.substring(0, line.indexOf("</math>") + "</math>".length());
+
+
+                    final String imageName = name + "-" + svgNumbver + ".png";
+                    final String imageName2 = ExtUtils.getFileName(name) + "-" + svgNumbver + ".png";
+                    svgs.put(imageName, svg);
+
+                    LOG.d("SVG-MATH:", imageName, svg);
+
+                    line += "<img src=\"" + imageName2 + "\" />";
+
+                    findSVG = false;
+                    svg = "";
+                } else if (findSVG) {
+                    svg += line;
+                }
+
+            }
+
+
             if (BookCSS.get().isAutoHypens && TxtUtils.isNotEmpty(AppTemp.get().hypenLang)) {
                 line = HypenUtils.applyHypnes(line);
             }
@@ -760,7 +831,7 @@ public class Fb2Extractor extends BaseExtractor {
                     value = value.replaceAll("^[0-9]+", "").trim();
 
                     out.append(" <t>[");
-                    out.append(value);
+                    out.append(TxtUtils.escapeHtml(value));
                     out.append("]</t>");
                 }
             }
@@ -771,7 +842,8 @@ public class Fb2Extractor extends BaseExtractor {
 
 
     @Deprecated
-    private static ByteArrayOutputStream generateHyphenFileEpubOld(InputStreamReader inputStream) throws Exception {
+    private static ByteArrayOutputStream generateHyphenFileEpubOld(InputStreamReader
+                                                                           inputStream) throws Exception {
         BufferedReader input = new BufferedReader(inputStream);
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -966,23 +1038,27 @@ public class Fb2Extractor extends BaseExtractor {
                 "</navPoint>"; //
     }
 
-    public static void writeToZip(ZipOutputStream zos, String name, InputStream stream) throws IOException {
+    public static void writeToZip(ZipOutputStream zos, String name, InputStream stream) throws
+            IOException {
         zos.putNextEntry(new ZipEntry(name));
         zipCopy(stream, zos);
     }
 
-    public static void writeToZipNoClose(ZipOutputStream zos, String name, InputStream stream) throws IOException {
+    public static void writeToZipNoClose(ZipOutputStream zos, String name, InputStream stream) throws
+            IOException {
         zos.putNextEntry(new ZipEntry(name));
         zipCopyNoClose(stream, zos);
     }
 
-    public static void writeToZip(ZipOutputStream zos, String name, String content) throws IOException {
+    public static void writeToZip(ZipOutputStream zos, String name, String content) throws
+            IOException {
         writeToZip(zos, name, new ByteArrayInputStream(content.getBytes()));
     }
 
     private static final int BUFFER_SIZE = 16 * 1024;
 
-    public static void zipCopy(InputStream inputStream, OutputStream zipStream) throws IOException {
+    public static void zipCopy(InputStream inputStream, OutputStream zipStream) throws
+            IOException {
 
         byte[] bytesIn = new byte[BUFFER_SIZE];
         int read = 0;
@@ -992,7 +1068,8 @@ public class Fb2Extractor extends BaseExtractor {
         inputStream.close();
     }
 
-    public static void zipCopyNoClose(InputStream inputStream, OutputStream zipStream) throws IOException {
+    public static void zipCopyNoClose(InputStream inputStream, OutputStream zipStream) throws
+            IOException {
 
         byte[] bytesIn = new byte[BUFFER_SIZE];
         int read = 0;

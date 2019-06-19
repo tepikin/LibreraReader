@@ -14,6 +14,7 @@ import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Parcelable;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
@@ -134,7 +135,10 @@ public class HorizontalViewActivity extends AdsFragmentActivity {
 
     HorizontalModeController dc;
 
-    Handler handler, handlerTimer;
+    Handler handler = new Handler(Looper.getMainLooper());
+    Handler flippingHandler = new Handler(Looper.getMainLooper());
+    Handler handlerTimer = new Handler(Looper.getMainLooper());
+
     CopyAsyncTask loadinAsyncTask;
 
     Dialog rotatoinDialog;
@@ -160,7 +164,6 @@ public class HorizontalViewActivity extends AdsFragmentActivity {
 
     ClickUtils clickUtils;
 
-    Handler flippingHandler;
     int flippingTimer = 0;
 
     protected void onCreateTest(final Bundle savedInstanceState) {
@@ -175,9 +178,7 @@ public class HorizontalViewActivity extends AdsFragmentActivity {
         intetrstialTimeoutSec = ADS.FULL_SCREEN_TIMEOUT_SEC;
         LOG.d("getRequestedOrientation", AppState.get().orientation, getRequestedOrientation());
 
-        handler = new Handler();
-        handlerTimer = new Handler();
-        flippingHandler = new Handler();
+
         flippingTimer = 0;
 
         long crateBegin = System.currentTimeMillis();
@@ -385,6 +386,7 @@ public class HorizontalViewActivity extends AdsFragmentActivity {
                 DocumentController.showFullScreenPopup(dc.getActivity(), v, id -> {
                     AppState.get().fullScreenMode = id;
                     DocumentController.chooseFullScreen(HorizontalViewActivity.this, AppState.get().fullScreenMode);
+                    onFullScreen.setImageResource(DocumentController.getFullScreenIcon(HorizontalViewActivity.this, AppState.get().fullScreenMode));
                     if (dc.isTextFormat()) {
                         if (onRefresh != null) {
                             onRefresh.run();
@@ -393,12 +395,12 @@ public class HorizontalViewActivity extends AdsFragmentActivity {
                         dc.restartActivity();
                     }
                     return true;
-                });
+                }, AppState.get().fullScreenMode);
 
 
             }
         });
-        //onFullScreen.setImageResource(AppState.get().isFullScreen ? R.drawable.glyphicons_487_fit_frame_to_image : R.drawable.glyphicons_488_fit_image_to_frame);
+        onFullScreen.setImageResource(DocumentController.getFullScreenIcon(HorizontalViewActivity.this, AppState.get().fullScreenMode));
 
         ImageView dayNightButton = (ImageView) findViewById(R.id.bookNight);
         dayNightButton.setOnClickListener(new View.OnClickListener() {
@@ -468,7 +470,9 @@ public class HorizontalViewActivity extends AdsFragmentActivity {
 
             @Override
             public void onClick(final View v) {
-                DragingDialogs.showContent(anchor, dc);
+                if (dc != null) {
+                    DragingDialogs.showContent(anchor, dc);
+                }
             }
         });
         findViewById(R.id.onBookmarks).setOnClickListener(onBookmarks);
@@ -516,6 +520,10 @@ public class HorizontalViewActivity extends AdsFragmentActivity {
 
             @Override
             public void onClick(View v) {
+                if (dc == null) {
+                    return;
+                }
+
                 MyPopupMenu p = new MyPopupMenu(v.getContext(), v);
                 p.getMenu().add(R.string.one_page).setIcon(R.drawable.glyphicons_two_page_one).setOnMenuItemClickListener(new OnMenuItemClickListener() {
 
@@ -883,7 +891,11 @@ public class HorizontalViewActivity extends AdsFragmentActivity {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
                             dialog.dismiss();
-                            dc.onCloseActivityFinal(null);
+                            if (dc != null) {
+                                dc.onCloseActivityFinal(null);
+                            } else {
+                                HorizontalViewActivity.this.finish();
+                            }
                         }
 
                     });
@@ -894,17 +906,24 @@ public class HorizontalViewActivity extends AdsFragmentActivity {
                             final String txt = input.getText().toString();
                             if (TxtUtils.isNotEmpty(txt)) {
                                 dialog.dismiss();
-                                dc.onCloseActivityFinal(new Runnable() {
 
-                                    @Override
-                                    public void run() {
-                                        getIntent().putExtra(HorizontalModeController.EXTRA_PASSWORD, txt);
-                                        startActivity(getIntent());
-                                    }
-                                });
+                                final Runnable runnable = () -> {
+                                    HorizontalViewActivity.this.finish();
+                                    getIntent().putExtra(HorizontalModeController.EXTRA_PASSWORD, txt);
+                                    startActivity(getIntent());
+                                };
+                                if (dc != null) {
+                                    dc.onCloseActivityFinal(runnable);
+                                } else {
+                                    runnable.run();
+                                }
 
                             } else {
-                                dc.onCloseActivityFinal(null);
+                                if (dc == null) {
+                                    HorizontalViewActivity.this.finish();
+                                } else {
+                                    dc.onCloseActivityFinal(null);
+                                }
                             }
                         }
                     });
@@ -1430,7 +1449,7 @@ public class HorizontalViewActivity extends AdsFragmentActivity {
 
     @Override
     protected void onDestroy() {
-        super.onDestroy();
+
         if (loadinAsyncTask != null) {
             try {
                 loadinAsyncTask.cancel(true);
@@ -1449,6 +1468,11 @@ public class HorizontalViewActivity extends AdsFragmentActivity {
 
         // AppTemp.get().isCut = false;
         PageImageState.get().clearResouces();
+
+
+        super.onDestroy();
+
+
 
     }
 
@@ -1950,6 +1974,9 @@ public class HorizontalViewActivity extends AdsFragmentActivity {
     }
 
     public void authoFit() {
+        if (handler == null) {
+            return;
+        }
         handler.postDelayed(new Runnable() {
 
             @Override

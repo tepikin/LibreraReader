@@ -58,6 +58,20 @@ public class TxtUtils {
     public static final String NON_BREAKE_SPACE = "\u00A0";
     public static final char NON_BREAKE_SPACE_CHAR = NON_BREAKE_SPACE.charAt(0);
 
+    //<a> asdfsadf </a>
+    public static String getStringInTag(String string, String tag) {
+        String start = "<" + tag + ">";
+        String end = "</" + tag + ">";
+        int i1 = string.indexOf(start);
+        int i2 = string.indexOf(end);
+
+        if (i1 >= 0 && i2 > i1) {
+            return string.substring(i1 + start.length(), i2);
+        }
+
+        return "";
+    }
+
     public static String trim(String string) {
         if (string == null) {
             return null;
@@ -256,6 +270,17 @@ public class TxtUtils {
 
     }
 
+    public static String replacePDFEndLine(String pageHTML) {
+        pageHTML = pageHTML.replace("-<end-line>", "");
+        pageHTML = pageHTML.replace("- <end-line>", "");
+        pageHTML = pageHTML.replace("<end-line>", " ");
+
+        pageHTML = pageHTML.replace("<pause>", "");
+        pageHTML = pageHTML.replace("<end-block>", "");
+        pageHTML = pageHTML.replaceAll("<pause-font-size-[0-9,.]*>", "");
+        return pageHTML;
+    }
+
     public static String replaceEndLine(String pageHTML) {
         pageHTML = pageHTML.replace("-<end-line>" + TTS_PAUSE + TTS_PAUSE, "");
         pageHTML = pageHTML.replace("-<end-line>" + TTS_PAUSE, "");
@@ -299,19 +324,27 @@ public class TxtUtils {
 
         LOG.d("pageHTML [2", pageHTML);
 
+        pageHTML = pageHTML.replace("<end-line>.", ".");
+
         if (AppState.get().isShowFooterNotesInText && AppTemp.get().hypenLang != null) {
             try {
                 String string = getLocaleStringResource(new Locale(AppTemp.get().hypenLang), R.string.foot_notes, LibreraApp.context);
-                pageHTML = pageHTML.replaceAll("[\\[{][0-9]+[\\]}]", TTS_PAUSE + string + TTS_PAUSE);
+                pageHTML = pageHTML.replaceAll("[\\[{][0-9]+[\\]}]", TTS_PAUSE + " " + TTS_PAUSE + string + TTS_PAUSE);
             } catch (Exception e) {
                 LOG.e(e);
             }
+        } else {
+            pageHTML = pageHTML.replaceAll("[\\[{]\\d+[\\]}]", "");//replace[1] or{22} or [32] or {3}
         }
+        pageHTML = pageHTML.replaceAll("(\\p{Alpha})\\d+", "$1");//replace1
+
 
         LOG.d("pageHTML [3]", pageHTML);
 
 
         pageHTML = replaceEndLine(pageHTML);
+
+
         pageHTML = pageHTML.replace("  ", " ");
         pageHTML = pageHTML.replaceAll("(?u)(\\w+)(-\\s)", "$1");
         LOG.d("pageHTML [after] ", pageHTML);
@@ -432,10 +465,12 @@ public class TxtUtils {
             }
 
 
+            pageHTML = pageHTML.replaceAll(" (\\S)\\.(\\S)\\.(\\S)\\.(\\S)\\. ", "  $1{dot}$2{dot}$3{dot}$4{dot} ");
             pageHTML = pageHTML.replaceAll(" (\\S{1,3})\\.(\\S{1,3})\\.(\\S{1,3})\\. ", "  $1{dot}$2{dot}$3{dot} ");
             pageHTML = pageHTML.replaceAll(" (\\S{1,3})\\.(\\S{1,4})\\. ", "  $1{dot}$2{dot} ");
             pageHTML = pageHTML.replaceAll(" (\\S{1,2})\\. (\\S{1,2})\\. ", "  $1{dot} $2{dot} ");
             pageHTML = pageHTML.replaceAll(" (\\S{1,2})\\. ", " $1{dot} ");
+            pageHTML = pageHTML.replaceAll("(\\d*)\\.(\\d+)", "$1{dot}$2"); //skip numbers 3.3 .343
 
 
             for (int i = 0; i < AppState.get().ttsSentecesDivs.length(); i++) {
@@ -611,7 +646,12 @@ public class TxtUtils {
     }
 
     public static String fixFileName(String fileName) {
-        fileName = fileName.replaceAll("[\\\\/:*?\"<>|]", "_");
+        fileName = fileName.replaceAll("[\\/:*?\"'<>|]", "_");
+        return fileName;
+
+    }
+    public static String fixFilePath(String fileName) {
+        fileName = fileName.replaceAll("[':*?\"<>|]", "_");
         return fileName;
 
     }
@@ -637,6 +677,7 @@ public class TxtUtils {
     public static String replaceLast(String input, String from, String to) {
         return input.replaceAll(from + "$", to);
     }
+
 
     public static String replaceFirst(String input, String from, String to) {
         return input.replaceAll("^" + from, to);
@@ -697,6 +738,7 @@ public class TxtUtils {
     }
 
     @TargetApi(24)
+
     public static Spanned underline(final String text) {
         try {
             return Html.fromHtml("<u>" + text + "</u>");

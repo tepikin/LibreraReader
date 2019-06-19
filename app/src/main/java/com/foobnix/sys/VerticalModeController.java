@@ -36,6 +36,7 @@ import org.ebookdroid.common.settings.CoreSettings;
 import org.ebookdroid.common.settings.SettingsManager;
 import org.ebookdroid.core.Page;
 import org.ebookdroid.core.codec.Annotation;
+import org.ebookdroid.core.codec.CodecPage;
 import org.ebookdroid.core.codec.OutlineLink;
 import org.ebookdroid.core.codec.PageLink;
 import org.ebookdroid.droids.mupdf.codec.MuPdfLinks;
@@ -71,6 +72,20 @@ public class VerticalModeController extends DocumentController {
         CoreSettings.getInstance().fullScreen = AppState.get().fullScreenMode == AppState.FULL_SCREEN_FULLSCREEN;
         handler = new Handler();
         TempHolder.get().loadingCancelled = false;
+    }
+
+
+    @Override
+    public void recyclePage(int pageNumber) {
+        if (ctr == null) {
+            return;
+        }
+        try {
+            CodecPage page = ctr.getDecodeService().getCodecDocument().getPage(pageNumber);
+            page.recycle();
+        } catch (Exception e) {
+            LOG.e(e);
+        }
     }
 
     @Override
@@ -225,16 +240,33 @@ public class VerticalModeController extends DocumentController {
     public void onNextScreen(boolean animate) {
         int nextScreenScrollBy = AppState.get().nextScreenScrollBy;
         LOG.d("nextScreenScrollBy", nextScreenScrollBy, "animate", animate);
+
+
+        int before = ctr.getDocumentController().getView().getScrollY();
         if (animate) {
             ctr.getDocumentController().getView().startPageScroll(0, 1 * nextScreenScrollBy * getScrollValue() / 100);
         } else {
             ctr.getDocumentController().getView().scrollBy(0, 1 * nextScreenScrollBy * getScrollValue() / 100);
         }
+
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                int after = ctr.getDocumentController().getView().getScrollY();
+                if (AppTemp.get().readingMode == AppState.READING_MODE_MUSICIAN && before == after) {
+                    ctr.getDocumentController().getView().stopScroller();
+                    ctr.getDocumentController().goToPage(0);
+                }
+            }
+        }, 100);
+
+
     }
 
     @Override
     public void onPrevScreen(boolean animate) {
         int nextScreenScrollBy = AppState.get().nextScreenScrollBy;
+        int before = ctr.getDocumentController().getView().getScrollY();
 
         if (animate) {
             ctr.getDocumentController().getView().startPageScroll(0, -1 * nextScreenScrollBy * getScrollValue() / 100);
@@ -242,6 +274,17 @@ public class VerticalModeController extends DocumentController {
             ctr.getDocumentController().getView().scrollBy(0, -1 * nextScreenScrollBy * getScrollValue() / 100);
         }
 
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                int after = ctr.getDocumentController().getView().getScrollY();
+                LOG.d(" before == after", before, after);
+                if (AppTemp.get().readingMode == AppState.READING_MODE_MUSICIAN && before == after) {
+                    ctr.getDocumentController().getView().stopScroller();
+                    ctr.getDocumentController().goToPage(getPageCount()-1);
+                }
+            }
+        }, 100);
     }
 
     @Override
@@ -560,10 +603,12 @@ public class VerticalModeController extends DocumentController {
         ctr.getZoomModel().initZoom(1);
         ctr.getZoomModel().commit();
 
-        ctr.getDocumentController().goToPage(curentPage, 0, 0);
-        ctr.getDocumentController().goToPage(curentPage);
+        //ctr.getDocumentController().goToPage(curentPage, 0, 0);
+        ctr.getDocumentController().goToPageAndCenter(curentPage);
+        //ctr.getDocumentController().goToPageAndCenter(curentPage);
 
-        ctr.getDocumentController().toggleRenderingEffects();
+
+        //ctr.getDocumentController().toggleRenderingEffects();
     }
 
     @Override

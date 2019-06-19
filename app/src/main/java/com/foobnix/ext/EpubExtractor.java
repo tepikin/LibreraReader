@@ -3,7 +3,9 @@ package com.foobnix.ext;
 import com.BaseExtractor;
 import com.foobnix.android.utils.LOG;
 import com.foobnix.android.utils.TxtUtils;
+import com.foobnix.android.utils.WebViewUtils;
 import com.foobnix.hypen.HypenUtils;
+import com.foobnix.model.AppState;
 import com.foobnix.model.AppTemp;
 import com.foobnix.pdf.info.ExtUtils;
 import com.foobnix.sys.ArchiveEntry;
@@ -92,11 +94,12 @@ public class EpubExtractor extends BaseExtractor {
                 LOG.d("nextEntry HTML cancell", TempHolder.get().loadingCancelled, name);
 
                 ByteArrayOutputStream hStream = new ByteArrayOutputStream();
-                Fb2Extractor.generateHyphenFileEpub(new InputStreamReader(zipInputStream), null,hStream);
+                Fb2Extractor.generateHyphenFileEpub(new InputStreamReader(zipInputStream), null, hStream, null, null);
                 Fb2Extractor.writeToZipNoClose(zos, name, new ByteArrayInputStream(hStream.toByteArray()));
             } else {
                 LOG.d("nextEntry cancell", TempHolder.get().loadingCancelled, name);
                 Fb2Extractor.writeToZipNoClose(zos, name, zipInputStream);
+
             }
 
         }
@@ -119,6 +122,8 @@ public class EpubExtractor extends BaseExtractor {
 
         HypenUtils.applyLanguage(AppTemp.get().hypenLang);
 
+        Map<String, String> svgs = new HashMap<>();
+
         while ((nextEntry = zipInputStream.getNextEntry()) != null) {
             if (TempHolder.get().loadingCancelled) {
                 break;
@@ -130,8 +135,7 @@ public class EpubExtractor extends BaseExtractor {
                 LOG.d("nextEntry HTML cancell", TempHolder.get().loadingCancelled, name);
 
                 ByteArrayOutputStream hStream = new ByteArrayOutputStream();
-                Fb2Extractor.generateHyphenFileEpub(new InputStreamReader(zipInputStream), notes, hStream);
-
+                Fb2Extractor.generateHyphenFileEpub(new InputStreamReader(zipInputStream), notes, hStream, name, svgs);
 
 
                 Fb2Extractor.writeToZipNoClose(zos, name, new ByteArrayInputStream(hStream.toByteArray()));
@@ -141,11 +145,38 @@ public class EpubExtractor extends BaseExtractor {
             }
 
         }
+
+        if (AppState.get().isExperimental) {
+
+            Object lock = new Object();
+
+            for (String key : svgs.keySet()) {
+
+
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                WebViewUtils.renterToPng(key, svgs.get(key), out, lock);
+
+                synchronized (lock) {
+                    lock.wait(2000);
+                }
+
+//                if (BuildConfig.LOG) {
+//                    final File file = new File(CacheZipUtils.CACHE_BOOK_DIR, key + ".svg");
+//                    IO.writeString(file, svgs.get(key));
+//                }
+
+                Fb2Extractor.writeToZipNoClose(zos, key, new ByteArrayInputStream(out.toByteArray()));
+
+
+            }
+        }
+
         zipInputStream.close();
 
         zos.close();
 
     }
+
 
     @Override
     public String getBookOverview(String path) {
@@ -259,9 +290,7 @@ public class EpubExtractor extends BaseExtractor {
                                     if (number != null) {
                                         number = number.replace(".0", "");
                                     }
-                                } else
-
-                                if ("calibre:user_metadata:#genre".equals(nameAttr)) {
+                                } else if ("calibre:user_metadata:#genre".equals(nameAttr)) {
                                     LOG.d("userGenre", value);
                                     try {
                                         JSONObject obj = new JSONObject(value);
@@ -321,7 +350,7 @@ public class EpubExtractor extends BaseExtractor {
             return ebookMeta;
         } catch (
 
-        Exception e) {
+                Exception e) {
             return EbookMeta.Empty();
         }
     }
@@ -527,6 +556,7 @@ public class EpubExtractor extends BaseExtractor {
                                 if (attr.startsWith("#")) {
                                     attr = name + attr;
                                 }
+                                LOG.d("link-item-text", attr, text);
                                 if (!TxtUtils.isFooterNote(text)) {
                                     LOG.d("Skip text", text);
                                     continue;
@@ -547,7 +577,6 @@ public class EpubExtractor extends BaseExtractor {
                         }
 
 
-
                     }
                 }
 
@@ -561,7 +590,8 @@ public class EpubExtractor extends BaseExtractor {
                     String name = nextEntry.getName();
                     for (String fileName : files) {
 
-                        if (name.endsWith(fileName)) {
+                        LOG.d("PARSE FILE NAME begin", name);
+                        if (ExtUtils.getFileName(name).endsWith(ExtUtils.getFileName(fileName))) {
                             LOG.d("PARSE FILE NAME", name);
                             // System.out.println("file: " + name);
                             Parser xmlParser = Parser.xmlParser();

@@ -1,7 +1,9 @@
 package com.foobnix;
 
 import android.app.Activity;
+import android.database.Cursor;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.widget.Toast;
 
 import com.foobnix.android.utils.LOG;
@@ -47,23 +49,46 @@ public class OpenerActivity extends Activity {
 
         LOG.d("OpenerActivity", getIntent());
         LOG.d("OpenerActivity Data", getIntent().getData());
-        LOG.d("OpenerActivity Path", getIntent().getData().getPath());
+
+        LOG.d("OpenerActivity Path", getDataPath());
         LOG.d("OpenerActivity Scheme", getIntent().getScheme());
         LOG.d("OpenerActivity Mime", getIntent().getType());
-        //LOG.d("OpenerActivity Mime", getIntent().getData().);
+        LOG.d("OpenerActivity ConentName", getContentName(this));
 
-        File file = new File(getIntent().getData().getPath());
+
+        File file = new File(getDataPath());
         if (!file.isFile()) {
             try {
+                BookType bookType = BookType.getByMimeType(getIntent().getType());
 
-                BookType mime = BookType.getByMimeType(getIntent().getType());
+                String name1 = getContentName(this);
+                String name2 = getDataPath();
+                String name3 = bookType != null ? bookType.getExt() : null;
 
-                if (mime.getExt() == null) {
+                LOG.d("OpenerActivity ==============");
+                LOG.d("OpenerActivity getContentName", name1);
+                LOG.d("OpenerActivity getPath", name2);
+                LOG.d("OpenerActivity getByMimeType", name3);
+
+                String ext = "";
+                if (BookType.isSupportedExtByPath(name2)) {
+                    ext = ExtUtils.getFileExtension(name2);
+                } else if (BookType.isSupportedExtByPath(name1)) {
+                    ext = ExtUtils.getFileExtension(name1);
+                } else if (name3 != null) {
+                    ext = name3;
+                }
+
+                LOG.d("OpenerActivity final ext", ext);
+
+
+                if (ext == null) {
                     Toast.makeText(this, R.string.msg_unexpected_error, Toast.LENGTH_SHORT).show();
                     finish();
                 }
 
-                String name = getIntent().getData().getPath().hashCode() + "." + mime.getExt();
+
+                String name = getDataPath().hashCode() + "." + ext;
 
                 LOG.d("OpenerActivity", "cache", name);
 
@@ -87,6 +112,30 @@ public class OpenerActivity extends Activity {
         FileMeta meta = FileMetaCore.createMetaIfNeed(file.getPath(), false);
         ExtUtils.openFile(this, meta);
         LOG.d("OpenerActivity", "open file", meta.getPath());
+    }
+
+    private String getDataPath() {
+        if (getIntent().getData() == null) {
+            return "";
+        }
+
+        return getIntent().getData().getPath();
+    }
+
+    public static String getContentName(Activity a) {
+        try {
+            Cursor cursor = a.getContentResolver().query(a.getIntent().getData(), new String[]{MediaStore.MediaColumns.DISPLAY_NAME}, null, null, null);
+            cursor.moveToFirst();
+            int nameIndex = cursor.getColumnIndex(MediaStore.MediaColumns.DISPLAY_NAME);
+            if (nameIndex >= 0) {
+                return cursor.getString(nameIndex);
+
+            }
+            cursor.close();
+        } catch (Exception e) {
+            LOG.e(e);
+        }
+        return "";
     }
 
     @Override

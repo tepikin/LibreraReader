@@ -3,8 +3,6 @@ package org.ebookdroid.core;
 import android.graphics.PointF;
 import android.graphics.RectF;
 
-import com.foobnix.android.utils.Dips;
-
 import org.ebookdroid.core.models.DocumentModel;
 import org.ebookdroid.ui.viewer.IView;
 
@@ -24,13 +22,22 @@ public class EventGotoPage implements IEvent {
         this.viewState = new ViewState(ctrl);
         this.ctrl = ctrl;
         this.model = viewState.model;
-        this.centerPage = toPage == 0 || Dips.isHorizontal() ? false : true;
+        this.centerPage = false;
         this.toPageIndex = toPage;
         this.offsetX = 0;
         this.offsetY = 0;
         this.animte = animate;
+    }
 
-
+    public EventGotoPage(final AbstractViewController ctrl, final int toPage, boolean animate, boolean center) {
+        this.viewState = new ViewState(ctrl);
+        this.ctrl = ctrl;
+        this.model = viewState.model;
+        this.centerPage = center;
+        this.toPageIndex = toPage;
+        this.offsetX = 0;
+        this.offsetY = 0;
+        this.animte = animate;
     }
 
     public EventGotoPage(final AbstractViewController ctrl, final int viewIndex, final float offsetX,
@@ -89,14 +96,9 @@ public class EventGotoPage implements IEvent {
         final float height = bounds.height();
 
         if (centerPage) {
-            switch (ctrl.mode) {
-                case HORIZONTAL_SCROLL:
-                    return new PointF(bounds.left - (viewRect.width() - width) / 2, scrollY);
-                case VERTICALL_SCROLL:
-                    return new PointF(scrollX, bounds.top - (viewRect.height() - height) / 2);
-            }
+            return new PointF(offsetX * width, bounds.top - (viewRect.height() - height) / 2);
         }
-        return new PointF(bounds.left + offsetX * width, bounds.top + offsetY * height);
+        return new PointF(scrollX + offsetX * width, bounds.top + offsetY * height);
 
     }
 
