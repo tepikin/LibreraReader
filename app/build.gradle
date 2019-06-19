@@ -271,7 +271,7 @@ dependencies {
     implementation 'org.zwobble.mammoth:mammoth:1.4.0'
     implementation 'javax.xml.stream:stax-api:1.0-2'
 
-    compile 'com.optimaize.languagedetector:language-detector:0.6'
+    implementation 'com.optimaize.languagedetector:language-detector:0.6'
 
 
     implementation 'com.google.android.gms:play-services-auth:16.0.1'
