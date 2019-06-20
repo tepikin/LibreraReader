@@ -420,8 +420,8 @@ public abstract class HorizontalModeController extends DocumentController {
     public void onCloseActivityFinal(final Runnable run) {
 
         stopTimer();
-        TTSEngine.get().stop();
-        TTSNotification.hideNotification();
+        //TTSEngine.get().stop();
+        //TTSNotification.hideNotification();
 
         Safe.run(new Runnable() {
 
