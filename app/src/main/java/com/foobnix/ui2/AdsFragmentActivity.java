@@ -86,7 +86,7 @@ public abstract class AdsFragmentActivity extends FragmentActivity {
 
     public void showInterstial() {
         TTSNotification.hideNotification();
-        TTSEngine.get().shutdown();
+        //TTSEngine.get().shutdown();
         adsPause();
         if (myAds.showInterstial()) {
             // ok
