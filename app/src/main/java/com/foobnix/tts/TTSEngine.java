@@ -32,8 +32,10 @@ import org.greenrobot.eventbus.EventBus;
 import java.io.File;
 import java.io.FileFilter;
 import java.text.DecimalFormat;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -223,6 +225,7 @@ public class TTSEngine {
                     HashMap<String, String> mapTemp1 = new HashMap<String, String>();
                     mapTemp1.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, FINISHED + i);
 
+                    setTtsLanguage(big);
                     ttsEngine.speak(big, TextToSpeech.QUEUE_ADD, mapTemp1);
                     ttsEngine.playSilence(AppState.get().ttsPauseDuration, TextToSpeech.QUEUE_ADD, mapTemp);
                     LOG.d("pageHTML-parts", i, big);
@@ -232,9 +235,27 @@ public class TTSEngine {
         } else {
             String textToPlay = text.replace(TxtUtils.TTS_PAUSE, "");
             LOG.d("pageHTML-parts-single", text);
+            setTtsLanguage(textToPlay);
             ttsEngine.speak(textToPlay, TextToSpeech.QUEUE_FLUSH, map);
         }
 
+    }
+
+    private void setTtsLanguage(String textToPlay){
+        char[] rus = "йцукенгшщзхъфывапролджэячсмитьбюЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭЯЧСМИТЬБЮ".toCharArray();
+        char[] en = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM".toCharArray();
+        int rusChars = 0;
+        int enChars  = 0;
+        for (char c : textToPlay.toCharArray()) {
+            if (Arrays.binarySearch(rus,c)>=0)rusChars++;
+            if (Arrays.binarySearch(en,c)>=0)enChars++;
+        }
+        if (rusChars>enChars){
+            ttsEngine.setLanguage(Locale.getDefault());
+        }else{
+            ttsEngine.setLanguage(Locale.ENGLISH);
+            ttsEngine.setSpeechRate(AppState.get().ttsSpeed*0.625f);
+        }
     }
 
     public void speakToFile(final DocumentController controller, final ResultResponse<String> info) {
